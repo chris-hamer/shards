@@ -23,6 +23,7 @@ AAuyron::AAuyron()
 	CameraLag = 3.0f;
 	CameraAutoTurnFactor = 1.0f;
 	CameraResetTime = 1.0f;
+	OffGroundJumpTime = 0.08f;
 
 	// Just in case.
 	TargetDirection = FRotator::ZeroRotator;
@@ -67,6 +68,7 @@ void AAuyron::BeginPlay()
 	SpringArm->TargetArmLength = DefaultArmLength;
 	SpringArm->CameraLagSpeed = CameraLag;
 	MovementComponent->maxslope = MaxSlope;
+	MovementComponent->MaxOffGroundTime = OffGroundJumpTime;
 	Gravity = -Gravity;
 }
 
@@ -150,10 +152,11 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity.Z = 0;
 			Velocity += JumpPower*MovementComponent->Floor.Normal;
 			JumpNextFrame = false;
+			WasOnTheGround = false;
 		}
 
 		// Store current on the ground state into WasOnTheGround.
-		WasOnTheGround = OnTheGround;
+		WasOnTheGround = !WasOnTheGround && MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround;
 
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);

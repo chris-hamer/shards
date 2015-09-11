@@ -5,6 +5,11 @@
 #include "why.h"
 #include "AuyronMovementComponent.h"
 
+UAuyronMovementComponent::UAuyronMovementComponent()
+{
+	offGroundTime = 0.0f;
+}
+
 //void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
@@ -26,7 +31,8 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	// Looks like we're standing on something.
 	if (Floor.Normal.Z > FMath::Sin((maxslope))) {
 		onground = true;
-	} else if (Floor.Normal.Z > 0.0f||true) { // (greater than 0 so this doesn't trigger on jumps)
+		offGroundTime = 0.0f;
+	} else { // (greater than 0 so this doesn't trigger on jumps)
 		// Slope is too steep so we should be pushed back by it by taking its vertical normal into account.
 		Horiz += Vert;
 		toosteep = true;
@@ -34,6 +40,11 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	// If we're not on a standable slope then we are not on the ground.
 	if (Floor.Normal.Z <= FMath::Sin((maxslope))) {
+		offGroundTime += DeltaTime; // Give player a small window to still jump after leaving a ledge
+	}
+
+	// If we're off the ground for too long, remove the second chance to jump
+	if (offGroundTime > MaxOffGroundTime) {
 		onground = false;
 	}
 

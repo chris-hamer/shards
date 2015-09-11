@@ -14,12 +14,16 @@ class UAuyronMovementComponent : public UPawnMovementComponent
 	GENERATED_BODY()
 
 public:
+	UAuyronMovementComponent();
+
 	// Variables to store the floor and wall collision normals.
 	FHitResult Floor;
 	FHitResult Wall;
 
 	// Temporary variable to tell the actual character class if we're on the ground or not.
 	bool onground;
+	float offGroundTime;
+	float MaxOffGroundTime;
 
 	// Temporary variable to tell the actual character class if we WERE on the ground or not.
 	bool wasonground;
