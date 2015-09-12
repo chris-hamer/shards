@@ -32,6 +32,7 @@ public:
 	void YawCamera(float AxisValue);
 	void Jump();
 	void Unjump();
+	void Use();
 	void CameraFaceForward();
 
 	FVector2D MovementInput;
@@ -92,6 +93,8 @@ public:
 
 	/* How long the camera should wait after the last mouse input before reverting to automatic control. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraResetTime;
+
+	bool ShouldActivate;
 
 private:
 	float TimeSinceLastRealignment;

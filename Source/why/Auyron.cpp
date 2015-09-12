@@ -213,6 +213,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAxis("CameraYaw", this, &AAuyron::YawCamera);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
+	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
 }
 
@@ -250,6 +251,11 @@ void AAuyron::Jump()
 void AAuyron::Unjump()
 {
 	HoldingJump = false;
+}
+
+void AAuyron::Use()
+{
+	ShouldActivate = true;
 }
 
 // HEY LINK TALK TO ME USING Z TARGETING
