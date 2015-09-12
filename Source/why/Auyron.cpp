@@ -1,6 +1,7 @@
 // DON'T TELL ME WHERE TO FILL OUT MY COPYRIGHT NOTICE YOU'RE NOT MY REAL DAD.
 
 #include "why.h"
+#include "Gem.h"
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
 
@@ -38,6 +39,8 @@ AAuyron::AAuyron()
 	RootComponent = CapsuleComponent;
 	CapsuleComponent->InitCapsuleSize(40.0f, 60.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
+	SetActorEnableCollision(true);
+	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
@@ -71,6 +74,7 @@ void AAuyron::BeginPlay()
 	MovementComponent->maxslope = MaxSlope;
 	MovementComponent->MaxOffGroundTime = OffGroundJumpTime;
 	Gravity = -Gravity;
+	GemCount = 0;
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -264,4 +268,16 @@ void AAuyron::CameraFaceForward()
 	FRotator NewRotation = SpringArm->GetComponentRotation();
 	NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
 	SpringArm->SetRelativeRotation(NewRotation);
+}
+
+void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL))
+	{
+		if (OtherActor->IsA(AGem::StaticClass()))
+		{
+			OtherActor->Destroy();
+			GemCount++;
+		}
+	}
 }

@@ -35,6 +35,9 @@ public:
 	void Use();
 	void CameraFaceForward();
 
+	UFUNCTION()
+	void HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
 	FVector2D MovementInput;
 	FVector2D CameraInput;
 
@@ -95,6 +98,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraResetTime;
 
 	bool ShouldActivate;
+	int GemCount;
 
 private:
 	float TimeSinceLastRealignment;
