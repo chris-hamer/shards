@@ -12,6 +12,8 @@ AStick::AStick()
 
 	StickModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
 	StickModel->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/StarterContent/Shapes/Shape_Sphere"));
+	StickModel->SetStaticMesh(MeshObj.Object);
 	RootComponent = StickModel;
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
