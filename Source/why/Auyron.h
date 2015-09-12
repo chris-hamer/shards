@@ -34,12 +34,13 @@ public:
 	void Unjump();
 	void Use();
 	void CameraFaceForward();
+	void Warp();
 
 	UFUNCTION()
 	void HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	FVector2D MovementInput;
-	FVector2D CameraInput;
+	FVector MovementInput;
+	FVector CameraInput;
 
 	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
@@ -79,6 +80,12 @@ public:
 	/* Minimum angle difference needed for the player model to snap to the direction the player is moving in. */
 	UPROPERTY(EditAnywhere, Category = "Movement", AdvancedDisplay) float FacingAngleSnapThreshold;
 
+	/* The maximum range of your teleporter. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRange;
+
+	/* The angle that you can be "off" from a target but still be able to teleport to it. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleTolerance;
+
 	/* Highest angle the camera is allowed to have. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraMaxAngle;
 
@@ -109,6 +116,9 @@ private:
 	bool JustJumped;
 	bool OnTheGround;
 	bool WasOnTheGround;
+	bool swish;
+	bool ztarget;
+	bool movementlocked;
 	FRotator TargetDirection;
 	FRotator OldDirection;
 	FVector Velocity;

@@ -4,6 +4,8 @@
 #include "Gem.h"
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
+#include "EngineUtils.h" 
+#include "Stick.h" 
 
 // Sets default values
 AAuyron::AAuyron()
@@ -15,17 +17,19 @@ AAuyron::AAuyron()
 	MaxVelocity = 420.0f; // Blaze it
 	MaxSlope = 45.0f;
 	TurnRate = 480.0f;
-	JumpPower = 500.0f;
+	JumpPower = 400.0f;
+	OffGroundJumpTime = 0.04f;
 	Gravity = 1000.0f;
 	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
+	TeleportAngleTolerance = 20.0f;
+	TeleportRange = 2500.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 400.0f;
 	CameraLag = 3.0f;
 	CameraAutoTurnFactor = 1.0f;
 	CameraResetTime = 1.0f;
-	OffGroundJumpTime = 0.08f;
 
 	// Just in case.
 	TargetDirection = FRotator::ZeroRotator;
@@ -103,10 +107,61 @@ void AAuyron::Tick(float DeltaTime)
 		NewRotation = SpringArm->GetComponentRotation();
 		NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
 		SpringArm->SetWorldRotation(NewRotation);
+		if (ztarget) {
+			NewRotation = PlayerModel->GetComponentRotation();
+			NewRotation.Yaw += CameraInput.X;
+			PlayerModel->SetRelativeRotation(NewRotation);
+		}
 	}
 
 	// Move the player in response to movement inputs.
 	{
+
+		if (ztarget) {
+			FRotator NewRotation = SpringArm->GetComponentRotation();
+			NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
+			SpringArm->SetRelativeRotation(NewRotation);
+			SpringArm->TargetArmLength = 100.0f;
+			SpringArm->CameraLagSpeed = 0.0f;
+			FVector Right = FVector::VectorPlaneProject(Camera->GetRightVector(), FVector::UpVector);
+			FVector Forward = FVector::VectorPlaneProject(Camera->GetForwardVector(), FVector::UpVector);
+			FVector base = FVector(0.0f, 0.0f, 50.0f) + FVector(-100.0f, -100.0f, 50.0f);
+			base = (-base.X*Right + base.Y*Forward + base.Z*FVector::UpVector);
+			SpringArm->SetRelativeLocation(base);
+			movementlocked = true;
+		} else {
+			SpringArm->TargetArmLength = DefaultArmLength;
+			SpringArm->CameraLagSpeed = CameraLag;
+			SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+			movementlocked = false;
+		}
+
+		if (swish) {
+			AStick* closest = NULL;
+			float biggestdot = -1.0f;
+			for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				if (ActorItr->GetClass()->GetName() == "Stick") {
+					FVector displacement = ActorItr->GetActorLocation() - GetActorLocation();
+					float dot = displacement.GetSafeNormal() | Camera->GetForwardVector().GetSafeNormal();
+					if (closest == nullptr || dot>biggestdot) {
+						closest = *ActorItr;
+						biggestdot = dot;
+					}
+				}
+			}
+			if (closest != nullptr &&
+				biggestdot > FMath::Cos(FMath::DegreesToRadians(TeleportAngleTolerance)) &&
+				(closest->GetActorLocation() - GetActorLocation()).Size() < TeleportRange &&
+				ztarget) {
+				AStick* s = closest;
+				SetActorLocation(s->gohere);
+			}
+			swish = false;
+		}
+		if (movementlocked) {
+			MovementInput = FVector::ZeroVector;
+		}
+
 		// The directions of "Right" and "Forward" depend on the direction the camera's facing.
 		FVector Right = Camera->GetRightVector();
 		Right.Z = 0.0f;
@@ -116,8 +171,8 @@ void AAuyron::Tick(float DeltaTime)
 		Forward = Forward.GetSafeNormal();
 
 		// Set up acceleration vector using the movement inputs.
-		FVector2D normalInput = MovementInput.GetSafeNormal();
-		FVector Acceleration = (Right*normalInput.X + Forward*normalInput.Y)*AccelerationRate;
+		FVector AdjustedInput = MovementInput.ClampSize(0.0, 1.0);
+		FVector Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*AccelerationRate;
 
 		// Apply deceleration.
 		if (OnTheGround) {
@@ -148,7 +203,7 @@ void AAuyron::Tick(float DeltaTime)
 		float tempz;
 		tempz = Velocity.Z;
 		Velocity.Z = 0.0f;
-		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity * MovementInput.Size());
+		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
 		Velocity.Z = tempz;
 
 		// Handle jumping.
@@ -180,7 +235,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// (but I forgive you)
 			TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
-				reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector2D(0, 1)));
+				reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
 		} else {
 			// If we're not moving set our target direction to the direction we're currently facing.
 			TargetDirection = PlayerModel->GetComponentRotation();
@@ -219,6 +274,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
 	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
+	InputComponent->BindAction("Warp", IE_Pressed, this, &AAuyron::Warp);
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
@@ -265,9 +321,13 @@ void AAuyron::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AAuyron::CameraFaceForward()
 {
-	FRotator NewRotation = SpringArm->GetComponentRotation();
-	NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
-	SpringArm->SetRelativeRotation(NewRotation);
+	ztarget = !ztarget;
+}
+
+// swish
+void AAuyron::Warp()
+{
+	swish = true;
 }
 
 void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
