@@ -17,14 +17,25 @@ AGem::AGem()
 	SphereComponent->SetCollisionProfileName(TEXT("Collectible"));
 	SetActorEnableCollision(true);
 
+	int32 gemKind = FMath::RandRange(1, 6);
 	GemModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/StarterContent/Props/SM_Lamp_Wall"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(*("/Game/Models/Gem" + FString::FromInt(gemKind)));
 	GemModel->SetStaticMesh(MeshObj.Object);
+	GemModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->AttachTo(RootComponent);
 
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
 	PointLightComponent->Intensity = 500.0f;
+	switch (gemKind)
+	{
+	case 1: PointLightComponent->LightColor = FColor::Blue; break;
+	case 2: PointLightComponent->LightColor = FColor::Red; break;
+	case 3: PointLightComponent->LightColor = FColor::Green; break;
+	case 4: PointLightComponent->LightColor = FColor::Yellow; break;
+	case 5: PointLightComponent->LightColor = FColor::Magenta; break;
+	case 6: PointLightComponent->LightColor = FColor::White; break;
+	}
 	PointLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	PointLightComponent->AttachTo(RootComponent);
 }
@@ -35,7 +46,7 @@ void AGem::BeginPlay()
 	Super::BeginPlay();
 
 	baseHeight = GetActorLocation().Z;
-	curTime = 0.0f;
+	curTime = FMath::FRandRange(0.0f, 2.0f*3.14f);
 }
 
 // Called every frame
@@ -44,7 +55,7 @@ void AGem::Tick( float DeltaTime )
 	Super::Tick( DeltaTime );
 
 	FVector loc = GetActorLocation();
-	loc = FVector(loc.X, loc.Y, baseHeight + 50.0f*FMath::Sin(curTime));
+	loc = FVector(loc.X, loc.Y, baseHeight + 20.0f*FMath::Sin(curTime));
 	SetActorLocation(loc);
 
 	curTime += DeltaTime;

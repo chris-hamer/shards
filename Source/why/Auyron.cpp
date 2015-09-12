@@ -155,7 +155,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (JumpNextFrame) {
 			// Jump taking the floor's angle into account.
 			Velocity.Z = 0;
-			Velocity += JumpPower*MovementComponent->Floor.Normal;
+			Velocity += JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal);
 			JumpNextFrame = false;
 			WasOnTheGround = false;
 		}
