@@ -112,8 +112,8 @@ void AAuyron::Tick(float DeltaTime)
 		Forward = Forward.GetSafeNormal();
 
 		// Set up acceleration vector using the movement inputs.
-		MovementInput = MovementInput.GetSafeNormal();
-		FVector Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y)*AccelerationRate;
+		FVector2D normalInput = MovementInput.GetSafeNormal();
+		FVector Acceleration = (Right*normalInput.X + Forward*normalInput.Y)*AccelerationRate;
 
 		// Apply deceleration.
 		if (OnTheGround) {
@@ -144,7 +144,7 @@ void AAuyron::Tick(float DeltaTime)
 		float tempz;
 		tempz = Velocity.Z;
 		Velocity.Z = 0.0f;
-		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
+		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity * MovementInput.Size());
 		Velocity.Z = tempz;
 
 		// Handle jumping.
@@ -246,6 +246,7 @@ void AAuyron::Jump()
 	}
 }
 
+// I wish you could unjump in real life
 void AAuyron::Unjump()
 {
 	HoldingJump = false;
