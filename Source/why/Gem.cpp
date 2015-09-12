@@ -17,7 +17,7 @@ AGem::AGem()
 	SphereComponent->SetCollisionProfileName(TEXT("Collectible"));
 	SetActorEnableCollision(true);
 
-	int32 gemKind = FMath::RandRange(1, 6);
+	gemKind = FMath::RandRange(1, 6);
 	GemModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(*("/Game/Models/Gem" + FString::FromInt(gemKind)));
 	GemModel->SetStaticMesh(MeshObj.Object);
@@ -25,16 +25,21 @@ AGem::AGem()
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->AttachTo(RootComponent);
 
+	// This part doesn't work and I don't know why
+	// It's making me depressed
+	const ConstructorHelpers::FObjectFinder<UMaterialInstance> MatObj(*("Material'/Game/Models/mGem" + FString::FromInt(gemKind) + ".mGem" + FString::FromInt(gemKind) + "'"));
+	GemModel->SetMaterial(0, MatObj.Object);
+
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
 	PointLightComponent->Intensity = 500.0f;
 	switch (gemKind)
 	{
-	case 1: PointLightComponent->LightColor = FColor::Blue; break;
-	case 2: PointLightComponent->LightColor = FColor::Red; break;
-	case 3: PointLightComponent->LightColor = FColor::Green; break;
-	case 4: PointLightComponent->LightColor = FColor::Yellow; break;
-	case 5: PointLightComponent->LightColor = FColor::Magenta; break;
-	case 6: PointLightComponent->LightColor = FColor::White; break;
+		case 1: PointLightComponent->LightColor = FColor::Blue;		break;
+		case 2: PointLightComponent->LightColor = FColor::Green;	break;
+		case 3: PointLightComponent->LightColor = FColor::Magenta;	break;
+		case 4: PointLightComponent->LightColor = FColor::Red;		break;
+		case 5: PointLightComponent->LightColor = FColor::Yellow;	break;
+		case 6: PointLightComponent->LightColor = FColor::White;	break;
 	}
 	PointLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	PointLightComponent->AttachTo(RootComponent);

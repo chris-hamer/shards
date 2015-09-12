@@ -27,4 +27,5 @@ public:
 private:
 	float curTime;
 	float baseHeight;
+	int32 gemKind;
 };
