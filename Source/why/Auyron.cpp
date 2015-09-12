@@ -50,7 +50,7 @@ AAuyron::AAuyron()
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	SpringArm->AttachTo(RootComponent);
-	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-60.0f, 0.0f, 0.0f));
+	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 60.0f), FRotator(-50.0f, 0.0f, 0.0f));
 	SpringArm->bEnableCameraLag = true;
 
 	// Camera so the plebs can "see what they're doing" or whatever.

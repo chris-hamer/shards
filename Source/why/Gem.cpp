@@ -19,7 +19,7 @@ AGem::AGem()
 
 	gemKind = FMath::RandRange(1, 6);
 	GemModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(*("/Game/Models/Gem" + FString::FromInt(gemKind)));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(*("/Game/Models/Gems/Gem" + FString::FromInt(gemKind)));
 	GemModel->SetStaticMesh(MeshObj.Object);
 	GemModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
@@ -27,7 +27,7 @@ AGem::AGem()
 
 	// This part doesn't work and I don't know why
 	// It's making me depressed
-	const ConstructorHelpers::FObjectFinder<UMaterialInstance> MatObj(*("Material'/Game/Models/mGem" + FString::FromInt(gemKind) + ".mGem" + FString::FromInt(gemKind) + "'"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInstance> MatObj(*("Material'/Game/Models/Gems/mGem" + FString::FromInt(gemKind) + "'"));
 	GemModel->SetMaterial(0, MatObj.Object);
 
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
