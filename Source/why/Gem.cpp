@@ -25,11 +25,6 @@ AGem::AGem()
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->AttachTo(RootComponent);
 
-	// This part doesn't work and I don't know why
-	// It's making me depressed
-	const ConstructorHelpers::FObjectFinder<UMaterialInstance> MatObj(*("Material'/Game/Models/Gems/mGem" + FString::FromInt(gemKind) + "'"));
-	GemModel->SetMaterial(0, MatObj.Object);
-
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
 	PointLightComponent->Intensity = 500.0f;
 	switch (gemKind)
