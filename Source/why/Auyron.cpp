@@ -11,11 +11,12 @@ AAuyron::AAuyron()
 	AccelerationRate = 5500.0f;
 	GroundDeceleration = 600.0f;
 	AirDeceleration = 50.0f;
-	MaxVelocity = 400.0f;
+	MaxVelocity = 420.0f; // Blaze it
 	MaxSlope = 45.0f;
-	TurnRate = 360.0f;
+	TurnRate = 480.0f;
 	JumpPower = 500.0f;
 	Gravity = 1000.0f;
+	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
@@ -155,6 +156,11 @@ void AAuyron::Tick(float DeltaTime)
 			WasOnTheGround = false;
 		}
 
+		// Variable jump height
+		if (!HoldingJump && Velocity.Z > 0) {
+			Velocity += Gravity * FVector(0, 0, UnjumpRate) * DeltaTime;
+		}
+
 		// Store current on the ground state into WasOnTheGround.
 		WasOnTheGround = !WasOnTheGround && MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround;
 
@@ -206,6 +212,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAxis("CameraPitch", this, &AAuyron::PitchCamera);
 	InputComponent->BindAxis("CameraYaw", this, &AAuyron::YawCamera);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
+	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
 }
 
@@ -235,7 +242,13 @@ void AAuyron::Jump()
 {
 	if (OnTheGround) {
 		JumpNextFrame = true;
+		HoldingJump = true;
 	}
+}
+
+void AAuyron::Unjump()
+{
+	HoldingJump = false;
 }
 
 // HEY LINK TALK TO ME USING Z TARGETING

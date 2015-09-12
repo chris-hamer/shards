@@ -31,6 +31,7 @@ public:
 	void PitchCamera(float AxisValue);
 	void YawCamera(float AxisValue);
 	void Jump();
+	void Unjump();
 	void CameraFaceForward();
 
 	FVector2D MovementInput;
@@ -68,6 +69,9 @@ public:
 	/* The magnitude of gravity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float Gravity;
 
+	/* The amount of extra gravity to apply to the player after releasing the jump button. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float UnjumpRate;
+
 	/* Minimum angle difference needed for the player model to snap to the direction the player is moving in. */
 	UPROPERTY(EditAnywhere, Category = "Movement", AdvancedDisplay) float FacingAngleSnapThreshold;
 
@@ -94,6 +98,7 @@ private:
 	float HowLong;
 	float TimeSinceLastMouseInput;
 	bool JumpNextFrame;
+	bool HoldingJump;
 	bool JustJumped;
 	bool OnTheGround;
 	bool WasOnTheGround;
