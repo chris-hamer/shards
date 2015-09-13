@@ -5,7 +5,8 @@
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
 #include "EngineUtils.h" 
-#include "Stick.h" 
+#include "Stick.h"  
+#include "TeleClaw.h" 
 
 // Sets default values
 AAuyron::AAuyron()
@@ -55,7 +56,10 @@ AAuyron::AAuyron()
 	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
 
-	// ANIMATION
+	// Teleclaw.
+	//TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
+	//const ConstructorHelpers::FObjectFinder<UStaticMesh> TeleClawObj(TEXT("/Game/Models/Teleclaw"));
+	//TeleClaw->SetStaticMesh(TeleClawObj.Object);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -85,6 +89,16 @@ void AAuyron::BeginPlay()
 	MovementComponent->MaxOffGroundTime = OffGroundJumpTime;
 	Gravity = -Gravity;
 	GemCount = 0;
+
+	// FIRMLY GRASP IT IN YOUR HAND.
+	ATeleClaw* tc = NULL;
+	for (TActorIterator<ATeleClaw> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		tc = *ActorItr;
+	}
+	if (tc != nullptr) {
+		PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
+		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	}
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -365,5 +379,5 @@ void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherC
 
 float AAuyron::GetSpeed()
 {
-	return Velocity.Size();
+	return FVector::VectorPlaneProject(Velocity,FVector::UpVector).Size();
 }

@@ -48,7 +48,7 @@ public:
 	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
-	UPROPERTY(EditAnywhere)	UStaticMeshComponent* PlayerHair;
+	//UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 
 	/* Rate that the player should accelerate. */
