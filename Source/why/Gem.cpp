@@ -25,19 +25,19 @@ AGem::AGem()
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->AttachTo(RootComponent);
 
-	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
-	PointLightComponent->Intensity = 500.0f;
-	switch (gemKind)
-	{
-		case 1: PointLightComponent->LightColor = FColor::Blue;		break;
-		case 2: PointLightComponent->LightColor = FColor::Green;	break;
-		case 3: PointLightComponent->LightColor = FColor::Magenta;	break;
-		case 4: PointLightComponent->LightColor = FColor::Red;		break;
-		case 5: PointLightComponent->LightColor = FColor::Yellow;	break;
-		case 6: PointLightComponent->LightColor = FColor::White;	break;
-	}
-	PointLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	PointLightComponent->AttachTo(RootComponent);
+	//PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
+	//PointLightComponent->Intensity = 500.0f;
+	//switch (gemKind)
+	//{
+		//case 1: PointLightComponent->LightColor = FColor::Blue;		break;
+		//case 2: PointLightComponent->LightColor = FColor::Green;	break;
+		//case 3: PointLightComponent->LightColor = FColor::Magenta;	break;
+		//case 4: PointLightComponent->LightColor = FColor::Red;		break;
+		//case 5: PointLightComponent->LightColor = FColor::Yellow;	break;
+		//case 6: PointLightComponent->LightColor = FColor::White;	break;
+	//}
+	//PointLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	//PointLightComponent->AttachTo(RootComponent);
 }
 
 // Called when the game starts or when spawned

@@ -114,7 +114,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (ztarget) {
 			NewRotation = PlayerModel->GetComponentRotation();
 			NewRotation.Yaw += CameraInput.X;
-			PlayerModel->SetRelativeRotation(NewRotation);
+			PlayerModel->SetWorldRotation(NewRotation);
 		}
 	}
 
@@ -160,11 +160,6 @@ void AAuyron::Tick(float DeltaTime)
 					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
 					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
-					GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked by:" : "fine"));
-					if (blocked) {
-						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, f.GetActor()->GetName());
-						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, "");
-					}
 					if (dot>biggestdot && !blocked) {
 						closest = *ActorItr;
 						biggestdot = dot;
@@ -269,6 +264,7 @@ void AAuyron::Tick(float DeltaTime)
 			// Horrible quaternion voodoo. Viewer discretion is advised.
 			// I'm honestly still not quite sure what I did.
 			FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
+			//FQuat test = FQuat::Identity;
 			float angle = 0.0f;
 			FVector dummy;
 			test.ToAxisAndAngle(dummy, angle);
@@ -276,9 +272,9 @@ void AAuyron::Tick(float DeltaTime)
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
 			if (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold)) {
 				test = FQuat(dummy, FMath::DegreesToRadians(TurnRate)*DeltaTime);
-				PlayerModel->AddRelativeRotation(test);
+				PlayerModel->AddLocalRotation(test);
 			} else {
-				PlayerModel->SetRelativeRotation(TargetDirection);
+				PlayerModel->SetWorldRotation(TargetDirection);
 			}
 		}
 		// Like what even ARE quaternions anyway?
