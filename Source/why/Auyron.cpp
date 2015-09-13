@@ -5,7 +5,8 @@
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
 #include "EngineUtils.h" 
-#include "Stick.h" 
+#include "Stick.h"  
+#include "TeleClaw.h" 
 
 // Sets default values
 AAuyron::AAuyron()
@@ -41,19 +42,24 @@ AAuyron::AAuyron()
 	// I wanted to be a cylinder, but no, we gotta be a capsule.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
-	CapsuleComponent->InitCapsuleSize(40.0f, 60.0f);
-	CapsuleComponent->SetRelativeScale3D(FVector(0.54f, 0.54f, 1.0f));
+	CapsuleComponent->InitCapsuleSize(25.0f, 90.0f);
+	//CapsuleComponent->SetRelativeScale3D(FVector(0.54f, 0.54f, 1.0f));
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
-	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Export-mainmodel"));
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/dude"));
 	PlayerModel->SetSkeletalMesh(MeshObj.Object);
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -60.0f));
-	PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -85.0f));
+	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
+
+	// Teleclaw.
+	//TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
+	//const ConstructorHelpers::FObjectFinder<UStaticMesh> TeleClawObj(TEXT("/Game/Models/Teleclaw"));
+	//TeleClaw->SetStaticMesh(TeleClawObj.Object);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -83,6 +89,16 @@ void AAuyron::BeginPlay()
 	MovementComponent->MaxOffGroundTime = OffGroundJumpTime;
 	Gravity = -Gravity;
 	GemCount = 0;
+
+	// FIRMLY GRASP IT IN YOUR HAND.
+	ATeleClaw* tc = NULL;
+	for (TActorIterator<ATeleClaw> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		tc = *ActorItr;
+	}
+	if (tc != nullptr) {
+		PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
+		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	}
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -114,7 +130,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (ztarget) {
 			NewRotation = PlayerModel->GetComponentRotation();
 			NewRotation.Yaw += CameraInput.X;
-			PlayerModel->SetRelativeRotation(NewRotation);
+			PlayerModel->SetWorldRotation(NewRotation);
 		}
 	}
 
@@ -160,11 +176,6 @@ void AAuyron::Tick(float DeltaTime)
 					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
 					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
-					GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked by:" : "fine"));
-					if (blocked) {
-						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, f.GetActor()->GetName());
-						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, "");
-					}
 					if (dot>biggestdot && !blocked) {
 						closest = *ActorItr;
 						biggestdot = dot;
@@ -269,6 +280,7 @@ void AAuyron::Tick(float DeltaTime)
 			// Horrible quaternion voodoo. Viewer discretion is advised.
 			// I'm honestly still not quite sure what I did.
 			FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
+			//FQuat test = FQuat::Identity;
 			float angle = 0.0f;
 			FVector dummy;
 			test.ToAxisAndAngle(dummy, angle);
@@ -276,9 +288,9 @@ void AAuyron::Tick(float DeltaTime)
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
 			if (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold)) {
 				test = FQuat(dummy, FMath::DegreesToRadians(TurnRate)*DeltaTime);
-				PlayerModel->AddRelativeRotation(test);
+				PlayerModel->AddLocalRotation(test);
 			} else {
-				PlayerModel->SetRelativeRotation(TargetDirection);
+				PlayerModel->SetWorldRotation(TargetDirection);
 			}
 		}
 		// Like what even ARE quaternions anyway?
@@ -363,4 +375,9 @@ void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherC
 			GemCount++;
 		}
 	}
+}
+
+float AAuyron::GetSpeed()
+{
+	return FVector::VectorPlaneProject(Velocity,FVector::UpVector).Size();
 }
