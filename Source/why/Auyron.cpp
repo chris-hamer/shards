@@ -41,14 +41,17 @@ AAuyron::AAuyron()
 	// I wanted to be a cylinder, but no, we gotta be a capsule.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
-	CapsuleComponent->InitCapsuleSize(40.0f, 60.0f);
+	CapsuleComponent->InitCapsuleSize(30.0f, 80.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
 
 	// It you.
-	PlayerModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
+	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -50.0f));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> mesh(TEXT("/Game/dude"));
+	USkeletalMesh* ddd = mesh.Object;
+	PlayerModel->SetSkeletalMesh(ddd);
 	PlayerModel->AttachTo(RootComponent);
 
 	// Use a spring arm so the camera can be all like swoosh.
@@ -140,7 +143,8 @@ void AAuyron::Tick(float DeltaTime)
 			AStick* closest = NULL;
 			float biggestdot = -1.0f;
 			for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-				if (ActorItr->GetClass()->GetName() == "Stick") {
+				GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, ActorItr->GetClass()->GetName());
+				if (ActorItr->GetClass()->GetName() == "Stick_C") {
 					FVector displacement = ActorItr->GetActorLocation() - GetActorLocation();
 
 					float dot = displacement.GetSafeNormal() | Camera->GetForwardVector().GetSafeNormal();
@@ -156,7 +160,7 @@ void AAuyron::Tick(float DeltaTime)
 					FCollisionObjectQueryParams  asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
 					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
-					//GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked" : "fine"));
+					GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked" : "fine"));
 					if (blocked) {
 						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, f.GetActor()->GetName());
 					}
