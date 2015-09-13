@@ -21,7 +21,8 @@ AStick::AStick()
 	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
 	PointLight->AttachTo(RootComponent);
 	PointLight->SetRelativeLocation(FVector(0.0f, 0.0f, 6.8f));
-	PointLight->Intensity = 2320.5f;
+	PointLight->Intensity = 1385.76f;
+	PointLight->AttenuationRadius = 1006.83f;
 	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
