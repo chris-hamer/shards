@@ -22,6 +22,7 @@ public:
 
 	UPROPERTY(EditAnywhere) USceneComponent* Here;
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* StickModel;
+	UPROPERTY(EditAnywhere) UPointLightComponent* PointLight;
 
 	FVector gohere;
 	

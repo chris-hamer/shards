@@ -23,7 +23,7 @@ AAuyron::AAuyron()
 	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
 	TeleportAngleTolerance = 20.0f;
-	TeleportRange = 2500.0f;
+	TeleportRange = 1400.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 400.0f;
@@ -42,13 +42,17 @@ AAuyron::AAuyron()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
 	CapsuleComponent->InitCapsuleSize(40.0f, 60.0f);
+	CapsuleComponent->SetRelativeScale3D(FVector(0.54f, 0.54f, 1.0f));
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
 
 	// It you.
-	PlayerModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -50.0f));
+	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Export-mainmodel"));
+	PlayerModel->SetSkeletalMesh(MeshObj.Object);
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -60.0f));
+	PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
 
 	// Use a spring arm so the camera can be all like swoosh.

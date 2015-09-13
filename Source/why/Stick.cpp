@@ -11,10 +11,18 @@ AStick::AStick()
 	PrimaryActorTick.bCanEverTick = true;
 
 	StickModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
-	StickModel->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/StarterContent/Shapes/Shape_Sphere"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Dais"));
 	StickModel->SetStaticMesh(MeshObj.Object);
+	StickModel->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+	StickModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
+	StickModel->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	RootComponent = StickModel;
+
+	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
+	PointLight->AttachTo(RootComponent);
+	PointLight->SetRelativeLocation(FVector(0.0f, 0.0f, 6.8f));
+	PointLight->Intensity = 2320.5f;
+	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
 }
