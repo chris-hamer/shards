@@ -91,14 +91,14 @@ void AAuyron::BeginPlay()
 	GemCount = 0;
 
 	// FIRMLY GRASP IT IN YOUR HAND.
-	//ATeleClaw* tc = NULL;
-	//for (TActorIterator<ATeleClaw> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-	//	tc = *ActorItr;
-	//}
-	//if (tc != nullptr) {
-	//	PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
-	//	tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	//}
+	ATeleClaw* tc = NULL;
+	for (TActorIterator<ATeleClaw> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		tc = *ActorItr;
+	}
+	if (tc != nullptr) {
+		PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
+		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	}
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
