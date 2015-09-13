@@ -157,12 +157,13 @@ void AAuyron::Tick(float DeltaTime)
 					TraceParams.AddIgnoredActor(*ActorItr);
 					TraceParams.AddIgnoredActor(this);
 					FHitResult f;
-					FCollisionObjectQueryParams  asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
+					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
 					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
-					//GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked" : "fine"));
+					GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked by:" : "fine"));
 					if (blocked) {
 						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, f.GetActor()->GetName());
+						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, "");
 					}
 					if (dot>biggestdot && !blocked) {
 						closest = *ActorItr;
@@ -176,6 +177,7 @@ void AAuyron::Tick(float DeltaTime)
 				ztarget) {
 				AStick* s = closest;
 				SetActorLocation(s->gohere);
+				Velocity.Z = 0.0f;
 			}
 			swish = false;
 		}
