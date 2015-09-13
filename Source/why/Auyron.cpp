@@ -41,19 +41,21 @@ AAuyron::AAuyron()
 	// I wanted to be a cylinder, but no, we gotta be a capsule.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
-	CapsuleComponent->InitCapsuleSize(40.0f, 60.0f);
-	CapsuleComponent->SetRelativeScale3D(FVector(0.54f, 0.54f, 1.0f));
+	CapsuleComponent->InitCapsuleSize(25.0f, 90.0f);
+	//CapsuleComponent->SetRelativeScale3D(FVector(0.54f, 0.54f, 1.0f));
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
-	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Export-mainmodel"));
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/dude"));
 	PlayerModel->SetSkeletalMesh(MeshObj.Object);
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -60.0f));
-	PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -85.0f));
+	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
+
+	// ANIMATION
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -359,4 +361,9 @@ void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherC
 			GemCount++;
 		}
 	}
+}
+
+float AAuyron::GetSpeed()
+{
+	return Velocity.Size();
 }

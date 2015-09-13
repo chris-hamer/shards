@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -28,4 +27,5 @@ private:
 	float curTime;
 	float baseHeight;
 	int32 gemKind;
+	int32 gemColor;
 };

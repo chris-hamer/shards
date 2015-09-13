@@ -38,6 +38,9 @@ public:
 
 	UFUNCTION()
 	void HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	
+	UFUNCTION(BlueprintCallable, Category="GO FUCK YOURSELF")
+	float GetSpeed();
 
 	FVector MovementInput;
 	FVector CameraInput;
@@ -45,6 +48,7 @@ public:
 	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
+	UPROPERTY(EditAnywhere)	UStaticMeshComponent* PlayerHair;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 
 	/* Rate that the player should accelerate. */
