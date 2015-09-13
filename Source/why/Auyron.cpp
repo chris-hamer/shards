@@ -146,8 +146,25 @@ void AAuyron::Tick(float DeltaTime)
 			for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 				if (ActorItr->GetClass()->GetName() == "Stick") {
 					FVector displacement = ActorItr->GetActorLocation() - GetActorLocation();
+
 					float dot = displacement.GetSafeNormal() | Camera->GetForwardVector().GetSafeNormal();
-					if (closest == nullptr || dot>biggestdot) {
+					FCollisionQueryParams TraceParams(FName(TEXT("Trace")), true, *ActorItr);
+					TraceParams.bTraceComplex = true;
+					//TraceParams.bTraceAsyncScene = true;
+					//TraceParams.bReturnPhysicalMaterial = ReturnPhysMat;
+
+					//Ignore Actors
+					TraceParams.AddIgnoredActor(*ActorItr);
+					TraceParams.AddIgnoredActor(this);
+					FHitResult f;
+					FCollisionObjectQueryParams  asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
+					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
+					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
+					//GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (blocked ? "blocked" : "fine"));
+					if (blocked) {
+						GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, f.GetActor()->GetName());
+					}
+					if (dot>biggestdot && !blocked) {
 						closest = *ActorItr;
 						biggestdot = dot;
 					}
