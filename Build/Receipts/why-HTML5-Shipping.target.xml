@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BuildReceipt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Properties>
+    <Property Name="TargetName" Value="why" />
+    <Property Name="Platform" Value="HTML5" />
+    <Property Name="Configuration" Value="Shipping" />
+    <Property Name="Precompile" Value="False" />
+  </Properties>
+  <BuildProducts>
+    <BuildProduct Path="$(ProjectDir)\Binaries\HTML5\why-HTML5-Shipping.js" Type="Executable" />
+    <BuildProduct Path="$(ProjectDir)\Binaries\HTML5\why-HTML5-Shipping.js.mem" Type="RequiredResource" />
+    <BuildProduct Path="$(ProjectDir)\Binaries\HTML5\why-HTML5-Shipping.js.symbols" Type="RequiredResource" />
+  </BuildProducts>
+  <RuntimeDependencies />
+  <bRequireDependenciesToExist>true</bRequireDependenciesToExist>
+</BuildReceipt>
