@@ -16,6 +16,7 @@ AStick::AStick()
 	StickModel->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	StickModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
 	StickModel->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	StickModel->SetCastShadow(false);
 	RootComponent = StickModel;
 
 	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));

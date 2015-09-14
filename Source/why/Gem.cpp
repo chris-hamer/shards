@@ -1,10 +1,10 @@
-// If you wanna live to see tomorrow, you'd better start fryin' them eggs
-// a little bit better than what you've a been fryin'. I'm tired of eatin
-// sloppy, slimey eggs.
+// If you wanna live to see tomorrow, you'd
+// better start fryin' them eggs a little bit
+// better than what you've a been fryin'. I'm 
+// tired of eatin sloppy, slimey eggs.
 
 #include "why.h"
 #include "Gem.h"
-
 
 // Sets default values
 AGem::AGem()
@@ -15,7 +15,7 @@ AGem::AGem()
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("RootComponent"));
 	SphereComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	RootComponent = SphereComponent;
-	SphereComponent->InitSphereRadius(20.0f);
+	SphereComponent->InitSphereRadius(60.0f);
 	SphereComponent->SetCollisionProfileName(TEXT("Collectible"));
 	SetActorEnableCollision(true);
 
@@ -26,6 +26,7 @@ AGem::AGem()
 	GemModel->SetStaticMesh(MeshObj.Object);
 	GemModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	GemModel->SetCastShadow(false);
 	GemModel->AttachTo(RootComponent);
 
 	//PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
