@@ -11,7 +11,7 @@ AStick::AStick()
 	PrimaryActorTick.bCanEverTick = true;
 
 	StickModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Dais"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/Dais"));
 	StickModel->SetStaticMesh(MeshObj.Object);
 	StickModel->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	StickModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
