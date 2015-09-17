@@ -132,6 +132,8 @@ void AAuyron::Tick(float DeltaTime)
 	{
 
 		if (ztarget) {
+			//const ConstructorHelpers::FObjectFinder<UAnimSequence> aimanim(TEXT("/Game/Animations/Characters/Auyron/Auryon_Aim"));
+			//PlayerModel->SetAnimation(aimanim.Object);
 			FRotator NewRotation = SpringArm->GetComponentRotation();
 			NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
 			SpringArm->SetRelativeRotation(NewRotation);
@@ -188,6 +190,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 		if (movementlocked) {
 			MovementInput = FVector::ZeroVector;
+			JumpNextFrame = false;
 		}
 
 		// The directions of "Right" and "Forward" depend on the direction the camera's facing.
@@ -401,4 +404,14 @@ bool AAuyron::GetIsTurning()
 	FVector dummy;
 	test.ToAxisAndAngle(dummy, angle);
 	return (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold));
+}
+
+bool AAuyron::GetIsAiming()
+{
+	return ztarget;
+}
+
+bool AAuyron::GetIsOnTheGround()
+{
+	return OnTheGround;
 }

@@ -43,6 +43,10 @@ public:
 	float GetSpeed();
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	bool GetIsTurning();
+	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	bool GetIsAiming();
+	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	bool GetIsOnTheGround();
 
 	FVector MovementInput;
 	FVector CameraInput;
