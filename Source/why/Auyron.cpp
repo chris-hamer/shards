@@ -49,16 +49,11 @@ AAuyron::AAuyron()
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
-	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/dude"));
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(MeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -85.0f));
 	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
-
-	// Teleclaw.
-	//TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
-	//const ConstructorHelpers::FObjectFinder<UStaticMesh> TeleClawObj(TEXT("/Game/Models/Teleclaw"));
-	//TeleClaw->SetStaticMesh(TeleClawObj.Object);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));

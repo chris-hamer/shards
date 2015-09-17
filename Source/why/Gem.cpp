@@ -35,12 +35,12 @@ AGem::AGem()
 	//PointLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	//PointLightComponent->AttachTo(RootComponent);
 	curTime = FMath::FRandRange(0.0f, 2.0f*3.14f);
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> blue(TEXT("/Game/Models/Gems/mGem1"));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> green(TEXT("/Game/Models/Gems/mGem2"));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> purple(TEXT("/Game/Models/Gems/mGem3"));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> pink(TEXT("/Game/Models/Gems/mGem4"));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> yellow(TEXT("/Game/Models/Gems/mGem5"));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> cyan(TEXT("/Game/Models/Gems/mGem6"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> blue(TEXT("/Game/Textures/Gems/mGem1"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> green(TEXT("/Game/Textures/Gems/mGem2"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> purple(TEXT("/Game/Textures/Gems/mGem3"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> pink(TEXT("/Game/Textures/Gems/mGem4"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> yellow(TEXT("/Game/Textures/Gems/mGem5"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> cyan(TEXT("/Game/Textures/Gems/mGem6"));
 	switch (gemColor)
 	{
 		case 1: GemModel->SetMaterial(0, blue.Object);		break;

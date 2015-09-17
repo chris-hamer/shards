@@ -11,7 +11,7 @@ ATeleClaw::ATeleClaw()
 	PrimaryActorTick.bCanEverTick = true;
 
 	TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/TeleClaw"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Weapons/TeleClaw"));
 	TeleClaw->SetStaticMesh(MeshObj.Object);
 }
 
