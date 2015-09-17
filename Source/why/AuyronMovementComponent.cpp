@@ -40,12 +40,8 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	// If we're not on a standable slope then we are not on the ground.
 	if (Floor.Normal.Z <= FMath::Sin((maxslope))) {
-		offGroundTime += DeltaTime; // Give player a small window to still jump after leaving a ledge
-	}
-
-	// If we're off the ground for too long, remove the second chance to jump
-	if (offGroundTime > MaxOffGroundTime) {
 		onground = false;
+		offGroundTime += DeltaTime;
 	}
 
 	// Sets "Horizontal" to be along the slope you're standing on so long as the slope isn't too steep.

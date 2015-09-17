@@ -72,7 +72,7 @@ public:
 	/* The upward speed at which the player starts their jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float JumpPower;
 
-	/* The upward speed at which the player starts their jump. */
+	/* Time after falling off a ledge that the player can still jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float OffGroundJumpTime;
 
 	/* The magnitude of gravity. */

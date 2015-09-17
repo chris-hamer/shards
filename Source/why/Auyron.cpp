@@ -43,7 +43,6 @@ AAuyron::AAuyron()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
 	CapsuleComponent->InitCapsuleSize(25.0f, 90.0f);
-	//CapsuleComponent->SetRelativeScale3D(FVector(0.54f, 0.54f, 1.0f));
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
@@ -254,25 +253,41 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity += Gravity * FVector(0, 0, UnjumpRate) * DeltaTime;
 		}
 
+		// Tad's Shame
+		//WasOnTheGround = !WasOnTheGround && (MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround);
+
 		// Store current on the ground state into WasOnTheGround.
-		WasOnTheGround = !WasOnTheGround && MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround;
+		WasOnTheGround = OnTheGround;
 
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
 
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::SanitizeFloat(MovementComponent->offGroundTime) + "   " + Velocity.ToString() + "   " + (OnTheGround ? "true" : "false") + "   " + (WasOnTheGround ? "true" : "false"));
+
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
-		if (!MovementInput.IsNearlyZero()) {
+		if (!ztarget) {
 			// I'ma tell ya not even Unity was stupid enough to use -180 -> 180 for rotations.
 			int8 reflect = (MovementInput.X >= 0 ? 1 : -1);
-			FVector asdf = PlayerModel->GetComponentRotation().Vector();
 
 			// (but I forgive you)
-			TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
-				reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
-		} else {
-			// If we're not moving set our target direction to the direction we're currently facing.
-			TargetDirection = PlayerModel->GetComponentRotation();
+			if (!MovementInput.IsNearlyZero() && !ztarget) {
+				TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
+					reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+			}
+		}
+
+		{
+			// Horrible quaternion voodoo. Viewer discretion is advised.
+			// I'm honestly still not quite sure what I did.
+			FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
+			//FQuat test = FQuat::Identity;
+			float angle = 0.0f;
+			FVector dummy;
+			test.ToAxisAndAngle(dummy, angle);
+			if (MovementInput.IsNearlyZero() && (FMath::Abs(angle) <= FMath::DegreesToRadians(FacingAngleSnapThreshold))) {
+				TargetDirection = PlayerModel->GetComponentRotation();
+			}
 		}
 
 		// Turn to face the target direction, but do it all smooth like.
@@ -286,11 +301,13 @@ void AAuyron::Tick(float DeltaTime)
 			test.ToAxisAndAngle(dummy, angle);
 
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
-			if (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold)) {
-				test = FQuat(dummy, FMath::DegreesToRadians(TurnRate)*DeltaTime);
-				PlayerModel->AddLocalRotation(test);
-			} else {
-				PlayerModel->SetWorldRotation(TargetDirection);
+			if (!ztarget) {
+				if ((FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold))) {
+					test = FQuat(dummy, FMath::DegreesToRadians(TurnRate)*DeltaTime);
+					PlayerModel->AddLocalRotation(test);
+				} else {
+					PlayerModel->SetWorldRotation(TargetDirection);
+				}
 			}
 		}
 		// Like what even ARE quaternions anyway?
@@ -336,7 +353,7 @@ void AAuyron::YawCamera(float AxisValue)
 
 void AAuyron::Jump()
 {
-	if (OnTheGround) {
+	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) {
 		JumpNextFrame = true;
 		HoldingJump = true;
 	}
