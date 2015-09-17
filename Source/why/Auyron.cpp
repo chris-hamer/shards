@@ -297,7 +297,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
 			if (!ztarget) {
-				if ((FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold))) {
+				if (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold)) {
 					test = FQuat(dummy, FMath::DegreesToRadians(TurnRate)*DeltaTime);
 					PlayerModel->AddLocalRotation(test);
 				} else {
@@ -391,5 +391,14 @@ void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherC
 
 float AAuyron::GetSpeed()
 {
-	return FVector::VectorPlaneProject(Velocity,FVector::UpVector).Size();
+	return FVector::VectorPlaneProject(Velocity, FVector::UpVector).Size();
+}
+
+bool AAuyron::GetIsTurning()
+{
+	FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
+	float angle = 0.0f;
+	FVector dummy;
+	test.ToAxisAndAngle(dummy, angle);
+	return (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold));
 }

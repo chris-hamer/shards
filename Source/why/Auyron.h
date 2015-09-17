@@ -39,8 +39,10 @@ public:
 	UFUNCTION()
 	void HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
-	UFUNCTION(BlueprintCallable, Category="GO FUCK YOURSELF")
+	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	float GetSpeed();
+	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	bool GetIsTurning();
 
 	FVector MovementInput;
 	FVector CameraInput;
