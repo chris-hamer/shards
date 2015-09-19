@@ -10,16 +10,16 @@
 
 // Sets default values
 AAuyron::AAuyron()
-{	
+{
 	// These should work.
 	AccelerationRate = 5500.0f;
 	GroundDeceleration = 600.0f;
 	AirDeceleration = 50.0f;
-	MaxVelocity = 420.0f; // Blaze it
+	MaxVelocity = 470.0f;
 	MaxSlope = 45.0f;
-	TurnRate = 480.0f;
+	TurnRate = 500.0f;
 	JumpPower = 400.0f;
-	OffGroundJumpTime = 0.04f;
+	OffGroundJumpTime = 0.08f;
 	Gravity = 1000.0f;
 	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
@@ -51,7 +51,7 @@ AAuyron::AAuyron()
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(MeshObj.Object);
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -85.0f));
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
 
