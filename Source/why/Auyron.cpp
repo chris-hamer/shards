@@ -11,6 +11,12 @@
 // Sets default values
 AAuyron::AAuyron()
 {
+	// Gonna use these to flag abilities
+	HasTeleport = true;
+	MaxExtraJumps = 1;
+	jumpsLeft = MaxExtraJumps;
+	HasGlide = false; // false because I haven't programmed this yet
+
 	// These should work.
 	AccelerationRate = 5500.0f;
 	GroundDeceleration = 600.0f;
@@ -19,6 +25,7 @@ AAuyron::AAuyron()
 	MaxSlope = 45.0f;
 	TurnRate = 500.0f;
 	JumpPower = 400.0f;
+	DoubleJumpPower = 350.0f;
 	OffGroundJumpTime = 0.08f;
 	Gravity = 1000.0f;
 	UnjumpRate = 1.5f;
@@ -215,6 +222,11 @@ void AAuyron::Tick(float DeltaTime)
 		// Ask the movement component if we're on the ground
 		// and apply gravity if we are.
 		OnTheGround = MovementComponent->onground;
+		if (OnTheGround)
+		{
+			jumpsLeft = MaxExtraJumps;
+		}
+
 		if (!OnTheGround) {
 			Acceleration += FVector(0.0f,0.0f,Gravity);
 		} else if(WasOnTheGround) {
@@ -241,7 +253,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (JumpNextFrame) {
 			// Jump taking the floor's angle into account.
 			Velocity.Z = 0;
-			Velocity += JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal);
+			Velocity += (justDoubleJumped ? DoubleJumpPower : JumpPower) * (MovementComponent->offGroundTime > 0 || justDoubleJumped ? FVector::UpVector : MovementComponent->Floor.Normal);
 			JumpNextFrame = false;
 			WasOnTheGround = false;
 		}
@@ -351,9 +363,18 @@ void AAuyron::YawCamera(float AxisValue)
 
 void AAuyron::Jump()
 {
-	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) {
+	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) 
+	{
 		JumpNextFrame = true;
 		HoldingJump = true;
+		justDoubleJumped = false;
+	}
+	else if (jumpsLeft > 0)
+	{
+		JumpNextFrame = true;
+		HoldingJump = true;
+		jumpsLeft--;
+		justDoubleJumped = true;
 	}
 }
 
