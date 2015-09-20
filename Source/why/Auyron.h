@@ -146,5 +146,6 @@ private:
 	FRotator TargetDirection;
 	FRotator OldDirection;
 	FVector Velocity;
+	FVector LastPlatformVelocity;
 	FVector2D OldMovementInput;
 };

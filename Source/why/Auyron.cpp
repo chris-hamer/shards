@@ -226,11 +226,10 @@ void AAuyron::Tick(float DeltaTime)
 		{
 			jumpsLeft = MaxExtraJumps;
 		}
-
-		if (!OnTheGround) 
+		else
 		{
 			Acceleration += FVector(0.0f,0.0f,Gravity);
-			if (WasOnTheGround && !JustJumped && MovementComponent->PlatformVelocity.SizeSquared() == 0)
+			if (WasOnTheGround && !JustJumped)
 			{
 				Velocity.Z = 0.0f;
 			}
