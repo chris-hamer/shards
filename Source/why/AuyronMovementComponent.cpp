@@ -27,10 +27,11 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	// Is the slope too steep? I don't think it is. But it might be.
 	bool toosteep = false;
-
 	// Looks like we're standing on something.
+	PlatformVelocity = FVector::ZeroVector;
 	if (Floor.Normal.Z > FMath::Sin((maxslope))) {
 		onground = true;
+		PlatformVelocity = Floor.Actor->GetVelocity();
 		offGroundTime = 0.0f;
 	} else { // (greater than 0 so this doesn't trigger on jumps)
 		// Slope is too steep so we should be pushed back by it by taking its vertical normal into account.

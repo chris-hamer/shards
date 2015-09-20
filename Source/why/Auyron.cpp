@@ -227,11 +227,13 @@ void AAuyron::Tick(float DeltaTime)
 			jumpsLeft = MaxExtraJumps;
 		}
 
-		if (!OnTheGround) {
+		if (!OnTheGround) 
+		{
 			Acceleration += FVector(0.0f,0.0f,Gravity);
-		} else if(WasOnTheGround) {
-			// Push the player into the ground a bit so we still get collisions every frame.
-			Velocity.Z = -10.0f;
+			if (WasOnTheGround && !JustJumped && MovementComponent->PlatformVelocity.SizeSquared() == 0)
+			{
+				Velocity.Z = 0.0f;
+			}
 		}
 
 		// You done bonked yer head on that there ceiling.
@@ -241,6 +243,8 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Physiiiiicccss.
 		Velocity += Acceleration * DeltaTime;
+		if (Velocity.Z > 0.0f)
+			JustJumped = false;
 
 		// Only cap the horizontal movement velocity.
 		float tempz;
@@ -249,11 +253,18 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
 		Velocity.Z = tempz;
 
+		// Do shit for moving platforms
+		//UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), MovementComponent->PlatformVelocity.X, MovementComponent->PlatformVelocity.Y, MovementComponent->PlatformVelocity.Z);
+		FVector loc = GetActorLocation() + MovementComponent->PlatformVelocity * DeltaTime;
+		SetActorLocation(loc);
+
 		// Handle jumping.
 		if (JumpNextFrame) {
 			// Jump taking the floor's angle into account.
 			Velocity.Z = 0;
-			Velocity += (justDoubleJumped ? DoubleJumpPower : JumpPower) * (MovementComponent->offGroundTime > 0 || justDoubleJumped ? FVector::UpVector : MovementComponent->Floor.Normal);
+			// TODO: incorporate platform velocity correctly
+			Velocity += (justDoubleJumped ? DoubleJumpPower : JumpPower) *
+						(MovementComponent->offGroundTime > 0 || justDoubleJumped ? FVector::UpVector : MovementComponent->Floor.Normal);
 			JumpNextFrame = false;
 			WasOnTheGround = false;
 		}
@@ -263,7 +274,7 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity += Gravity * FVector(0, 0, UnjumpRate) * DeltaTime;
 		}
 
-		// Tad's Shame
+		// Tad doesn't have shame
 		//WasOnTheGround = !WasOnTheGround && (MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround);
 
 		// Store current on the ground state into WasOnTheGround.
@@ -365,12 +376,14 @@ void AAuyron::Jump()
 {
 	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) 
 	{
+		JustJumped = true;
 		JumpNextFrame = true;
 		HoldingJump = true;
 		justDoubleJumped = false;
 	}
 	else if (jumpsLeft > 0)
 	{
+		JustJumped = true;
 		JumpNextFrame = true;
 		HoldingJump = true;
 		jumpsLeft--;
@@ -392,7 +405,10 @@ void AAuyron::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AAuyron::CameraFaceForward()
 {
-	ztarget = !ztarget;
+	if (HasTeleport)
+	{
+		ztarget = !ztarget;
+	}
 }
 
 // swish
