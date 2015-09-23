@@ -42,7 +42,7 @@ AAuyron::AAuyron()
 	// I wanted to be a cylinder, but no, we gotta be a capsule.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
-	CapsuleComponent->InitCapsuleSize(25.0f, 90.0f);
+	CapsuleComponent->InitCapsuleSize(40.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
@@ -52,7 +52,6 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(MeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -85.0f));
-	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
 
 	// Use a spring arm so the camera can be all like swoosh.
@@ -132,8 +131,6 @@ void AAuyron::Tick(float DeltaTime)
 	{
 
 		if (ztarget) {
-			//const ConstructorHelpers::FObjectFinder<UAnimSequence> aimanim(TEXT("/Game/Animations/Characters/Auyron/Auryon_Aim"));
-			//PlayerModel->SetAnimation(aimanim.Object);
 			FRotator NewRotation = SpringArm->GetComponentRotation();
 			NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
 			SpringArm->SetRelativeRotation(NewRotation);
@@ -162,15 +159,12 @@ void AAuyron::Tick(float DeltaTime)
 					float dot = displacement.GetSafeNormal() | Camera->GetForwardVector().GetSafeNormal();
 					FCollisionQueryParams TraceParams(FName(TEXT("Trace")), true, *ActorItr);
 					TraceParams.bTraceComplex = true;
-					//TraceParams.bTraceAsyncScene = true;
-					//TraceParams.bReturnPhysicalMaterial = ReturnPhysMat;
 
 					//Ignore Actors
 					TraceParams.AddIgnoredActor(*ActorItr);
 					TraceParams.AddIgnoredActor(this);
 					FHitResult f;
 					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
-					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					if (dot>biggestdot && !blocked) {
 						closest = *ActorItr;
@@ -185,9 +179,12 @@ void AAuyron::Tick(float DeltaTime)
 				AStick* s = closest;
 				SetActorLocation(s->gohere);
 				Velocity.Z = 0.0f;
+				ztarget = false;
 			}
 			swish = false;
 		}
+
+		// Can't move if your movement's locked.
 		if (movementlocked) {
 			MovementInput = FVector::ZeroVector;
 			JumpNextFrame = false;
@@ -260,7 +257,11 @@ void AAuyron::Tick(float DeltaTime)
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
 
-		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::SanitizeFloat(MovementComponent->offGroundTime) + "   " + Velocity.ToString() + "   " + (OnTheGround ? "true" : "false") + "   " + (WasOnTheGround ? "true" : "false"));
+		tempz = Velocity.Z;
+		Velocity.Z = 0.0f;
+		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::SanitizeFloat(Velocity.Size()));
+		Velocity.Z = tempz;
 
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
