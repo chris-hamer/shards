@@ -24,6 +24,7 @@ public:
 	bool onground;
 	float offGroundTime;
 	float MaxOffGroundTime;
+	FVector PlatformVelocity;
 
 	// Temporary variable to tell the actual character class if we WERE on the ground or not.
 	bool wasonground;

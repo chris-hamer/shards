@@ -10,16 +10,23 @@
 
 // Sets default values
 AAuyron::AAuyron()
-{	
+{
+	// Gonna use these to flag abilities
+	HasTeleport = true;
+	MaxExtraJumps = 1;
+	jumpsLeft = MaxExtraJumps;
+	HasGlide = false; // false because I haven't programmed this yet
+
 	// These should work.
 	AccelerationRate = 5500.0f;
 	GroundDeceleration = 600.0f;
 	AirDeceleration = 50.0f;
-	MaxVelocity = 420.0f; // Blaze it
+	MaxVelocity = 470.0f;
 	MaxSlope = 45.0f;
-	TurnRate = 480.0f;
+	TurnRate = 500.0f;
 	JumpPower = 400.0f;
-	OffGroundJumpTime = 0.04f;
+	DoubleJumpPower = 350.0f;
+	OffGroundJumpTime = 0.08f;
 	Gravity = 1000.0f;
 	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
@@ -42,7 +49,7 @@ AAuyron::AAuyron()
 	// I wanted to be a cylinder, but no, we gotta be a capsule.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = CapsuleComponent;
-	CapsuleComponent->InitCapsuleSize(40.0f, 90.0f);
+	CapsuleComponent->InitCapsuleSize(25.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	SetActorEnableCollision(true);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
@@ -51,7 +58,8 @@ AAuyron::AAuyron()
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(MeshObj.Object);
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -85.0f));
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
+	//PlayerModel->SetRelativeScale3D(FVector(35.0f, 35.0f, 17.16083f));
 	PlayerModel->AttachTo(RootComponent);
 
 	// Use a spring arm so the camera can be all like swoosh.
@@ -131,6 +139,8 @@ void AAuyron::Tick(float DeltaTime)
 	{
 
 		if (ztarget) {
+			//const ConstructorHelpers::FObjectFinder<UAnimSequence> aimanim(TEXT("/Game/Animations/Characters/Auyron/Auryon_Aim"));
+			//PlayerModel->SetAnimation(aimanim.Object);
 			FRotator NewRotation = SpringArm->GetComponentRotation();
 			NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
 			SpringArm->SetRelativeRotation(NewRotation);
@@ -159,12 +169,15 @@ void AAuyron::Tick(float DeltaTime)
 					float dot = displacement.GetSafeNormal() | Camera->GetForwardVector().GetSafeNormal();
 					FCollisionQueryParams TraceParams(FName(TEXT("Trace")), true, *ActorItr);
 					TraceParams.bTraceComplex = true;
+					//TraceParams.bTraceAsyncScene = true;
+					//TraceParams.bReturnPhysicalMaterial = ReturnPhysMat;
 
 					//Ignore Actors
 					TraceParams.AddIgnoredActor(*ActorItr);
 					TraceParams.AddIgnoredActor(this);
 					FHitResult f;
 					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
+					//bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
 					if (dot>biggestdot && !blocked) {
 						closest = *ActorItr;
@@ -179,12 +192,9 @@ void AAuyron::Tick(float DeltaTime)
 				AStick* s = closest;
 				SetActorLocation(s->gohere);
 				Velocity.Z = 0.0f;
-				ztarget = false;
 			}
 			swish = false;
 		}
-
-		// Can't move if your movement's locked.
 		if (movementlocked) {
 			MovementInput = FVector::ZeroVector;
 			JumpNextFrame = false;
@@ -212,11 +222,17 @@ void AAuyron::Tick(float DeltaTime)
 		// Ask the movement component if we're on the ground
 		// and apply gravity if we are.
 		OnTheGround = MovementComponent->onground;
-		if (!OnTheGround) {
+		if (OnTheGround)
+		{
+			jumpsLeft = MaxExtraJumps;
+		}
+		else
+		{
 			Acceleration += FVector(0.0f,0.0f,Gravity);
-		} else if(WasOnTheGround) {
-			// Push the player into the ground a bit so we still get collisions every frame.
-			Velocity.Z = -10.0f;
+			if (WasOnTheGround && !JustJumped)
+			{
+				Velocity.Z = 0.0f;
+			}
 		}
 
 		// You done bonked yer head on that there ceiling.
@@ -226,6 +242,8 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Physiiiiicccss.
 		Velocity += Acceleration * DeltaTime;
+		if (Velocity.Z > 0.0f)
+			JustJumped = false;
 
 		// Only cap the horizontal movement velocity.
 		float tempz;
@@ -234,11 +252,18 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
 		Velocity.Z = tempz;
 
+		// Do shit for moving platforms
+		//UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), MovementComponent->PlatformVelocity.X, MovementComponent->PlatformVelocity.Y, MovementComponent->PlatformVelocity.Z);
+		FVector loc = GetActorLocation() + MovementComponent->PlatformVelocity * DeltaTime;
+		SetActorLocation(loc);
+
 		// Handle jumping.
 		if (JumpNextFrame) {
 			// Jump taking the floor's angle into account.
 			Velocity.Z = 0;
-			Velocity += JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal);
+			// TODO: incorporate platform velocity correctly
+			Velocity += (justDoubleJumped ? DoubleJumpPower : JumpPower) *
+						(MovementComponent->offGroundTime > 0 || justDoubleJumped ? FVector::UpVector : MovementComponent->Floor.Normal);
 			JumpNextFrame = false;
 			WasOnTheGround = false;
 		}
@@ -248,7 +273,7 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity += Gravity * FVector(0, 0, UnjumpRate) * DeltaTime;
 		}
 
-		// Tad's Shame
+		// Tad doesn't have shame
 		//WasOnTheGround = !WasOnTheGround && (MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround);
 
 		// Store current on the ground state into WasOnTheGround.
@@ -257,11 +282,7 @@ void AAuyron::Tick(float DeltaTime)
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
 
-		tempz = Velocity.Z;
-		Velocity.Z = 0.0f;
-		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::SanitizeFloat(Velocity.Size()));
-		Velocity.Z = tempz;
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::SanitizeFloat(MovementComponent->offGroundTime) + "   " + Velocity.ToString() + "   " + (OnTheGround ? "true" : "false") + "   " + (WasOnTheGround ? "true" : "false"));
 
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
@@ -352,9 +373,20 @@ void AAuyron::YawCamera(float AxisValue)
 
 void AAuyron::Jump()
 {
-	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) {
+	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) 
+	{
+		JustJumped = true;
 		JumpNextFrame = true;
 		HoldingJump = true;
+		justDoubleJumped = false;
+	}
+	else if (jumpsLeft > 0)
+	{
+		JustJumped = true;
+		JumpNextFrame = true;
+		HoldingJump = true;
+		jumpsLeft--;
+		justDoubleJumped = true;
 	}
 }
 
@@ -372,7 +404,10 @@ void AAuyron::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AAuyron::CameraFaceForward()
 {
-	ztarget = !ztarget;
+	if (HasTeleport)
+	{
+		ztarget = !ztarget;
+	}
 }
 
 // swish

@@ -78,6 +78,9 @@ public:
 	/* The upward speed at which the player starts their jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float JumpPower;
 
+	/* The upward speed at which the player double jumps. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float DoubleJumpPower;
+
 	/* Time after falling off a ledge that the player can still jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float OffGroundJumpTime;
 
@@ -89,6 +92,15 @@ public:
 
 	/* Minimum angle difference needed for the player model to snap to the direction the player is moving in. */
 	UPROPERTY(EditAnywhere, Category = "Movement", AdvancedDisplay) float FacingAngleSnapThreshold;
+
+	/* Whether or not we can use teleport claw */
+	UPROPERTY(EditAnywhere, Category = "Power ups") bool HasTeleport;
+
+	/* How many air jumps we can do (1 = double jump, 2 = triple, etc.) */
+	UPROPERTY(EditAnywhere, Category = "Power ups") uint8  MaxExtraJumps;
+
+	/* Whether or not we can do short glide */
+	UPROPERTY(EditAnywhere, Category = "Power ups") bool HasGlide;
 
 	/* The maximum range of your teleporter. */
 	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRange;
@@ -125,6 +137,8 @@ private:
 	bool HoldingJump;
 	bool JustJumped;
 	bool OnTheGround;
+	uint8 jumpsLeft;
+	bool justDoubleJumped;
 	bool WasOnTheGround;
 	bool swish;
 	bool ztarget;
@@ -132,5 +146,6 @@ private:
 	FRotator TargetDirection;
 	FRotator OldDirection;
 	FVector Velocity;
+	FVector LastPlatformVelocity;
 	FVector2D OldMovementInput;
 };
