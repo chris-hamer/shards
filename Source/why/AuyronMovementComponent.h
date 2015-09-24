@@ -32,5 +32,14 @@ public:
 	// Stores the maximum slope as set by the character class.
 	float maxslope;
 
+	// Velocity of the platform you're standing on.
+	FVector groundvelocity;
+
+	// Vertical velocity of the platform you're standing on.
+	// Stored separatly because the z component of groundvelocity
+	// is set to zero if it is positive to compensate for collision
+	// detection, but its value is still useful.
+	float groundverticalvelocity;
+
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 };

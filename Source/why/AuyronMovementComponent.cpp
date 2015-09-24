@@ -4,10 +4,12 @@
 
 #include "why.h"
 #include "AuyronMovementComponent.h"
+#include "MovingPlatform.h"
 
 UAuyronMovementComponent::UAuyronMovementComponent()
 {
 	offGroundTime = 0.0f;
+	groundverticalvelocity = 0.0f;
 }
 
 //void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -15,7 +17,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Get (and then clear) the movement vector that we set in AAuyron::Tick
+	// Get (and also clear) the movement vector that we set in AAuyron::Tick
 	FVector DesiredMovementThisFrame = ConsumeInputVector();
 
 	// Separate movememt vector into horizonal and vertical components.
@@ -27,13 +29,29 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	// Is the slope too steep? I don't think it is. But it might be.
 	bool toosteep = false;
+
+	// Assume you're not on a moving platform.
+	groundvelocity = FVector::ZeroVector;
+	groundverticalvelocity = 0.0f;
+
 	// Looks like we're standing on something.
-	PlatformVelocity = FVector::ZeroVector;
 	if (Floor.Normal.Z > FMath::Sin((maxslope))) {
 		onground = true;
-		PlatformVelocity = Floor.Actor->GetVelocity();
 		offGroundTime = 0.0f;
-	} else { // (greater than 0 so this doesn't trigger on jumps)
+
+		// It's a moving platform.
+		if (Floor.GetActor()->GetClass()->GetName() == "MovingPlatform") {
+			// Record the platform's velocity so the character controller can deal with it.
+			groundvelocity = ((AMovingPlatform*)Floor.GetActor())->Velocity;
+
+			// If the platform is moving up, ignore the vertical part of its movement
+			// since collision detection will push the character upwards anyway.
+			if (groundvelocity.Z > 0.0f) {
+				groundverticalvelocity = groundvelocity.Z;
+				groundvelocity.Z = 0.0f;
+			}
+		}
+	} else {
 		// Slope is too steep so we should be pushed back by it by taking its vertical normal into account.
 		Horiz += Vert;
 		toosteep = true;
@@ -45,10 +63,10 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		offGroundTime += DeltaTime;
 	}
 
-	// Sets "Horizontal" to be along the slope you're standing on so long as the slope isn't too steep.
+	// Sets "Horizontal" movement to be up/down the slope you're standing on so long as the slope isn't too steep.
 	if (!toosteep&&!Floor.Normal.Equals(FVector::UpVector,0.1f)) {
 		// Look at this math. LOOK AT THIS MATH.
-		Horiz.Z = Floor.Normal.RotateAngleAxis(FMath::Sign(Horiz | Floor.Normal)*-100.0f, FVector::CrossProduct(Floor.Normal, FVector::UpVector).GetSafeNormal()).Z*Horiz.Size();
+		//Horiz.Z += Floor.Normal.RotateAngleAxis(FMath::Sign(Horiz | Floor.Normal)*-91.0f, FVector::CrossProduct(Floor.Normal, FVector::UpVector).GetSafeNormal()).Z*Horiz.Size();
 	}
 
 	// Move horizontally.

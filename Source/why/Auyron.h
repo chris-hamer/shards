@@ -57,8 +57,11 @@ public:
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 
-	/* Rate that the player should accelerate. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float AccelerationRate;
+	/* Rate that the player should accelerate while on the ground. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float GroundAccelerationRate;
+
+	/* Rate that the player should accelerate while in the air. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float AirAccelerationRate;
 
 	/* Rate that the player should decelerate while on the ground. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float GroundDeceleration;
