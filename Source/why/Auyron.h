@@ -35,6 +35,8 @@ public:
 	void Use();
 	void CameraFaceForward();
 	void Warp();
+	void Dash();
+	void UnDash();
 
 	UFUNCTION()
 	void HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
@@ -56,6 +58,7 @@ public:
 	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* DashParticles;
 
 	/* Rate that the player should accelerate while on the ground. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float GroundAccelerationRate;
@@ -68,9 +71,15 @@ public:
 
 	/* Rate that the player should decelerate while in the air. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float AirDeceleration;
-	
+
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float MaxVelocity;
+
+	/* The player's maximum horizontal velocity. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float DashSpeed;
+
+	/* The player's maximum horizontal velocity. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float DashDuration;
 
 	/* The maximum slope angle in degrees that the player can walk on. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float MaxSlope;
@@ -135,6 +144,7 @@ public:
 private:
 	float TimeSinceLastRealignment;
 	float HowLong;
+	float dashtimer;
 	float TimeSinceLastMouseInput;
 	bool JumpNextFrame;
 	bool HoldingJump;
@@ -144,7 +154,10 @@ private:
 	bool justDoubleJumped;
 	bool WasOnTheGround;
 	bool swish;
+	bool dash;
+	bool dashing;
 	bool ztarget;
+	bool wasztarget;
 	bool movementlocked;
 	FRotator TargetDirection;
 	FRotator OldDirection;

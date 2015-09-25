@@ -71,7 +71,8 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	// Move horizontally.
 	SafeMoveUpdatedComponent(Horiz, UpdatedComponent->GetComponentRotation(), true, Wall);
-	
+	wallnormal = Wall.Normal;
+
 	// Stop rubbing your face against the wall.
 	if (Wall.IsValidBlockingHit())
 	{

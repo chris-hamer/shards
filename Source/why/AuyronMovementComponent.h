@@ -41,5 +41,7 @@ public:
 	// detection, but its value is still useful.
 	float groundverticalvelocity;
 
+	FVector wallnormal;
+
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 };

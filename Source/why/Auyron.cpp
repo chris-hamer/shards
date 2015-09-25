@@ -13,10 +13,12 @@ AAuyron::AAuyron()
 {	
 	// These should work.
 	GroundAccelerationRate = 5500.0f;
-	AirAccelerationRate = 1500.0f;
-	GroundDeceleration = 600.0f;
+	AirAccelerationRate = 850.0f;
+	GroundDeceleration = 400.0;
 	AirDeceleration = 50.0f;
-	MaxVelocity = 420.0f; // Blaze it
+	MaxVelocity = 500.0f;
+	DashSpeed = 1500.0f;
+	DashDuration = 0.25f;
 	MaxSlope = 45.0f;
 	TurnRate = 480.0f;
 	JumpPower = 450.0f;
@@ -61,9 +63,15 @@ AAuyron::AAuyron()
 	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 60.0f), FRotator(-50.0f, 0.0f, 0.0f));
 	SpringArm->bEnableCameraLag = true;
 
-	// Camera so the plebs can "see what they're doing" or whatever.
+	// Camera so the casuals can "see what they're doing" or whatever.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
 	Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
+
+	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Textures/Characters/Auyron/DashParticles"));
+	DashParticles->SetTemplate(dp.Object);
+	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	DashParticles->AttachTo(PlayerModel);
 
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -93,6 +101,7 @@ void AAuyron::BeginPlay()
 		PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
 		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	}
+	DashParticles->DeactivateSystem();
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -106,6 +115,8 @@ void AAuyron::Tick(float DeltaTime)
 	// Update timing values.
 	TimeSinceLastMouseInput += DeltaTime;
 
+	JustJumped = false;
+
 	// Move the camera in response to mouse movement.
 	{
 		// Reset camera input timer if the camera controls were touched.
@@ -115,8 +126,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		FRotator NewRotation = SpringArm->GetComponentRotation();
 		NewRotation.Yaw = NewRotation.Yaw + CameraInput.X;
+
 		// The camera should only turn with the player if the mouse hasn't been touched recently.
-		if (TimeSinceLastMouseInput > CameraResetTime) {
+		if (TimeSinceLastMouseInput > CameraResetTime && !ztarget) {
 			NewRotation.Yaw = NewRotation.Yaw + MovementInput.X*CameraAutoTurnFactor;
 		}
 		SpringArm->SetWorldRotation(NewRotation);
@@ -134,10 +146,19 @@ void AAuyron::Tick(float DeltaTime)
 	// Move the player in response to movement inputs.
 	{
 
-		if (ztarget) {
+		if (ztarget&&!dashing) {
+
 			// Set the spring arm's new rotation and remove its lag.
 			FRotator NewRotation = SpringArm->RelativeRotation;
-			NewRotation.Yaw = PlayerModel->RelativeRotation.Yaw;
+			if (!wasztarget) {
+				if (MovementInput.IsNearlyZero()) {
+					NewRotation.Yaw = TargetDirection.Yaw;
+				} else {
+					NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
+						(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+				}
+			}
+			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
 			SpringArm->SetRelativeRotation(NewRotation);
 			SpringArm->TargetArmLength = 100.0f;
 			SpringArm->CameraLagSpeed = 0.0f;
@@ -176,10 +197,10 @@ void AAuyron::Tick(float DeltaTime)
 					TraceParams.AddIgnoredActor(this);
 					FHitResult f;
 					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
-					
+
 					// Figure out if the ray is blocked by an object.
 					bool blocked = GetWorld()->LineTraceSingle(f, Camera->GetComponentLocation(), ActorItr->GetActorLocation(), TraceParams, asdf);
-					if (dot>biggestdot && !blocked) {
+					if (dot > biggestdot && !blocked) {
 						closest = *ActorItr;
 						biggestdot = dot;
 					}
@@ -199,10 +220,16 @@ void AAuyron::Tick(float DeltaTime)
 			swish = false;
 		}
 
+		if (dashing) {
+			movementlocked = true;
+		}
+
 		// If you can't move, don't move.
 		if (movementlocked) {
 			MovementInput = FVector::ZeroVector;
-			JumpNextFrame = false;
+			if (!dashing) {
+				JumpNextFrame = false;
+			}
 		}
 
 		// The directions of "Right" and "Forward" depend on the direction the camera's facing.
@@ -215,8 +242,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Set up acceleration vector using the movement inputs.
 		FVector AdjustedInput = MovementInput.ClampSize(0.0, 1.0);
-		FVector Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? GroundAccelerationRate : AirAccelerationRate);
-
+		FVector Acceleration = FVector::ZeroVector;
+		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? GroundAccelerationRate : AirAccelerationRate);
+		
 		// Apply deceleration.
 		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector(0.0f, 0.0f, 1.0f)))*(OnTheGround ? GroundDeceleration : AirDeceleration)*DeltaTime;
 
@@ -254,6 +282,29 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity += JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal).GetSafeNormal();
 			JumpNextFrame = false;
 			WasOnTheGround = false;
+			JustJumped = true;
+
+			// No cheating.
+			if (dashing) {
+				DashParticles->DeactivateSystem();
+				dashing = false;
+				dashtimer = 0.0f;
+			}
+
+			// Don't store the player's old target direction anymore.
+			TargetDirection.Yaw = PlayerModel->GetComponentRotation().Yaw;
+
+			// Wall jump.
+			FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
+			if (!OnTheGround && wnproject.Size()>0.9f) {
+				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
+				newmodelrotation.Yaw = MovementComponent->wallnormal.Rotation().Yaw;
+				PlayerModel->SetWorldRotation(newmodelrotation);
+				TargetDirection = newmodelrotation;
+				temp = Velocity;
+				Velocity = MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity;
+				Velocity.Z = temp.Z;
+			}
 		}
 
 		// Variable jump height
@@ -261,8 +312,28 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity += Gravity * FVector(0, 0, UnjumpRate) * DeltaTime;
 		}
 
+		if (dash) {
+			dash = false;
+			if (OnTheGround) {
+				DashParticles->ActivateSystem();
+				dashing = true;
+			}
+		}
+
+		if (dashing) {
+			float z = Velocity.Z;
+			Velocity = TargetDirection.Vector().GetSafeNormal()*1500.0f;
+			Velocity.Z = z;
+			dashtimer += DeltaTime;
+			if (dashtimer > DashDuration) {
+				dashing = false;
+				DashParticles->DeactivateSystem();
+				dashtimer = 0.0f;
+			}
+		}
+
 		// Put Velocity back in the reference frame of the stationary world.
-		Velocity += MovementComponent->groundvelocity;// -a;
+		Velocity += MovementComponent->groundvelocity;
 
 		// Tad's Shame
 		//WasOnTheGround = !WasOnTheGround && (MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround);
@@ -270,12 +341,14 @@ void AAuyron::Tick(float DeltaTime)
 		// Store current on the ground state into WasOnTheGround.
 		WasOnTheGround = OnTheGround;
 
+		wasztarget = ztarget;
+
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
 
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
-		if (!ztarget) {
+		if (!ztarget && OnTheGround && !JustJumped) {
 			// I'ma tell ya not even Unity was stupid enough to use -180 -> 180 for rotations.
 			int8 reflect = (MovementInput.X >= 0 ? 1 : -1);
 
@@ -283,19 +356,6 @@ void AAuyron::Tick(float DeltaTime)
 			if (!MovementInput.IsNearlyZero() && !ztarget) {
 				TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
 					reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
-			}
-		}
-
-		{
-			// Horrible quaternion voodoo. Viewer discretion is advised.
-			// I'm honestly still not quite sure what I did.
-			FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
-			//FQuat test = FQuat::Identity;
-			float angle = 0.0f;
-			FVector dummy;
-			test.ToAxisAndAngle(dummy, angle);
-			if (MovementInput.IsNearlyZero() && (FMath::Abs(angle) <= FMath::DegreesToRadians(FacingAngleSnapThreshold))) {
-				TargetDirection = PlayerModel->GetComponentRotation();
 			}
 		}
 
@@ -307,11 +367,13 @@ void AAuyron::Tick(float DeltaTime)
 			float angle = 0.0f;
 			FVector dummy;
 			test.ToAxisAndAngle(dummy, angle);
+			
+			float multiply = (dashing ? 3.0f : 1.0f);
 
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
-			if (!ztarget) {
-				if (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold)) {
-					test = FQuat(dummy, FMath::DegreesToRadians(TurnRate)*DeltaTime);
+			if (!ztarget&&OnTheGround) {
+				if (FMath::Abs(angle) > FMath::DegreesToRadians(multiply*FacingAngleSnapThreshold)) {
+					test = FQuat(dummy, FMath::DegreesToRadians(multiply*TurnRate)*DeltaTime);
 					PlayerModel->AddLocalRotation(test);
 				} else {
 					PlayerModel->SetWorldRotation(TargetDirection);
@@ -335,6 +397,8 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
 	InputComponent->BindAction("Warp", IE_Pressed, this, &AAuyron::Warp);
+	InputComponent->BindAction("Dash", IE_Pressed, this, &AAuyron::Dash);
+	InputComponent->BindAction("Dash", IE_Released, this, &AAuyron::UnDash);
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
@@ -361,7 +425,8 @@ void AAuyron::YawCamera(float AxisValue)
 
 void AAuyron::Jump()
 {
-	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime) {
+	FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
+	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 		JumpNextFrame = true;
 		HoldingJump = true;
 	}
@@ -381,13 +446,30 @@ void AAuyron::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AAuyron::CameraFaceForward()
 {
-	ztarget = !ztarget;
+	if (!dashing) {
+		ztarget = !ztarget;
+	}
 }
 
 // swish
 void AAuyron::Warp()
 {
 	swish = true;
+}
+
+// woosh
+void AAuyron::Dash()
+{
+	if (!dashing&&!ztarget) {
+		dash = true;
+	}
+}
+
+void AAuyron::UnDash()
+{
+	if (dashing) {
+		dashtimer = DashDuration + 100.0f;
+	}
 }
 
 void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -404,7 +486,6 @@ void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherC
 
 float AAuyron::GetSpeed()
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 15.0, FColor::Green, (Velocity - MovementComponent->groundvelocity).ToString());
 	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
 
