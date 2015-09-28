@@ -33,13 +33,13 @@ AStick::AStick()
 void AStick::BeginPlay()
 {
 	Super::BeginPlay();
-	gohere = Here->GetComponentLocation();
 }
 
 // Called every frame
 void AStick::Tick( float DeltaTime )
 {
-	Super::Tick( DeltaTime );
+	Super::Tick(DeltaTime);
+	gohere = Here->GetComponentLocation();
 	
 }
 

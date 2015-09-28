@@ -13,20 +13,20 @@ AMovingPlatform::AMovingPlatform()
 	CycleTime = 6.0f;
 	MovementType = LINEAR;
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	Root->AttachTo(RootComponent);
+	//Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	//Root->AttachTo(RootComponent);
+
+	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/platform"));
+	Model->SetStaticMesh(MeshObj.Object);
+	Model->AttachTo(RootComponent);
+	Model->SetRelativeLocation(FVector::ZeroVector);
 
 	StartPosition = CreateDefaultSubobject<USceneComponent>(TEXT("Start Position"));
 	StartPosition->AttachTo(Root);
 	
 	EndPosition = CreateDefaultSubobject<USceneComponent>(TEXT("End Position"));
 	EndPosition->AttachTo(Root);
-
-	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/platform"));
-	Model->SetStaticMesh(MeshObj.Object);
-	Model->AttachTo(Root);
-	Model->SetRelativeLocation(FVector::ZeroVector);
 
 }
 
@@ -79,11 +79,17 @@ void AMovingPlatform::Tick( float DeltaTime )
 	// Increment the timer and find the platform's new position.
 	timer += DeltaTime;
 	FVector NewPosition = FMath::Lerp(StartPosition->GetComponentLocation(), EndPosition->GetComponentLocation(), f(timer, CycleTime));
-	
+	FVector OldPosition = Model->GetComponentLocation();
+
 	// Estimate the platform's veloicty using a numerical derivative of its movement function.
 	Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
 	
+	FVector start = StartPosition->GetComponentLocation();
+	FVector end = EndPosition->GetComponentLocation();
+
 	// Move the platform to its new location.
 	Model->SetWorldLocation(NewPosition);
+	StartPosition->SetWorldLocation(start);
+	EndPosition->SetWorldLocation(end);
 }
 

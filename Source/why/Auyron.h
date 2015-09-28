@@ -3,6 +3,12 @@
 #pragma once
 
 #include "GameFramework/Pawn.h"
+#include "GameFramework/HUD.h"
+#include "Runtime/UMG/Public/Blueprint/UserWidget.h"
+#include "Runtime/UMG/Public/UMG.h"
+#include "Runtime/UMG/Public/UMGStyle.h"
+#include "Runtime/UMG/Public/Slate/SObjectWidget.h"
+#include "Runtime/UMG/Public/IUMGModule.h"
 #include "Auyron.generated.h"
 
 UCLASS()
@@ -34,13 +40,21 @@ public:
 	void Unjump();
 	void Use();
 	void CameraFaceForward();
+	void CameraUnFaceForward();
+	void CameraModeToggle();
 	void Warp();
 	void Dash();
 	void UnDash();
 
+	//UFUNCTION()
+	//void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	UFUNCTION()
-	void HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	
+	void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	UFUNCTION()
+	void UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	float GetSpeed();
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
@@ -49,6 +63,9 @@ public:
 	bool GetIsAiming();
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	bool GetIsOnTheGround();
+	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	//int GetGemCount();
+	
 
 	FVector MovementInput;
 	FVector CameraInput;
@@ -59,6 +76,9 @@ public:
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* DashParticles;
+	UPROPERTY(EditAnywhere) UUserWidget* thehud;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<class UUserWidget> asd;
 
 	/* Rate that the player should accelerate while on the ground. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float GroundAccelerationRate;
@@ -159,6 +179,12 @@ private:
 	bool ztarget;
 	bool wasztarget;
 	bool movementlocked;
+	bool cameralocked;
+	bool cameramode;
+	bool CameraOverrideLookAtPlayer;
+	FVector CameraOverrideTargetDisplacement;
+	FVector CameraOverrideTargetLocation;
+	FRotator CameraOverrideTargetRotation;
 	FRotator TargetDirection;
 	FRotator OldDirection;
 	FVector Velocity;

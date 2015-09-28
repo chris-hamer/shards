@@ -4,9 +4,10 @@
 #include "Gem.h"
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
+#include "CameraOverrideRegion.h"
 #include "EngineUtils.h" 
 #include "Stick.h"  
-#include "TeleClaw.h" 
+#include "TeleClaw.h"
 
 // Sets default values
 AAuyron::AAuyron()
@@ -47,8 +48,10 @@ AAuyron::AAuyron()
 	RootComponent = CapsuleComponent;
 	CapsuleComponent->InitCapsuleSize(45.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
+	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
+	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
+	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
 	SetActorEnableCollision(true);
-	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::HitGem);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
@@ -80,6 +83,46 @@ AAuyron::AAuyron()
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = RootComponent;
 }
+void AAuyron::UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
+		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
+			cameralocked = false;
+			CameraOverrideLookAtPlayer = false;
+			CameraOverrideTargetDisplacement = FVector::ZeroVector;
+			CameraOverrideTargetRotation = FRotator::ZeroRotator;
+		}
+	}
+}
+void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
+		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, "asdfasfdsafdsafdasdf");
+			cameralocked = true;
+			CameraOverrideLookAtPlayer = ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer;
+			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetDisplacement;
+			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetRotation;
+		}
+	}
+}
+void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL))
+	{
+		if (OtherActor->IsA(AGem::StaticClass()))
+		{
+			OtherActor->Destroy();
+			GemCount++;
+		}
+		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
+			cameralocked = true;
+			CameraOverrideLookAtPlayer = ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer;
+			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetDisplacement;
+			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetRotation;
+		}
+	}
+}
 
 // GAME START.
 void AAuyron::BeginPlay()
@@ -87,6 +130,7 @@ void AAuyron::BeginPlay()
 	Super::BeginPlay();
 	SpringArm->TargetArmLength = DefaultArmLength;
 	SpringArm->CameraLagSpeed = CameraLag;
+	SpringArm->CameraRotationLagSpeed = 0.0f;
 	MovementComponent->maxslope = MaxSlope;
 	MovementComponent->MaxOffGroundTime = OffGroundJumpTime;
 	Gravity = -Gravity;
@@ -102,6 +146,23 @@ void AAuyron::BeginPlay()
 		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	}
 	DashParticles->DeactivateSystem();
+
+	//if (!HUDWidget->IsVisible()) {
+	//	HUDWidget->AddToViewport();
+	//}
+	//UGameplayStatics::GetPlayerController(this, 0)->GetHUD();
+	if (asd) {
+		// Create the widget and store it.
+		thehud = CreateWidget<UUserWidget>(GetWorld(), asd);
+
+		// now you can use the widget directly since you have a referance for it.
+		// Extra check to  make sure the pointer holds the widget.
+		if (thehud)
+		{
+			//let add it to the view port
+			thehud->AddToViewport();
+		}
+	}
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -117,8 +178,14 @@ void AAuyron::Tick(float DeltaTime)
 
 	JustJumped = false;
 
+	bool cameralocktemp = cameralocked;
+
+	if (cameramode) {
+		cameralocked = false;
+	}
+
 	// Move the camera in response to mouse movement.
-	{
+	if(!cameralocked||ztarget) {
 		// Reset camera input timer if the camera controls were touched.
 		if (CameraInput.X != 0.0f || CameraInput.Y != 0.0f) {
 			TimeSinceLastMouseInput = 0.0f;
@@ -136,12 +203,24 @@ void AAuyron::Tick(float DeltaTime)
 		NewRotation = SpringArm->GetComponentRotation();
 		NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
 		SpringArm->SetWorldRotation(NewRotation);
-		if (ztarget) {
-			NewRotation = PlayerModel->GetComponentRotation();
-			NewRotation.Yaw += CameraInput.X;
-			PlayerModel->SetWorldRotation(NewRotation);
+		SpringArm->CameraRotationLagSpeed = 0.0f;
+	} else {
+		SpringArm->SetRelativeRotation(CameraOverrideTargetRotation);
+		SpringArm->SetRelativeLocation(CameraOverrideTargetDisplacement);
+		if (CameraOverrideLookAtPlayer) {
+			SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
 		}
+		SpringArm->CameraRotationLagSpeed = CameraLag;
+		SpringArm->TargetArmLength = (SpringArm->GetComponentLocation() - GetActorLocation()).Size();
 	}
+
+	if (ztarget) {
+		FRotator NewRotation = PlayerModel->GetComponentRotation();
+		NewRotation.Yaw += CameraInput.X;
+		TargetDirection.Yaw = NewRotation.Yaw;
+		PlayerModel->SetWorldRotation(NewRotation);
+	}
+
 
 	// Move the player in response to movement inputs.
 	{
@@ -174,11 +253,15 @@ void AAuyron::Tick(float DeltaTime)
 			movementlocked = true;
 		} else {
 			// Return the spring arm to its original location.
-			SpringArm->TargetArmLength = DefaultArmLength;
-			SpringArm->CameraLagSpeed = CameraLag;
-			SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+			if (!cameralocked) {
+				SpringArm->TargetArmLength = DefaultArmLength;
+				SpringArm->CameraLagSpeed = CameraLag;
+				SpringArm->CameraRotationLagSpeed = 0.0f;
+				SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+			}
 			movementlocked = false;
 		}
+		cameralocked = cameralocktemp;
 
 		if (swish) {
 			// Iterate over each TelePad and cast a ray.
@@ -215,6 +298,7 @@ void AAuyron::Tick(float DeltaTime)
 				AStick* s = closest;
 				SetActorLocation(s->gohere);
 				Velocity.Z = 0.0f;
+				Velocity = FVector::ZeroVector;
 				ztarget = false;
 			}
 			swish = false;
@@ -298,11 +382,11 @@ void AAuyron::Tick(float DeltaTime)
 			FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
 			if (!OnTheGround && wnproject.Size()>0.9f) {
 				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
-				newmodelrotation.Yaw = MovementComponent->wallnormal.Rotation().Yaw;
+				newmodelrotation.Yaw = (MovementComponent->wallnormal.GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), MovementComponent->wallnormal.GetSafeNormal())).Rotation().Yaw;
 				PlayerModel->SetWorldRotation(newmodelrotation);
 				TargetDirection = newmodelrotation;
 				temp = Velocity;
-				Velocity = MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity;
+				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y), MovementComponent->wallnormal.GetSafeNormal())*MaxVelocity);
 				Velocity.Z = temp.Z;
 			}
 		}
@@ -396,6 +480,8 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
 	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
+	InputComponent->BindAction("CameraFaceForward", IE_Released, this, &AAuyron::CameraUnFaceForward);
+	InputComponent->BindAction("CameraMode", IE_Pressed, this, &AAuyron::CameraModeToggle);
 	InputComponent->BindAction("Warp", IE_Pressed, this, &AAuyron::Warp);
 	InputComponent->BindAction("Dash", IE_Pressed, this, &AAuyron::Dash);
 	InputComponent->BindAction("Dash", IE_Released, this, &AAuyron::UnDash);
@@ -447,8 +533,20 @@ void AAuyron::Use()
 void AAuyron::CameraFaceForward()
 {
 	if (!dashing) {
-		ztarget = !ztarget;
+		ztarget = true;
 	}
+}
+
+void AAuyron::CameraUnFaceForward()
+{
+	if (!dashing) {
+		ztarget = false;
+	}
+}
+
+void AAuyron::CameraModeToggle()
+{
+	cameramode = !cameramode;
 }
 
 // swish
@@ -472,24 +570,16 @@ void AAuyron::UnDash()
 	}
 }
 
-void AAuyron::HitGem(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
-	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL))
-	{
-		if (OtherActor->IsA(AGem::StaticClass()))
-		{
-			OtherActor->Destroy();
-			GemCount++;
-		}
-	}
-}
-
 float AAuyron::GetSpeed()
 {
 	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
 
-bool AAuyron::GetIsTurning()
+//int AAuyron::GetGemCount() {
+//	return GemCount;
+//}
+
+bool AAuyron::GetIsTurning() 
 {
 	FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
 	float angle = 0.0f;
