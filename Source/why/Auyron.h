@@ -71,6 +71,7 @@ public:
 	FVector CameraInput;
 
 	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
+	UPROPERTY(EditAnywhere) USpringArmComponent* SidewaysSpringArm;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
@@ -126,13 +127,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement", AdvancedDisplay) float FacingAngleSnapThreshold;
 
 	/* Whether or not we can use teleport claw */
-	UPROPERTY(EditAnywhere, Category = "Power ups") bool HasTeleport;
-
-	/* How many air jumps we can do (1 = double jump, 2 = triple, etc.) */
-	UPROPERTY(EditAnywhere, Category = "Power ups") uint8  MaxExtraJumps;
+	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasTeleport;
 
 	/* Whether or not we can do short glide */
-	UPROPERTY(EditAnywhere, Category = "Power ups") bool HasGlide;
+	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasGlide;
+
+	/* Duration of glide. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideDuration;
 
 	/* The maximum range of your teleporter. */
 	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRange;

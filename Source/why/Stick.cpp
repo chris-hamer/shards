@@ -27,6 +27,7 @@ AStick::AStick()
 	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
+	PostTeleportVelocity = FVector(0.0f, 0.0f, 0.0f);
 }
 
 // Called when the game starts or when spawned

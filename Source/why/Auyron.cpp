@@ -27,7 +27,7 @@ AAuyron::AAuyron()
 	Gravity = 900.0f;
 	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
-	TeleportAngleTolerance = 20.0f;
+	TeleportAngleTolerance = 5.0f;
 	TeleportRange = 1400.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
@@ -60,6 +60,9 @@ AAuyron::AAuyron()
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->AttachTo(RootComponent);
 
+	SidewaysSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SidewaysSpringArm"));
+	SidewaysSpringArm->AttachTo(RootComponent);
+
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	SpringArm->AttachTo(RootComponent);
@@ -87,10 +90,15 @@ void AAuyron::UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherC
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
 		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
-			cameralocked = false;
-			CameraOverrideLookAtPlayer = false;
-			CameraOverrideTargetDisplacement = FVector::ZeroVector;
-			CameraOverrideTargetRotation = FRotator::ZeroRotator;
+
+			if (CameraOverrideLookAtPlayer == ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer &&
+				CameraOverrideTargetDisplacement == ((ACameraOverrideRegion*)OtherActor)->TargetDisplacement &&
+				CameraOverrideTargetRotation == ((ACameraOverrideRegion*)OtherActor)->TargetRotation) {
+				cameralocked = false;
+				CameraOverrideLookAtPlayer = false;
+				CameraOverrideTargetDisplacement = FVector::ZeroVector;
+				CameraOverrideTargetRotation = FRotator::ZeroRotator;
+			}
 		}
 	}
 }
@@ -98,7 +106,7 @@ void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherCom
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
 		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, "asdfasfdsafdsafdasdf");
+			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, "asdfasfdsafdsafdasdf");
 			cameralocked = true;
 			CameraOverrideLookAtPlayer = ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer;
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetDisplacement;
@@ -128,6 +136,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 void AAuyron::BeginPlay()
 {
 	Super::BeginPlay();
+	SidewaysSpringArm->TargetArmLength = 0.0f;
 	SpringArm->TargetArmLength = DefaultArmLength;
 	SpringArm->CameraLagSpeed = CameraLag;
 	SpringArm->CameraRotationLagSpeed = 0.0f;
@@ -147,10 +156,6 @@ void AAuyron::BeginPlay()
 	}
 	DashParticles->DeactivateSystem();
 
-	//if (!HUDWidget->IsVisible()) {
-	//	HUDWidget->AddToViewport();
-	//}
-	//UGameplayStatics::GetPlayerController(this, 0)->GetHUD();
 	if (asd) {
 		// Create the widget and store it.
 		thehud = CreateWidget<UUserWidget>(GetWorld(), asd);
@@ -230,6 +235,9 @@ void AAuyron::Tick(float DeltaTime)
 			// Set the spring arm's new rotation and remove its lag.
 			FRotator NewRotation = SpringArm->RelativeRotation;
 			if (!wasztarget) {
+				if (cameralocked) {
+					NewRotation.Pitch = 0.0f;
+				}
 				if (MovementInput.IsNearlyZero()) {
 					NewRotation.Yaw = TargetDirection.Yaw;
 				} else {
@@ -239,7 +247,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
 			SpringArm->SetRelativeRotation(NewRotation);
-			SpringArm->TargetArmLength = 100.0f;
+			SpringArm->TargetArmLength = 300.0f;
 			SpringArm->CameraLagSpeed = 0.0f;
 
 			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
@@ -247,8 +255,13 @@ void AAuyron::Tick(float DeltaTime)
 			FVector Forward = FVector::VectorPlaneProject((-(CapsuleComponent->GetComponentRotation())).RotateVector(Camera->GetForwardVector()), FVector::UpVector);
 
 			// Move the spring arm.
-			FVector base = FVector(0.0f, 0.0f, 50.0f) + FVector(-100.0f, -100.0f, 50.0f);
-			base = (-base.X*Right + base.Y*Forward + base.Z*FVector::UpVector);
+			//FVector base = FVector(0.0f, 0.0f, 50.0f) + FVector(-100.0f, -100.0f, 50.0f);
+			FVector base = FVector(0.0f, 0.0f, 50.0f) + FVector(0.0f, 100.0f, 50.0f);
+			base = (base.X*Forward + base.Y*Right + base.Z*FVector::UpVector);
+			//GEngine->AddOnScreenDebugMessage(-1, 15, FColor::Green, base.ToString());
+
+			//SpringArm->SetRelativeLocation(FVector::ZeroVector);
+			//SpringArm->SetRelativeLocation(FVector(0.0f, -100.0f, 50.0f));
 			SpringArm->SetRelativeLocation(base);
 			movementlocked = true;
 		} else {
@@ -269,7 +282,8 @@ void AAuyron::Tick(float DeltaTime)
 			float biggestdot = -1.0f;
 			for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 				if (ActorItr->GetClass()->GetName() == "Stick") {
-					FVector displacement = ActorItr->GetActorLocation() - GetActorLocation();
+					//FVector displacement = ActorItr->GetActorLocation() - GetActorLocation();
+					FVector displacement = ActorItr->GetActorLocation() - Camera->GetComponentLocation();
 
 					float dot = displacement.GetSafeNormal() | Camera->GetForwardVector().GetSafeNormal();
 					FCollisionQueryParams TraceParams(FName(TEXT("Trace")), true, *ActorItr);
@@ -297,9 +311,10 @@ void AAuyron::Tick(float DeltaTime)
 				ztarget) {
 				AStick* s = closest;
 				SetActorLocation(s->gohere);
-				Velocity.Z = 0.0f;
-				Velocity = FVector::ZeroVector;
+				Velocity += s->PostTeleportVelocity;
 				ztarget = false;
+				OnTheGround = false;
+				WasOnTheGround = false;
 			}
 			swish = false;
 		}
