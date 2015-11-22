@@ -20,10 +20,14 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 	
+	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) UBoxComponent* Region;
-	UPROPERTY(EditAnywhere) USceneComponent* TargetLocation;
+	UPROPERTY(EditAnywhere) UCameraComponent* TargetCamera;
 
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LookAtPlayer;
+	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerXAxis;
+	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerYAxis;
+	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerZAxis;
 	UPROPERTY(EditAnywhere, Category = "Camera") FVector TargetDisplacement;
 	UPROPERTY(EditAnywhere, Category = "Camera") FRotator TargetRotation;
 	

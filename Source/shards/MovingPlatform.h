@@ -30,13 +30,13 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual float nderiv(float x, float ctime, float(*f)(float, float), float c = 0.01);
 
-	USceneComponent* Root;
+	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) USceneComponent* StartPosition;
 	UPROPERTY(EditAnywhere) USceneComponent* EndPosition;
 	UPROPERTY(EditAnywhere) UStaticMeshComponent* Model;
 
 	/* Time in seconds it takes to complete one cycle. */
-	UPROPERTY(EditAnywhere, Category="Movement") float CycleTime;
+	UPROPERTY(EditAnywhere, Category = "Movement") float CycleTime;
 
 	/** The type of movement pattern this platform uses. */
 	UPROPERTY(EditAnywhere, Category = "Movement") TEnumAsByte<Type> MovementType;

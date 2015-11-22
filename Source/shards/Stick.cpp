@@ -17,6 +17,7 @@ AStick::AStick()
 	StickModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
 	StickModel->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	StickModel->SetCastShadow(false);
+	StickModel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	RootComponent = StickModel;
 
 	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
@@ -27,6 +28,7 @@ AStick::AStick()
 	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
+	//Here->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	PostTeleportVelocity = FVector(0.0f, 0.0f, 0.0f);
 }
 

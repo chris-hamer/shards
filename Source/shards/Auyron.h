@@ -67,12 +67,11 @@ public:
 	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	//int GetGemCount();
 	
-
 	FVector MovementInput;
 	FVector CameraInput;
 
+	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
-	UPROPERTY(EditAnywhere) USpringArmComponent* SidewaysSpringArm;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
 	UPROPERTY(EditAnywhere)	ATeleClaw* TeleClaw;
@@ -127,20 +126,29 @@ public:
 	/* Minimum angle difference needed for the player model to snap to the direction the player is moving in. */
 	UPROPERTY(EditAnywhere, Category = "Movement", AdvancedDisplay) float FacingAngleSnapThreshold;
 
-	/* Whether or not we can use teleport claw */
+	/* Whether or not we can use teleport claw. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasTeleport;
 
-	/* Whether or not we can do short glide */
+	/* Whether or not we can use glide. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasGlide;
 
 	/* Duration of glide. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideDuration;
 
-	/* The maximum range of your teleporter. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRange;
+	/* The maximum range of your teleporter when aiming. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRangeWhenAiming;
 
-	/* The angle that you can be "off" from a target but still be able to teleport to it. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleTolerance;
+	/* The angle that you can be "off" from a target while aiming but still be able to teleport to it. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleToleranceWhenAiming;
+
+	/* The maximum range of your teleporter when not aiming. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRangeWhenNotAiming;
+
+	/* The angle that you can be "off" from a target while not aiming but still be able to teleport to it. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleToleranceWhenNotAiming;
+
+	/* The color that the telepads should turn when you're aiming at them. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") FColor TeleportLightColor;
 
 	/* Highest angle the camera is allowed to have. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraMaxAngle;
@@ -153,6 +161,9 @@ public:
 
 	/* How long it takes the camera to move to its final position when following the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraLag;
+
+	/* How long it takes the camera to move to its final position when following the player. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float CameraRotationLag;
 
 	/* How rapidly the camera should turn with the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraAutoTurnFactor;
@@ -184,6 +195,9 @@ private:
 	bool cameralocked;
 	bool cameramode;
 	bool CameraOverrideLookAtPlayer;
+	bool CameraLockToPlayerXAxis;
+	bool CameraLockToPlayerYAxis;
+	bool CameraLockToPlayerZAxis;
 	FVector CameraOverrideTargetDisplacement;
 	FVector CameraOverrideTargetLocation;
 	FRotator CameraOverrideTargetRotation;

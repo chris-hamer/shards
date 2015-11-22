@@ -20,7 +20,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	// Get (and also clear) the movement vector that we set in AAuyron::Tick
 	FVector DesiredMovementThisFrame = ConsumeInputVector();
 
-	// Separate movememt vector into horizonal and vertical components.
+	// Separate movement vector into horizonal and vertical components.
 	FVector Horiz = FVector::VectorPlaneProject(DesiredMovementThisFrame, FVector::UpVector);
 	FVector Vert = FVector(0.0f, 0.0f, DesiredMovementThisFrame.Z);
 
@@ -34,13 +34,22 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	groundvelocity = FVector::ZeroVector;
 	groundverticalvelocity = 0.0f;
 
+	// If we're not on a standable slope then we are not on the ground.
+	if (Floor.Normal.Z <= FMath::Sin((maxslope))) {
+		onground = false;
+		offGroundTime += DeltaTime;
+
+		// Make sure to slide down the slope and check if we hit a standable surface.
+		SlideAlongSurface(Vert, 1.0f - Floor.Time, Floor.Normal, Floor, true);
+	}
+
 	// Looks like we're standing on something.
 	if (Floor.Normal.Z > FMath::Sin((maxslope))) {
 		onground = true;
 		offGroundTime = 0.0f;
 
 		// It's a moving platform.
-		if (Floor.GetActor()->GetClass()->GetName() == "MovingPlatform") {
+		if (Floor.GetActor()->GetClass() != nullptr && Floor.GetActor()->GetClass()->GetName() == "MovingPlatform") {
 			// Record the platform's velocity so the character controller can deal with it.
 			groundvelocity = ((AMovingPlatform*)Floor.GetActor())->Velocity;
 
@@ -57,12 +66,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		toosteep = true;
 	}
 
-	// If we're not on a standable slope then we are not on the ground.
-	if (Floor.Normal.Z <= FMath::Sin((maxslope))) {
-		onground = false;
-		offGroundTime += DeltaTime;
-	}
-
 	// Sets "Horizontal" movement to be up/down the slope you're standing on so long as the slope isn't too steep.
 	if (!toosteep&&!Floor.Normal.Equals(FVector::UpVector,0.1f)) {
 		// Look at this math. LOOK AT THIS MATH.
@@ -77,6 +80,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	if (Wall.IsValidBlockingHit())
 	{
 		// I have to do all these calculations because you're too stupid to not run into walls.
-		SlideAlongSurface(Horiz, 1.f - Wall.Time, Wall.Normal, Wall, true);
+		SlideAlongSurface(Horiz, 1.0f - Wall.Time, Wall.Normal, Wall, true);
 	}
 };
