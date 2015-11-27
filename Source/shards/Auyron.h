@@ -10,6 +10,8 @@
 #include "Runtime/UMG/Public/Slate/SObjectWidget.h"
 #include "Runtime/UMG/Public/IUMGModule.h"
 #include "TeleClaw.h"
+#include "TwoDimensionalMovementRegion.h"
+#include "Checkpoint.h"
 #include "Auyron.generated.h"
 
 UCLASS()
@@ -32,6 +34,7 @@ public:
 
 	UPROPERTY(EditAnywhere) class UAuyronMovementComponent* MovementComponent;
 
+
 	//Input functions
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
@@ -46,7 +49,8 @@ public:
 	void Warp();
 	void Dash();
 	void UnDash();
-
+	void Respawn();
+	
 	//UFUNCTION()
 	//void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	UFUNCTION()
@@ -77,6 +81,7 @@ public:
 	UPROPERTY(EditAnywhere)	ATeleClaw* TeleClaw;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* DashParticles;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* FloatParticles;
 	UPROPERTY(EditAnywhere) UUserWidget* thehud;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 		TSubclassOf<class UUserWidget> asd;
@@ -108,11 +113,11 @@ public:
 	/* The angle in degrees that the player can turn in one second. Only affects the player model, not movement. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float TurnRate;
 
+	/* Fraction of the default turn rate that should apply when gliding. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float GlideTurnRateMultiplier;
+
 	/* The upward speed at which the player starts their jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float JumpPower;
-
-	/* The upward speed at which the player double jumps. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float DoubleJumpPower;
 
 	/* Time after falling off a ledge that the player can still jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float OffGroundJumpTime;
@@ -132,8 +137,14 @@ public:
 	/* Whether or not we can use glide. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasGlide;
 
-	/* Duration of glide. */
+	/* Duration of glide in seconds. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideDuration;
+
+	/* Initial upward velocity imparted on player when starting their glide. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") float InitialGlideVelocity;
+
+	/* Factor that the gravity should be multiplied by when gliding. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideGravityMultiplier;
 
 	/* The maximum range of your teleporter when aiming. */
 	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRangeWhenAiming;
@@ -183,6 +194,14 @@ private:
 	bool HoldingJump;
 	bool JustJumped;
 	bool OnTheGround;
+	
+	float DefaultGravity;
+
+	bool GlideNextFrame;
+	bool IsGliding;
+	bool AlreadyGlided;
+	float GlideTimer;
+
 	uint8 jumpsLeft;
 	bool justDoubleJumped;
 	bool WasOnTheGround;
@@ -198,6 +217,12 @@ private:
 	bool CameraLockToPlayerXAxis;
 	bool CameraLockToPlayerYAxis;
 	bool CameraLockToPlayerZAxis;
+	bool MovementAxisLocked;
+	float LockedAxisValue;
+
+	FVector RespawnPoint;
+	
+	TEnumAsByte<ATwoDimensionalMovementRegion::AxisEnum> LockedMovementAxis;
 	FVector CameraOverrideTargetDisplacement;
 	FVector CameraOverrideTargetLocation;
 	FRotator CameraOverrideTargetRotation;

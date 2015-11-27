@@ -7,7 +7,9 @@
 #include "CameraOverrideRegion.h"
 #include "EngineUtils.h" 
 #include "Stick.h"  
+#include "Checkpoint.h"
 #include "TeleClaw.h"
+#include "TwoDimensionalMovementRegion.h"
 
 // Sets default values
 AAuyron::AAuyron()
@@ -21,17 +23,21 @@ AAuyron::AAuyron()
 	DashSpeed = 1500.0f;
 	DashDuration = 0.25f;
 	MaxSlope = 45.0f;
-	TurnRate = 480.0f;
+	TurnRate = 720.0f;
+	GlideTurnRateMultiplier = 1.0f;
 	JumpPower = 450.0f;
 	OffGroundJumpTime = 0.04f;
 	Gravity = 900.0f;
 	UnjumpRate = 1.5f;
 	FacingAngleSnapThreshold = 5.0f;
-	TeleportRangeWhenAiming = 1400.0f;
+	TeleportRangeWhenAiming = 1600.0f;
 	TeleportAngleToleranceWhenAiming = 5.0f;
-	TeleportRangeWhenNotAiming = 700.0f;
+	TeleportRangeWhenNotAiming = 900.0f;
 	TeleportAngleToleranceWhenNotAiming = 70.0f;
 	TeleportLightColor = FColor(0x336FE6FF);
+	GlideDuration = 2.0f;
+	InitialGlideVelocity = 100.0f;
+	GlideGravityMultiplier = 50.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 400.0f;
@@ -81,10 +87,16 @@ AAuyron::AAuyron()
 	Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
 
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Textures/Characters/Auyron/DashParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Particles/DashParticles"));
 	DashParticles->SetTemplate(dp.Object);
 	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	DashParticles->AttachTo(PlayerModel);
+
+	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
+	FloatParticles->SetTemplate(fp.Object);
+	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	FloatParticles->AttachTo(PlayerModel);
 
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -93,6 +105,11 @@ AAuyron::AAuyron()
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 }
+
+void AAuyron::Respawn() {
+	SetActorLocation(RespawnPoint);
+}
+
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
@@ -112,6 +129,10 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 				CameraOverrideTargetRotation = FRotator::ZeroRotator;
 			}
 		}
+
+		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
+			MovementAxisLocked = false;
+		}
 	}
 }
 
@@ -127,10 +148,17 @@ void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherCom
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
+
+		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
+			MovementAxisLocked = true;
+			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
+			LockedMovementAxis = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedAxis;
+		}
 	}
 }
 void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// Stop hitting yourself.
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL))
 	{
 		// We just picked up a gem.
@@ -151,6 +179,16 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
+
+		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
+			MovementAxisLocked = true;
+			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
+			LockedMovementAxis = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedAxis;
+		}
+
+		if (OtherActor->IsA(ACheckpoint::StaticClass())) {
+			RespawnPoint = ((ACheckpoint*)OtherActor)->RespawnPoint->GetComponentLocation();
+		}
 	}
 }
 
@@ -168,6 +206,7 @@ void AAuyron::BeginPlay()
 
 	// Point gravuty downwards.
 	Gravity = -Gravity;
+	DefaultGravity = Gravity;
 
 	// Initialize gem count.
 	GemCount = 0;
@@ -189,8 +228,9 @@ void AAuyron::BeginPlay()
 		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	}
 
-	// Start with the dash particles off.
+	// Start with the particles off.
 	DashParticles->DeactivateSystem();
+	FloatParticles->DeactivateSystem();
 
 	if (asd) {
 		// Create the widget and store it.
@@ -219,6 +259,7 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Reset temporary booleans.
 	JustJumped = false;
+	SpringArm->bEnableCameraLag = true;
 	bool cameralocktemp = cameralocked;
 
 	// Set and range and angle to the "short range" values.
@@ -278,12 +319,6 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
 			}
 		}
-
-		//if (ztarget) {
-		//	FRotator NewRotation = PlayerModel->GetComponentRotation();
-		//	NewRotation.Yaw += CameraInput.X;
-		//	PlayerModel->SetWorldRotation(NewRotation);
-		//}
 
 
 		// The player is aiming.
@@ -432,6 +467,10 @@ void AAuyron::Tick(float DeltaTime)
 					ztarget = false;
 					OnTheGround = false;
 					WasOnTheGround = false;
+					if (IsGliding) {
+						AlreadyGlided = true;
+						IsGliding = false;
+					}
 				}
 			}
 
@@ -448,9 +487,10 @@ void AAuyron::Tick(float DeltaTime)
 		if (movementlocked) {
 			MovementInput = FVector::ZeroVector;
 
-			// Lock jumping as well unless we're dashing.
+			// Lock jumping and gliding as well unless we're dashing.
 			if (!dashing) {
 				JumpNextFrame = false;
+				GlideNextFrame = false;
 			}
 		}
 
@@ -487,6 +527,30 @@ void AAuyron::Tick(float DeltaTime)
 			Velocity.Z = 0.0f;
 		}
 
+		// This is a 2D platformer now.
+		if (MovementAxisLocked) {
+			FVector newpos(GetActorLocation());
+			switch (LockedMovementAxis) {
+				case ATwoDimensionalMovementRegion::XAXIS:
+					newpos.X = LockedAxisValue;
+					Velocity.X = 0.0f;
+					MovementInput.Y = 0.0f;
+					AdjustedInput.Y = 0.0f;
+					break;
+				case ATwoDimensionalMovementRegion::YAXIS:
+					newpos.Y = LockedAxisValue;
+					Velocity.Y = 0.0f;
+					MovementInput.Y = 0.0f;
+					AdjustedInput.Y = 0.0f;
+					break;
+				case ATwoDimensionalMovementRegion::ZAXIS:
+					newpos.Z = LockedAxisValue;
+					Velocity.Z = 0.0f;
+					break;
+			}
+			SetActorLocation(newpos);
+		}
+
 		// Physiiiiicccss.
 		Velocity += Acceleration * DeltaTime;
 
@@ -507,9 +571,6 @@ void AAuyron::Tick(float DeltaTime)
 			WasOnTheGround = false;
 			JustJumped = true;
 
-			// Don't store the player's old target direction anymore.
-			TargetDirection.Yaw = PlayerModel->GetComponentRotation().Yaw;
-
 			// This ain't Megaman X, kiddo.
 			if (dashing) {
 				DashParticles->DeactivateSystem();
@@ -527,12 +588,42 @@ void AAuyron::Tick(float DeltaTime)
 				PlayerModel->SetWorldRotation(newmodelrotation);
 				TargetDirection = newmodelrotation;
 
+				if (IsGliding) {
+					AlreadyGlided = true;
+					IsGliding = false;
+				}
+
 				// Set player velocity to be away from the wall.
 				temp = Velocity;
 				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y), MovementComponent->wallnormal.GetSafeNormal())*MaxVelocity);
 				Velocity.Z = temp.Z;
 
 			}
+		}
+
+		if (OnTheGround) {
+			AlreadyGlided = false;
+		}
+
+		if (GlideNextFrame&&!AlreadyGlided) {
+			Velocity.Z = InitialGlideVelocity;
+			IsGliding = true;
+			AlreadyGlided = true;
+			GlideNextFrame = false;
+			FloatParticles->ActivateSystem();
+		}
+
+		if (IsGliding) {
+			GlideTimer += DeltaTime;
+			Gravity = DefaultGravity / GlideGravityMultiplier;
+		} else {
+			FloatParticles->DeactivateSystem();
+			GlideTimer = 0.0f;
+			Gravity = DefaultGravity;
+		}
+
+		if (GlideTimer > GlideDuration || OnTheGround || !HoldingJump) {
+			IsGliding = false;
 		}
 
 		// Apply a downward force if the player lets go of jump while still moving upwards.
@@ -569,6 +660,12 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
+		// How the hell did you end up down there?
+		if (GetActorLocation().Z < -2000.0f) {
+			SpringArm->bEnableCameraLag = false;
+			Respawn();
+		}
+
 		// Put Velocity back in the reference frame of the stationary world.
 		Velocity += MovementComponent->groundvelocity;
 
@@ -589,7 +686,7 @@ void AAuyron::Tick(float DeltaTime)
 	{
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
-		if (!ztarget && OnTheGround && !JustJumped) {
+		if (!ztarget && ( OnTheGround || IsGliding) && !JustJumped) {
 			// I'ma tell ya not even Unity was stupid enough to use -180 -> 180 for rotations.
 			int8 reflect = (MovementInput.X >= 0 ? 1 : -1);
 
@@ -597,6 +694,19 @@ void AAuyron::Tick(float DeltaTime)
 			if (!MovementInput.IsNearlyZero() && !ztarget) {
 				TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
 					reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+				if (MovementAxisLocked) {
+					FVector tempvector(TargetDirection.Vector());
+					switch (LockedMovementAxis) {
+						case ATwoDimensionalMovementRegion::XAXIS:
+							tempvector.X = 0.0f;
+							TargetDirection = tempvector.Rotation();
+							break;
+						case ATwoDimensionalMovementRegion::YAXIS:
+							tempvector.Y = 0.0f;
+							TargetDirection = tempvector.Rotation();
+							break;
+					}
+				}
 			}
 		}
 
@@ -615,12 +725,14 @@ void AAuyron::Tick(float DeltaTime)
 			float multiply = (dashing ? 3.0f : 1.0f);
 
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
-			if (!ztarget&&OnTheGround) {
-				if (FMath::Abs(angle) > FMath::DegreesToRadians(multiply*FacingAngleSnapThreshold)) {
-					test = FQuat(dummy, FMath::DegreesToRadians(multiply*TurnRate)*DeltaTime);
-					PlayerModel->AddLocalRotation(test);
-				} else {
+			if (!ztarget) {
+				test = FQuat(dummy, FMath::DegreesToRadians(multiply*(IsGliding ? 1.0f : GlideTurnRateMultiplier)*TurnRate)*DeltaTime);
+				float angle2 = 0.0f;
+				test.ToAxisAndAngle(dummy, angle2);
+				if (FMath::Abs(angle2) > FMath::Abs(angle)) {
 					PlayerModel->SetWorldRotation(TargetDirection);
+				} else {
+					PlayerModel->AddLocalRotation(test);
 				}
 			}
 		}
@@ -678,8 +790,10 @@ void AAuyron::Jump()
 	FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
 	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 		JumpNextFrame = true;
-		HoldingJump = true;
+	} else {
+		GlideNextFrame = true;
 	}
+	HoldingJump = true;
 }
 
 // I wish you could unjump in real life.

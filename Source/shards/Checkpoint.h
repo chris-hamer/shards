@@ -3,16 +3,16 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
-#include "aaaaaaa.generated.h"
+#include "Checkpoint.generated.h"
 
 UCLASS()
-class SHARDS_API Aaaaaaaa : public AActor
+class SHARDS_API ACheckpoint : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	Aaaaaaaa();
+	ACheckpoint();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -20,6 +20,9 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
+	UPROPERTY(EditAnywhere) USceneComponent* Root;
+	UPROPERTY(EditAnywhere) USceneComponent* RespawnPoint;
+	UPROPERTY(EditAnywhere) UBoxComponent* Region;
 	
 	
 };
