@@ -49,6 +49,8 @@ AAuyron::AAuyron()
 	CameraAutoTurnFactor = 1.0f;
 	CameraResetTime = 1.0f;
 
+	HelpEnabled = true;
+
 	// Just in case.
 	TargetDirection = FRotator::ZeroRotator;
 	Velocity = FVector::ZeroVector;
@@ -771,6 +773,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
 	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
+	InputComponent->BindAction("ToggleHelp", IE_Pressed, this, &AAuyron::ToggleHelp);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
 	InputComponent->BindAction("CameraFaceForward", IE_Released, this, &AAuyron::CameraUnFaceForward);
 	InputComponent->BindAction("CameraMode", IE_Pressed, this, &AAuyron::CameraModeToggle);
@@ -855,6 +858,10 @@ void AAuyron::Warp()
 	swish = true;
 }
 
+void AAuyron::ToggleHelp() {
+	HelpEnabled = !HelpEnabled;
+}
+
 // woosh
 void AAuyron::Dash()
 {
@@ -898,6 +905,11 @@ bool AAuyron::GetIsAiming()
 bool AAuyron::GetIsOnTheGround()
 {
 	return OnTheGround;
+}
+
+bool AAuyron::GetHelpEnabled()
+{
+	return HelpEnabled;
 }
 
 uint8 AAuyron::GetGemAmount()

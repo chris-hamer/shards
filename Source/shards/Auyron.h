@@ -43,6 +43,7 @@ public:
 	void Jump();
 	void Unjump();
 	void Use();
+	void ToggleHelp();
 	void CameraFaceForward();
 	void CameraUnFaceForward();
 	void CameraModeToggle();
@@ -70,6 +71,8 @@ public:
 	bool GetIsAiming();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsOnTheGround();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetHelpEnabled();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	uint8 GetGemAmount();
 
@@ -202,7 +205,8 @@ private:
 	bool HoldingJump;
 	bool JustJumped;
 	bool OnTheGround;
-	
+	bool HelpEnabled;
+
 	float DefaultGravity;
 
 	bool GlideNextFrame;
