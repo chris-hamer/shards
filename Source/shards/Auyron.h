@@ -59,7 +59,9 @@ public:
 	void Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	UFUNCTION()
 	void UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
+	
+	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	FVector GetPlayerLocation();
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	float GetSpeed();
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
@@ -68,6 +70,7 @@ public:
 	bool GetIsAiming();
 	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	bool GetIsOnTheGround();
+
 	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	//int GetGemCount();
 	
@@ -175,6 +178,9 @@ public:
 
 	/* How long it takes the camera to move to its final position when following the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraRotationLag;
+
+	/* Factor that the camera lag should be multiplied by when aiming. Setting this to zero disables aiming lag. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float AimingLagMultiplier;
 
 	/* How rapidly the camera should turn with the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraAutoTurnFactor;

@@ -9,6 +9,7 @@
 #include "Stick.h"  
 #include "Checkpoint.h"
 #include "TeleClaw.h"
+#include "MusicRegion.h"
 #include "TwoDimensionalMovementRegion.h"
 
 // Sets default values
@@ -43,6 +44,7 @@ AAuyron::AAuyron()
 	DefaultArmLength = 400.0f;
 	CameraLag = 3.0f;
 	CameraRotationLag = 7.0f;
+	AimingLagMultiplier = 3.0f;
 	CameraAutoTurnFactor = 1.0f;
 	CameraResetTime = 1.0f;
 
@@ -133,6 +135,10 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = false;
 		}
+		
+		if (OtherActor->IsA(AMusicRegion::StaticClass())) {
+			((AMusicRegion*)OtherActor)->Music->FadeOut(2.0f,0.0f);
+		}
 	}
 }
 
@@ -188,6 +194,10 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 
 		if (OtherActor->IsA(ACheckpoint::StaticClass())) {
 			RespawnPoint = ((ACheckpoint*)OtherActor)->RespawnPoint->GetComponentLocation();
+		}
+
+		if (OtherActor->IsA(AMusicRegion::StaticClass())) {
+			((AMusicRegion*)OtherActor)->Music->FadeIn(2.0f);
 		}
 	}
 }
@@ -308,11 +318,15 @@ void AAuyron::Tick(float DeltaTime)
 			// target location and rotation.
 			SpringArm->CameraRotationLagSpeed = CameraRotationLag;
 			SpringArm->SetWorldRotation(CameraOverrideTargetRotation);
-			SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement);
-			SpringArm->SetWorldLocation(FVector(
-				(CameraLockToPlayerXAxis ? GetActorLocation().X : SpringArm->GetComponentLocation().X),
-				(CameraLockToPlayerYAxis ? GetActorLocation().Y : SpringArm->GetComponentLocation().Y),
-				(CameraLockToPlayerZAxis ? GetActorLocation().Z : SpringArm->GetComponentLocation().Z)));
+			if (!CameraLockToPlayerXAxis&&!CameraLockToPlayerYAxis&&!CameraLockToPlayerZAxis) {
+				SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement);
+			} else {
+				SpringArm->SetWorldLocation(FVector(
+					(CameraLockToPlayerXAxis ? GetActorLocation().X : CameraOverrideTargetDisplacement.X),
+					(CameraLockToPlayerYAxis ? GetActorLocation().Y : CameraOverrideTargetDisplacement.Y),
+					(CameraLockToPlayerZAxis ? GetActorLocation().Z : CameraOverrideTargetDisplacement.Z)));
+				//SpringArm->TargetArmLength = FVector::Dist(SpringArm->GetComponentLocation(), GetActorLocation());
+			}
 
 			// Face the camera towards the player if the region specifies to do so.
 			if (CameraOverrideLookAtPlayer) {
@@ -357,7 +371,7 @@ void AAuyron::Tick(float DeltaTime)
 			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
 			SpringArm->SetRelativeRotation(NewRotation);
 			SpringArm->TargetArmLength = 300.0f;
-			SpringArm->CameraLagSpeed = 0.0f;
+			SpringArm->CameraLagSpeed = CameraLag*AimingLagMultiplier;
 
 			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
 			FVector Right = FVector::VectorPlaneProject(CapsuleComponent->GetComponentRotation().RotateVector(Camera->GetRightVector()), FVector::UpVector);
@@ -465,6 +479,7 @@ void AAuyron::Tick(float DeltaTime)
 					SetActorLocation(s->gohere);
 					Velocity = s->PostTeleportVelocity;
 					ztarget = false;
+					SpringArm->CameraLagSpeed = CameraLag;
 					OnTheGround = false;
 					WasOnTheGround = false;
 					if (IsGliding) {
@@ -876,4 +891,8 @@ bool AAuyron::GetIsAiming()
 bool AAuyron::GetIsOnTheGround()
 {
 	return OnTheGround;
+}
+
+FVector AAuyron::GetPlayerLocation() {
+	return GetActorLocation();
 }
