@@ -60,16 +60,18 @@ public:
 	UFUNCTION()
 	void UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	
-	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	FVector GetPlayerLocation();
-	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetSpeed();
-	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsTurning();
-	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsAiming();
-	UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsOnTheGround();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	uint8 GetGemAmount();
 
 	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	//int GetGemCount();

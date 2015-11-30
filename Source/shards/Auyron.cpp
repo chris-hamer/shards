@@ -11,6 +11,7 @@
 #include "TeleClaw.h"
 #include "MusicRegion.h"
 #include "TwoDimensionalMovementRegion.h"
+#include "WarpCrystal.h"
 
 // Sets default values
 AAuyron::AAuyron()
@@ -199,6 +200,10 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 		if (OtherActor->IsA(AMusicRegion::StaticClass())) {
 			((AMusicRegion*)OtherActor)->Music->FadeIn(2.0f);
 		}
+
+		if (OtherActor->IsA(AWarpCrystal::StaticClass())) {
+			SetActorLocation(((AWarpCrystal*)OtherActor)->WarpExit->GetComponentLocation());
+		}
 	}
 }
 
@@ -236,6 +241,7 @@ void AAuyron::BeginPlay()
 		// FIRMLY GRASP IT IN YOUR HAND.
 		PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
 		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+		tc->TeleClaw->AddRelativeLocation(FVector(0.0f, 0.5f, 0.0f));
 	}
 
 	// Start with the particles off.
@@ -595,8 +601,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// OK this might be Megaman X a litle.
 			FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
-			if (!OnTheGround && wnproject.Size() > 0.9f) {
-
+			if (!OnTheGround && wnproject.Size() > 0.95f) {
 				// Make the player face away from the wall we just jumped off of.
 				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
 				newmodelrotation.Yaw = (MovementComponent->wallnormal.GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), MovementComponent->wallnormal.GetSafeNormal())).Rotation().Yaw;
@@ -806,7 +811,9 @@ void AAuyron::Jump()
 	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 		JumpNextFrame = true;
 	} else {
-		GlideNextFrame = true;
+		if (HasGlide) {
+			GlideNextFrame = true;
+		}
 	}
 	HoldingJump = true;
 }
@@ -891,6 +898,11 @@ bool AAuyron::GetIsAiming()
 bool AAuyron::GetIsOnTheGround()
 {
 	return OnTheGround;
+}
+
+uint8 AAuyron::GetGemAmount()
+{
+	return GemCount;
 }
 
 FVector AAuyron::GetPlayerLocation() {

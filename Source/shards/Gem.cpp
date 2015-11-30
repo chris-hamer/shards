@@ -24,7 +24,8 @@ AGem::AGem()
 	GemModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(*("/Game/Models/Gems/Gem" + FString::FromInt(gemKind)));
 	GemModel->SetStaticMesh(MeshObj.Object);
-	GemModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
+	GemModel->SetCollisionProfileName(TEXT("NoCollision"));
+	GemModel->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->SetCastShadow(false);
 	GemModel->AttachTo(RootComponent);
