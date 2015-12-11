@@ -28,6 +28,7 @@ AGem::AGem()
 	GemModel->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->SetCastShadow(false);
+	GemModel->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GemModel->AttachTo(RootComponent);
 
 	//PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));

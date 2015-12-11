@@ -19,6 +19,7 @@ AMovingPlatform::AMovingPlatform()
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/platform"));
 	Model->SetStaticMesh(MeshObj.Object);
+	Model->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	//Model->AttachTo(RootComponent);
 	RootComponent = Model;
 	Model->SetRelativeLocation(FVector::ZeroVector);

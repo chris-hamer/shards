@@ -366,13 +366,11 @@ void AAuyron::Tick(float DeltaTime)
 			if (!wasztarget) {
 
 				// ...orient the new rotation to be level with the xy axis...
-				if (cameralocked) {
-					NewRotation.Pitch = 0.0f;
-				}
+				NewRotation.Pitch = 0.0f;
 
 				// ...and face the camera in direction that the player is facing...
 				if (MovementInput.IsNearlyZero()) {
-					NewRotation.Yaw = TargetDirection.Yaw;
+					NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
 				} else {
 					// ...unless the player is holding a direction, in which case
 					// face that direction.
@@ -407,7 +405,12 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->TargetArmLength = DefaultArmLength;
 				SpringArm->CameraLagSpeed = CameraLag;
 				SpringArm->CameraRotationLagSpeed = 0.0f;
-				SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+				SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+				
+				// If we just stopped aiming, reset the camera's rotation as well.
+				if (wasztarget) {
+					SpringArm->SetRelativeRotation(FRotator(-45.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+				}
 			}
 
 			// Re-enable the player's movement inputs.
@@ -494,6 +497,12 @@ void AAuyron::Tick(float DeltaTime)
 					Velocity = s->PostTeleportVelocity;
 					ztarget = false;
 					SpringArm->CameraLagSpeed = CameraLag;
+
+					// If we were aiming, reset the camera's rotation.
+					if (wasztarget) {
+						SpringArm->SetRelativeRotation(FRotator(-45.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+					}
+
 					OnTheGround = false;
 					WasOnTheGround = false;
 					if (IsGliding) {
