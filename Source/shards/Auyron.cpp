@@ -269,7 +269,13 @@ void AAuyron::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Set our frame of reference to be that of the surface we're standing on.
+	// If there is a sharp change in the velocity of the platform that the player is
+	// standing on, immediately snap the player's velocity to match it. 
+	if (!MovementComponent->groundvelocity.IsNearlyZero() && !JumpNextFrame && FMath::Abs((FVector::VectorPlaneProject(MovementComponent->groundvelocity,FVector::UpVector) - FVector::VectorPlaneProject(previousgroundvelocity,FVector::UpVector)).Size()) > 200.0f) {
+		Velocity = MovementComponent->groundvelocity + FVector(0.0f, 0.0f, -100.0f);
+	}
+
+	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	Velocity -= MovementComponent->groundvelocity;
 
 	// Update timing values.
@@ -697,11 +703,14 @@ void AAuyron::Tick(float DeltaTime)
 		// Store current on the ground state into WasOnTheGround.
 		WasOnTheGround = OnTheGround;
 
+		previousgroundvelocity = MovementComponent->groundvelocity;
+
 		// Store current aiming state into wasaiming.
 		wasztarget = ztarget;
 
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
+
 	}
 
 	// Handle rotating the player model in response to player input.
@@ -770,6 +779,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAxis("MoveY", this, &AAuyron::MoveForward);
 	InputComponent->BindAxis("CameraPitch", this, &AAuyron::PitchCamera);
 	InputComponent->BindAxis("CameraYaw", this, &AAuyron::YawCamera);
+	InputComponent->BindAxis("ControllerCameraYaw", this, &AAuyron::ControllerYawCamera);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
 	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
@@ -802,6 +812,14 @@ void AAuyron::PitchCamera(float AxisValue)
 void AAuyron::YawCamera(float AxisValue)
 {
 	CameraInput.X = AxisValue;
+}
+
+void AAuyron::ControllerYawCamera(float AxisValue)
+{
+	if (ztarget) {
+		AxisValue *= -1;
+	}
+	CameraInput.X += AxisValue;
 }
 
 void AAuyron::Jump()

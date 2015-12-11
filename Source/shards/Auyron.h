@@ -40,6 +40,7 @@ public:
 	void MoveRight(float AxisValue);
 	void PitchCamera(float AxisValue);
 	void YawCamera(float AxisValue);
+	void ControllerYawCamera(float AxisValue);
 	void Jump();
 	void Unjump();
 	void Use();
@@ -225,6 +226,7 @@ private:
 	bool movementlocked;
 	bool cameralocked;
 	bool cameramode;
+	FVector previousgroundvelocity;
 	bool CameraOverrideLookAtPlayer;
 	bool CameraLockToPlayerXAxis;
 	bool CameraLockToPlayerYAxis;

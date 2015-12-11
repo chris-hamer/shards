@@ -44,4 +44,6 @@ public:
 	/* The platform's current velocity. */
 	FVector Velocity;
 	
+	bool HasVelocityFunction;
+
 };

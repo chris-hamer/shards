@@ -66,6 +66,7 @@ void AMovingPlatform::Tick( float DeltaTime )
 
 	// Switch the function used depending on the editor setting.
 	float (*f)(float, float) = &linear;
+	float (*v)(float, float) = &linear;
 	switch (MovementType) {
 	case LINEAR:
 		f = &linear;
@@ -82,9 +83,14 @@ void AMovingPlatform::Tick( float DeltaTime )
 	FVector NewPosition = FMath::Lerp(StartPosition->GetComponentLocation(), EndPosition->GetComponentLocation(), f(timer, CycleTime));
 	FVector OldPosition = Model->GetComponentLocation();
 
-	// Estimate the platform's veloicty using a numerical derivative of its movement function.
-	Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
-	
+	if (HasVelocityFunction) {
+		// Get the platform's velocity from a user-provided function.
+		Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), v(timer, CycleTime));
+	} else {
+		// Estimate the platform's veloicty using a numerical derivative of its movement function.
+		Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
+	}
+
 	FVector start = StartPosition->GetComponentLocation();
 	FVector end = EndPosition->GetComponentLocation();
 
