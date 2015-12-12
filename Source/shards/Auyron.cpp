@@ -20,7 +20,7 @@ AAuyron::AAuyron()
 	GroundAccelerationRate = 5500.0f;
 	AirAccelerationRate = 850.0f;
 	GroundDeceleration = 400.0;
-	AirDeceleration = 50.0f;
+	AirDeceleration = 25.0f;
 	MaxVelocity = 500.0f;
 	DashSpeed = 1500.0f;
 	DashDuration = 0.25f;
@@ -42,7 +42,7 @@ AAuyron::AAuyron()
 	GlideGravityMultiplier = 50.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
-	DefaultArmLength = 400.0f;
+	DefaultArmLength = 1000.0f;
 	CameraLag = 3.0f;
 	CameraRotationLag = 7.0f;
 	AimingLagMultiplier = 3.0f;
@@ -516,7 +516,7 @@ void AAuyron::Tick(float DeltaTime)
 			swish = false;
 		}
 
-		// Lock the player's movemeng inputs if they're dashing.
+		// Lock the player's movement inputs if they're dashing.
 		if (dashing) {
 			movementlocked = true;
 		}
@@ -545,8 +545,18 @@ void AAuyron::Tick(float DeltaTime)
 		FVector Acceleration = FVector::ZeroVector;
 		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? GroundAccelerationRate : AirAccelerationRate);
 
+		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
+		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
+		// quickly and immediately change directions.
+		if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
+			!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
+			(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
+			Acceleration += (MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime;
+		}
+
 		// Apply deceleration.
-		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector(0.0f, 0.0f, 1.0f)))*(OnTheGround ? GroundDeceleration : AirDeceleration)*DeltaTime;
+		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundDeceleration : AirDeceleration) * DeltaTime;
+		GEngine->AddOnScreenDebugMessage(-1, 15, FColor::Green, (FVector::VectorPlaneProject((MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime, FVector::UpVector)).ToString());
 
 		// Ask the movement component if we're on the ground and apply gravity if we aren't.
 		OnTheGround = MovementComponent->onground;
@@ -634,7 +644,6 @@ void AAuyron::Tick(float DeltaTime)
 				temp = Velocity;
 				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y), MovementComponent->wallnormal.GetSafeNormal())*MaxVelocity);
 				Velocity.Z = temp.Z;
-
 			}
 		}
 
@@ -862,7 +871,7 @@ void AAuyron::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AAuyron::CameraFaceForward()
 {
-	if (!dashing) {
+	if (!dashing&&!MovementAxisLocked) {
 		ztarget = true;
 	}
 }

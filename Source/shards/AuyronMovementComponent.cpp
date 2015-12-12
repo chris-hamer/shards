@@ -50,7 +50,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 		// It's a moving platform.
 		if (Floor.GetActor() != nullptr && Floor.GetActor()->GetClass() != nullptr && Floor.GetActor()->GetClass()->GetName() == "MovingPlatform") {
-			// Record the platform's velocity so the character controller can deal with it.
+			// Record the platform's velocity and acceleration so the character controller can deal with it.
 			groundvelocity = ((AMovingPlatform*)Floor.GetActor())->Velocity;
 
 			// If the platform is moving up, ignore the vertical part of its movement

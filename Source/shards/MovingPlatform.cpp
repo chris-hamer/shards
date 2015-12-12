@@ -50,6 +50,10 @@ float wave(float x, float ctime) {
 	return (-FMath::Cos(2 * 3.14159 * x / ctime) + 1.0f) / (2.0f);
 }
 
+float wavevelocity(float x, float ctime) {
+	return (3.14159 * FMath::Sin(2 * 3.14159 * x / ctime) / ctime);
+}
+
 // Defines linear motion where the platform's position changes linearly with time.
 float linear(float x, float ctime) {
 	return (2 * FMath::Abs(FMath::Fmod(x / ctime + 0.5f, 1.0f) - 0.5f));
@@ -91,7 +95,9 @@ void AMovingPlatform::Tick( float DeltaTime )
 		// Estimate the platform's veloicty using a numerical derivative of its movement function.
 		Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
 	}
-
+	if (MovementType == WAVE) {
+		GEngine->AddOnScreenDebugMessage(-1, 15, FColor::Blue, Velocity.ToString());
+	}
 	FVector start = StartPosition->GetComponentLocation();
 	FVector end = EndPosition->GetComponentLocation();
 
