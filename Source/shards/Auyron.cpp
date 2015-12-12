@@ -556,7 +556,6 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply deceleration.
 		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundDeceleration : AirDeceleration) * DeltaTime;
-		GEngine->AddOnScreenDebugMessage(-1, 15, FColor::Green, (FVector::VectorPlaneProject((MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime, FVector::UpVector)).ToString());
 
 		// Ask the movement component if we're on the ground and apply gravity if we aren't.
 		OnTheGround = MovementComponent->onground;

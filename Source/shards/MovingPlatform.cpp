@@ -95,9 +95,7 @@ void AMovingPlatform::Tick( float DeltaTime )
 		// Estimate the platform's veloicty using a numerical derivative of its movement function.
 		Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
 	}
-	if (MovementType == WAVE) {
-		GEngine->AddOnScreenDebugMessage(-1, 15, FColor::Blue, Velocity.ToString());
-	}
+
 	FVector start = StartPosition->GetComponentLocation();
 	FVector end = EndPosition->GetComponentLocation();
 
