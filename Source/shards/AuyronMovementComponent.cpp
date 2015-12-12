@@ -5,6 +5,7 @@
 #include "shards.h"
 #include "AuyronMovementComponent.h"
 #include "MovingPlatform.h"
+#include "RotatingPlatform.h"
 
 UAuyronMovementComponent::UAuyronMovementComponent()
 {
@@ -49,9 +50,23 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		offGroundTime = 0.0f;
 
 		// It's a moving platform.
-		if (Floor.GetActor() != nullptr && Floor.GetActor()->GetClass() != nullptr && Floor.GetActor()->GetClass()->GetName() == "MovingPlatform") {
+		if (Floor.GetActor() != nullptr && Floor.GetActor()->GetClass() != nullptr && (Floor.GetActor()->GetClass()->GetName() == "MovingPlatform" || Floor.GetActor()->GetClass()->GetName() == "RotatingPlatform")) {
 			// Record the platform's velocity and acceleration so the character controller can deal with it.
 			groundvelocity = ((AMovingPlatform*)Floor.GetActor())->Velocity;
+
+			// It's a ROTATING platform.
+			if (Floor.GetActor()->GetClass()->GetName() == "RotatingPlatform") {
+				// Add its rotational velocity, which we get my multiplying its magnitude (angular frequency
+				// times distance from center) by the unit vector in the angular direction (which we get by crossing
+				// the player's displacement from the center with the z axis), then make it negative if the platform
+				// is rotating clockwise.  
+				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)Floor.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
+				float angularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)Floor.GetActor())->AngularPeriod;
+				int8 spindir = (((ARotatingPlatform*)Floor.GetActor())->SpinDirection == ARotatingPlatform::CW ? -1 : 1);
+				groundvelocity += angularfrequency * displacement.Size() *
+								  FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *
+					              spindir;
+			}
 
 			// If the platform is moving up, ignore the vertical part of its movement
 			// since collision detection will push the character upwards anyway.

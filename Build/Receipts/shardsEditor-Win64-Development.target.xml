@@ -7,9 +7,9 @@
     <Property Name="Precompile" Value="False" />
   </Properties>
   <BuildProducts>
-    <BuildProduct Path="$(ProjectDir)\Binaries\Win64\UE4Editor-shards-3361.dll" Type="DynamicLibrary" />
-    <BuildProduct Path="$(ProjectDir)\Binaries\Win64\UE4Editor-shards-3361.pdb" Type="SymbolFile" />
-    <BuildProduct Path="$(ProjectDir)\Intermediate\Build\Win64\UE4Editor\Development\UE4Editor-shards-3361.lib" Type="ImportLibrary" />
+    <BuildProduct Path="$(ProjectDir)\Binaries\Win64\UE4Editor-shards-3378.dll" Type="DynamicLibrary" />
+    <BuildProduct Path="$(ProjectDir)\Binaries\Win64\UE4Editor-shards-3378.pdb" Type="SymbolFile" />
+    <BuildProduct Path="$(ProjectDir)\Intermediate\Build\Win64\UE4Editor\Development\UE4Editor-shards-3378.lib" Type="ImportLibrary" />
   </BuildProducts>
   <RuntimeDependencies />
   <AdditionalProperties />
