@@ -34,6 +34,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	// Assume you're not on a moving platform.
 	groundvelocity = FVector::ZeroVector;
 	groundverticalvelocity = 0.0f;
+	platformangularfrequency = 0.0f;
 
 	// If we're not on a standable slope then we are not on the ground.
 	if (Floor.Normal.Z <= FMath::Sin((maxslope))) {
@@ -61,9 +62,9 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 				// the player's displacement from the center with the z axis), then make it negative if the platform
 				// is rotating clockwise.  
 				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)Floor.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
-				float angularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)Floor.GetActor())->AngularPeriod;
+				platformangularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)Floor.GetActor())->AngularPeriod;
 				int8 spindir = (((ARotatingPlatform*)Floor.GetActor())->SpinDirection == ARotatingPlatform::CW ? -1 : 1);
-				groundvelocity += angularfrequency * displacement.Size() *
+				groundvelocity += platformangularfrequency * displacement.Size() *
 								  FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *
 					              spindir;
 			}

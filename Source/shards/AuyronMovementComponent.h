@@ -41,6 +41,9 @@ public:
 	// detection, but its value is still useful.
 	float groundverticalvelocity;
 
+	// Angular frequency of the rotating platform that the player is standing on.
+	float platformangularfrequency;
+
 	FVector wallnormal;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
