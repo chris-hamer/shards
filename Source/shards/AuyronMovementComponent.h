@@ -44,6 +44,9 @@ public:
 	// Angular frequency of the rotating platform that the player is standing on.
 	float platformangularfrequency;
 
+	// Is 1 if the platform is spinning clockwise, and -1 if it isn't.
+	int8 platformspindir;
+
 	FVector wallnormal;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;

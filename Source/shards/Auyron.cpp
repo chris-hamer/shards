@@ -734,8 +734,11 @@ void AAuyron::Tick(float DeltaTime)
 	{
 
 		// If the player is standing on a moving platform, they should rotate along with it.
-		PlayerModel->AddLocalRotation(FQuat(FVector::UpVector, MovementComponent->platformangularfrequency * DeltaTime));
-		TargetDirection.Yaw += FQuat(FVector::UpVector, MovementComponent->platformangularfrequency * DeltaTime).Rotator().Yaw;
+		if (MovementComponent->platformangularfrequency != 0.0f) {
+			FQuat platformrotation = FQuat(FVector::UpVector, -MovementComponent->platformspindir * MovementComponent->platformangularfrequency * DeltaTime);
+			PlayerModel->AddLocalRotation(platformrotation);
+			TargetDirection.Yaw += platformrotation.Rotator().Yaw;
+		}
 
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
