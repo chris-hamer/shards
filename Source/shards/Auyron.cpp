@@ -68,6 +68,9 @@ AAuyron::AAuyron()
 	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
+	CapsuleComponent->SetSimulatePhysics(true);
+	CapsuleComponent->SetEnableGravity(false);
+	CapsuleComponent->SetLinearDamping(10.0f);
 	CapsuleComponent->AttachTo(RootComponent);
 	SetActorEnableCollision(true);
 
@@ -493,10 +496,22 @@ void AAuyron::Tick(float DeltaTime)
 				// Teleport the player to the TelePad if they're trying to teleport
 				// and impart the post teleport velocity on them.
 				if (swish) {
-					SetActorLocation(s->gohere);
-					Velocity = s->PostTeleportVelocity;
+					itshappening = true;
+					warptimer = 0.0f;
+					thisguy = s;
+				}
+			}
+
+			if (warptimer > 0.0f) {
+				warptimer = -1.0f;
+				if (thisguy != nullptr) {
+					SetActorLocation(thisguy->gohere);
+					Velocity = thisguy->PostTeleportVelocity;
 					ztarget = false;
-					SpringArm->CameraLagSpeed = CameraLag;
+
+					if (ztarget) {
+						SpringArm->CameraLagSpeed = 0.0f;
+					}
 
 					// If we were aiming, reset the camera's rotation.
 					if (wasztarget) {
@@ -671,6 +686,10 @@ void AAuyron::Tick(float DeltaTime)
 			IsGliding = false;
 		}
 
+		if (warptimer >= 0.0f) {
+			warptimer += DeltaTime;
+		}
+
 		// Apply a downward force if the player lets go of jump while still moving upwards.
 		// This allows for variable jump heights.
 		if (!HoldingJump && Velocity.Z > 0) {
@@ -800,6 +819,8 @@ void AAuyron::Tick(float DeltaTime)
 void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	Super::SetupPlayerInputComponent(InputComponent);
+	InputComponent->bBlockInput = true;
+	InputComponent->Priority = 1000;
 	InputComponent->BindAxis("MoveX", this, &AAuyron::MoveRight);
 	InputComponent->BindAxis("MoveY", this, &AAuyron::MoveForward);
 	InputComponent->BindAxis("CameraPitch", this, &AAuyron::PitchCamera);
@@ -899,6 +920,12 @@ void AAuyron::CameraModeToggle()
 void AAuyron::Warp()
 {
 	swish = true;
+	//itshappening = true;
+}
+
+void AAuyron::ActualWarp()
+{
+	swish = true;
 }
 
 void AAuyron::ToggleHelp() {
@@ -962,4 +989,10 @@ uint8 AAuyron::GetGemAmount()
 
 FVector AAuyron::GetPlayerLocation() {
 	return GetActorLocation();
+}
+
+bool AAuyron::AboutToWarp() {
+	bool isitreally = itshappening;
+	itshappening = false;
+	return isitreally;
 }

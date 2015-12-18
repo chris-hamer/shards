@@ -10,6 +10,7 @@
 #include "Runtime/UMG/Public/Slate/SObjectWidget.h"
 #include "Runtime/UMG/Public/IUMGModule.h"
 #include "TeleClaw.h"
+#include "Stick.h"
 #include "TwoDimensionalMovementRegion.h"
 #include "Checkpoint.h"
 #include "Auyron.generated.h"
@@ -49,6 +50,7 @@ public:
 	void CameraUnFaceForward();
 	void CameraModeToggle();
 	void Warp();
+	void ActualWarp();
 	void Dash();
 	void UnDash();
 	void Respawn();
@@ -76,6 +78,8 @@ public:
 	bool GetHelpEnabled();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	uint8 GetGemAmount();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool AboutToWarp();
 
 	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
 	//int GetGemCount();
@@ -214,6 +218,9 @@ private:
 	bool IsGliding;
 	bool AlreadyGlided;
 	float GlideTimer;
+	float warptimer;
+
+	AStick* thisguy;
 
 	uint8 jumpsLeft;
 	bool justDoubleJumped;
@@ -225,6 +232,7 @@ private:
 	bool wasztarget;
 	bool movementlocked;
 	bool cameralocked;
+	bool itshappening;
 	bool cameramode;
 	FVector previousgroundvelocity;
 	bool CameraOverrideLookAtPlayer;
