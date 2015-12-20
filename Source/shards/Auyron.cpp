@@ -38,6 +38,7 @@ AAuyron::AAuyron()
 	GlideDuration = 2.0f;
 	InitialGlideVelocity = 100.0f;
 	GlideGravityMultiplier = 50.0f;
+	SlamVelocity = 1000.0f;
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 1000.0f;
@@ -47,7 +48,7 @@ AAuyron::AAuyron()
 	CameraAutoTurnFactor = 1.0f;
 	CameraResetTime = 1.0f;
 
-	HelpEnabled = true;
+	HelpEnabled = false;
 
 	// Just in case.
 	TargetDirection = FRotator::ZeroRotator;
@@ -86,6 +87,7 @@ AAuyron::AAuyron()
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraLagSpeed = CameraLag;
 	SpringArm->CameraRotationLagSpeed = 0.0f;
+	SpringArm->CameraLagMaxDistance = 1000.0f;
 	SpringArm->AttachTo(CapsuleComponent);
 
 	// Camera so the casuals can "see what they're doing" or whatever.
@@ -104,6 +106,12 @@ AAuyron::AAuyron()
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	FloatParticles->AttachTo(PlayerModel);
 
+	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Particles/SlamParticles"));
+	SlamParticles->SetTemplate(sp.Object);
+	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	SlamParticles->AttachTo(PlayerModel);
+
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesL->SetTemplate(tpl.Object);
@@ -115,6 +123,11 @@ AAuyron::AAuyron()
 	TrailParticlesR->SetTemplate(tpr.Object);
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesR->AttachTo(PlayerModel);
+
+	// Get the instance of the TeleClaw weapon.
+	TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> tc(TEXT("/Game/Models/Weapons/TeleClaw"));
+	TeleClaw->SetStaticMesh(tc.Object);
 
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -245,24 +258,16 @@ void AAuyron::BeginPlay()
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
 
-	// Get the instance of the TeleClaw weapon.
-	ATeleClaw* tc = NULL;
-	for (TActorIterator<ATeleClaw> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-		tc = *ActorItr;
-	}
-
-	// If we find it, attach it to the player's right hand socket.
-	if (tc != nullptr) {
-		// FIRMLY GRASP IT IN YOUR HAND.
-		PlayerModel->GetSocketByName("RightHand")->AttachActor(tc, PlayerModel);
-		tc->TeleClaw->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-		tc->TeleClaw->AddRelativeLocation(FVector(0.0f, 0.5f, 0.0f));
-	}
+	TeleClaw->AttachTo(PlayerModel, "RightHand", EAttachLocation::SnapToTargetIncludingScale);
 
 	// Start with the particles off.
+	DashParticles->bAutoActivate = false;
 	DashParticles->DeactivateSystem();
+	FloatParticles->bAutoActivate = false;
 	FloatParticles->DeactivateSystem();
-
+	SlamParticles->bAutoActivate = false;
+	SlamParticles->DeactivateSystem();
+	
 	if (asd) {
 		// Create the widget and store it.
 		thehud = CreateWidget<UUserWidget>(GetWorld(), asd);
@@ -353,7 +358,6 @@ void AAuyron::Tick(float DeltaTime)
 					(CameraLockToPlayerXAxis ? GetActorLocation().X : CameraOverrideTargetDisplacement.X),
 					(CameraLockToPlayerYAxis ? GetActorLocation().Y : CameraOverrideTargetDisplacement.Y),
 					(CameraLockToPlayerZAxis ? GetActorLocation().Z : CameraOverrideTargetDisplacement.Z)));
-				//SpringArm->TargetArmLength = FVector::Dist(SpringArm->GetComponentLocation(), GetActorLocation());
 			}
 
 			// Face the camera towards the player if the region specifies to do so.
@@ -505,37 +509,32 @@ void AAuyron::Tick(float DeltaTime)
 				// Teleport the player to the TelePad if they're trying to teleport
 				// and impart the post teleport velocity on them.
 				if (swish) {
-					itshappening = true;
-					warptimer = 0.0f;
-					thisguy = s;
-				}
-			}
+					if (s != nullptr) {
+						// Move the player to the telepad's position and give them the perscribed velocity.
+						SetActorLocation(s->gohere);
+						Velocity = s->PostTeleportVelocity;
+						ztarget = false;
 
-			if (warptimer > 0.0f) {
-				warptimer = -1.0f;
-				if (thisguy != nullptr) {
-					SetActorLocation(thisguy->gohere);
-					Velocity = thisguy->PostTeleportVelocity;
-					ztarget = false;
+						// Tell the animation blueprint that we're about to teleport.
+						itshappening = true;
 
-					if (ztarget) {
-						SpringArm->CameraLagSpeed = 0.0f;
-					}
+						// If we were aiming, reset the camera's rotation.
+						if (wasztarget) {
+							SpringArm->CameraLagSpeed = 0.0f;
+							SpringArm->SetRelativeRotation(FRotator(-45.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+						}
 
-					// If we were aiming, reset the camera's rotation.
-					if (wasztarget) {
-						SpringArm->SetRelativeRotation(FRotator(-45.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
-					}
-
-					OnTheGround = false;
-					WasOnTheGround = false;
-					if (IsGliding) {
-						AlreadyGlided = true;
-						IsGliding = false;
+						// Reset OnTheGround and glide variables.
+						OnTheGround = false;
+						WasOnTheGround = false;
+						dunk = false;
+						if (IsGliding) {
+							AlreadyGlided = true;
+							IsGliding = false;
+						}
 					}
 				}
 			}
-
 			// Reset the "player wants to teleport" variable.
 			swish = false;
 		}
@@ -556,7 +555,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
-		// The directions of "Right" and "Forward" depend on the direction the camera's facing.
+		// The directions of "Right" and "Forward" depend on the direction that the camera's facing.
 		FVector Right = Camera->GetRightVector();
 		Right.Z = 0.0f;
 		Right = Right.GetSafeNormal();
@@ -582,7 +581,8 @@ void AAuyron::Tick(float DeltaTime)
 		// and increases it when they are going slow. This makes decelerating feel much smoother.
 		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / MaxVelocity), FMath::Square(Velocity.Size() / MaxVelocity), Velocity.Size() / MaxVelocity), 0.0f, 1.0f);
 
-		// Apply deceleration.
+		// Apply a deceleration that scales with the player's velocity
+		// in such a waythat it limits it to MaxVelocity.
 		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundAccelerationRate / MaxVelocity : AirAccelerationRate / MaxVelocity) * slowfactor;
 
 		// Ask the movement component if we're on the ground and apply gravity if we aren't.
@@ -629,13 +629,6 @@ void AAuyron::Tick(float DeltaTime)
 		// Physiiiiicccss.
 		Velocity += Acceleration * DeltaTime;
 
-		// Only cap the horizontal movement velocity.
-		FVector temp;
-		temp = Velocity;
-		Velocity.Z = 0.0f;
-		//Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
-		Velocity.Z = temp.Z;
-
 		// Handle jumping.
 		if (JumpNextFrame) {
 
@@ -662,24 +655,22 @@ void AAuyron::Tick(float DeltaTime)
 				PlayerModel->SetWorldRotation(newmodelrotation);
 				TargetDirection = newmodelrotation;
 
-				if (IsGliding) {
+				// No cheating.
+				if (IsGliding||AlreadyGlided) {
 					AlreadyGlided = true;
 					IsGliding = false;
 				}
 
 				// Set player velocity to be away from the wall.
-				temp = Velocity;
+				FVector temp = Velocity;
 				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y), MovementComponent->wallnormal.GetSafeNormal())*MaxVelocity);
 				Velocity.Z = temp.Z;
 				JustWallJumped = true;
 			}
 		}
 
-		if (OnTheGround) {
-			AlreadyGlided = false;
-		}
-
-		if (GlideNextFrame&&!AlreadyGlided) {
+		// Start gliding.
+		if (GlideNextFrame&&!AlreadyGlided&&!dunk) {
 			Velocity.Z = InitialGlideVelocity;
 			IsGliding = true;
 			AlreadyGlided = true;
@@ -687,6 +678,7 @@ void AAuyron::Tick(float DeltaTime)
 			FloatParticles->ActivateSystem();
 		}
 
+		// Handle gliding.
 		if (IsGliding) {
 			GlideTimer += DeltaTime;
 			Gravity = DefaultGravity / GlideGravityMultiplier;
@@ -696,8 +688,13 @@ void AAuyron::Tick(float DeltaTime)
 			Gravity = DefaultGravity;
 		}
 
+		// Stop gliding.
 		if (GlideTimer > GlideDuration || OnTheGround || !HoldingJump) {
 			IsGliding = false;
+		}
+
+		if (OnTheGround) {
+			AlreadyGlided = false;
 		}
 
 		if (warptimer >= 0.0f) {
@@ -738,6 +735,21 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
+		// COME ON AND SLAM
+		if (SlamNextFrame) {
+			SlamNextFrame = false;
+			if (!OnTheGround) {
+				Velocity -= SlamVelocity * FVector::UpVector;
+				dunk = true;
+			}
+		}
+
+		// AND WELCOME TO THE JAM
+		if (dunk && OnTheGround) {
+			dunk = false;
+			SlamParticles->ActivateSystem();
+		}
+
 		// How the hell did you end up down there?
 		if (GetActorLocation().Z < -2000.0f) {
 			SpringArm->bEnableCameraLag = false;
@@ -753,6 +765,7 @@ void AAuyron::Tick(float DeltaTime)
 		// Store current on the ground state into WasOnTheGround.
 		WasOnTheGround = OnTheGround;
 
+		// Store current velocity into previousgroundvelocity.
 		previousgroundvelocity = MovementComponent->groundvelocity;
 
 		// Store current aiming state into wasaiming.
@@ -848,6 +861,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("CameraFaceForward", IE_Released, this, &AAuyron::CameraUnFaceForward);
 	InputComponent->BindAction("CameraMode", IE_Pressed, this, &AAuyron::CameraModeToggle);
 	InputComponent->BindAction("Warp", IE_Pressed, this, &AAuyron::Warp);
+	InputComponent->BindAction("Slam", IE_Pressed, this, &AAuyron::Slam);
 	InputComponent->BindAction("Dash", IE_Pressed, this, &AAuyron::Dash);
 	InputComponent->BindAction("Dash", IE_Released, this, &AAuyron::UnDash);
 }
@@ -934,14 +948,14 @@ void AAuyron::CameraModeToggle()
 void AAuyron::Warp()
 {
 	swish = true;
-	//itshappening = true;
 }
 
-void AAuyron::ActualWarp()
+void AAuyron::Slam()
 {
-	swish = true;
+	SlamNextFrame = true;
 }
 
+// I DON'T NEED YOUR HELP
 void AAuyron::ToggleHelp() {
 	HelpEnabled = !HelpEnabled;
 }
@@ -967,10 +981,6 @@ float AAuyron::GetSpeed()
 {
 	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
-
-//int AAuyron::GetGemCount() {
-//	return GemCount;
-//}
 
 bool AAuyron::GetIsTurning() 
 {

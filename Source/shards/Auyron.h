@@ -50,7 +50,7 @@ public:
 	void CameraUnFaceForward();
 	void CameraModeToggle();
 	void Warp();
-	void ActualWarp();
+	void Slam();
 	void Dash();
 	void UnDash();
 	void Respawn();
@@ -86,9 +86,6 @@ public:
 	bool GetJustWallJumped();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool AboutToWarp();
-
-	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
-	//int GetGemCount();
 	
 	FVector MovementInput;
 	FVector CameraInput;
@@ -97,15 +94,16 @@ public:
 	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
-	UPROPERTY(EditAnywhere)	ATeleClaw* TeleClaw;
+	UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* FloatParticles;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* SlamParticles;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesL;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesR;
 	UPROPERTY(EditAnywhere) UUserWidget* thehud;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-		TSubclassOf<class UUserWidget> asd;
+	TSubclassOf<class UUserWidget> asd;
 
 	/* Rate that the player should accelerate while on the ground. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float GroundAccelerationRate;
@@ -164,6 +162,9 @@ public:
 	/* Factor that the gravity should be multiplied by when gliding. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideGravityMultiplier;
 
+	/* Downward velocity at which the player uses slam. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") float SlamVelocity;
+
 	/* The maximum range of your teleporter when aiming. */
 	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRangeWhenAiming;
 
@@ -215,6 +216,8 @@ private:
 	bool HoldingJump;
 	bool JustJumped;
 	bool JustWallJumped;
+	bool SlamNextFrame;
+	bool JustSlammed;
 	bool OnTheGround;
 	bool HelpEnabled;
 
@@ -239,6 +242,7 @@ private:
 	bool movementlocked;
 	bool cameralocked;
 	bool itshappening;
+	bool dunk;
 	bool cameramode;
 	FVector previousgroundvelocity;
 	bool CameraOverrideLookAtPlayer;
