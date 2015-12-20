@@ -30,7 +30,6 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual float nderiv(float x, float ctime, float(*f)(float, float), float c = 0.01);
 
-	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) USceneComponent* StartPosition;
 	UPROPERTY(EditAnywhere) USceneComponent* EndPosition;
 	UPROPERTY(EditAnywhere) UStaticMeshComponent* Model;

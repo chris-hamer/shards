@@ -13,22 +13,18 @@ AMovingPlatform::AMovingPlatform()
 	CycleTime = 6.0f;
 	MovementType = LINEAR;
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	Root->AttachTo(RootComponent);
-
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/platform"));
 	Model->SetStaticMesh(MeshObj.Object);
 	Model->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	RootComponent = Root;
-	Model->AttachTo(Root);
+	RootComponent = Model;
 
 	StartPosition = CreateDefaultSubobject<USceneComponent>(TEXT("Start Position"));
-	StartPosition->AttachTo(Root);
+	StartPosition->AttachTo(RootComponent);
 	StartPosition->SetRelativeLocation(FVector::ZeroVector);
 
 	EndPosition = CreateDefaultSubobject<USceneComponent>(TEXT("End Position"));
-	EndPosition->AttachTo(Root);
+	EndPosition->AttachTo(RootComponent);
 	EndPosition->SetRelativeLocation(FVector::ZeroVector);
 
 }

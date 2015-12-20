@@ -8,7 +8,7 @@ ARotatingPlatform::ARotatingPlatform() {
 	AngularPeriod = 4;
 
 	Center = CreateDefaultSubobject<USceneComponent>(TEXT("Center"));
-	Center->AttachTo(Root);
+	Center->AttachTo(RootComponent);
 }
 
 void ARotatingPlatform::Tick(float DeltaTime)

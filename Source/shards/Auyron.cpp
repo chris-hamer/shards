@@ -18,9 +18,7 @@ AAuyron::AAuyron()
 {	
 	// These should work.
 	GroundAccelerationRate = 5500.0f;
-	AirAccelerationRate = 850.0f;
-	GroundDeceleration = 400.0;
-	AirDeceleration = 25.0f;
+	AirAccelerationRate = 500.0f;
 	MaxVelocity = 500.0f;
 	DashSpeed = 1500.0f;
 	DashDuration = 0.25f;
@@ -105,6 +103,18 @@ AAuyron::AAuyron()
 	FloatParticles->SetTemplate(fp.Object);
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	FloatParticles->AttachTo(PlayerModel);
+
+	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
+	TrailParticlesL->SetTemplate(tpl.Object);
+	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	TrailParticlesL->AttachTo(PlayerModel);
+
+	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
+	TrailParticlesR->SetTemplate(tpr.Object);
+	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	TrailParticlesR->AttachTo(PlayerModel);
 
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -286,6 +296,7 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Reset temporary booleans.
 	JustJumped = false;
+	JustWallJumped = false;
 	SpringArm->bEnableCameraLag = true;
 	bool cameralocktemp = cameralocked;
 
@@ -390,7 +401,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
 			FVector Right = FVector::VectorPlaneProject(CapsuleComponent->GetComponentRotation().RotateVector(Camera->GetRightVector()), FVector::UpVector);
-			FVector Forward = FVector::VectorPlaneProject((-(CapsuleComponent->GetComponentRotation())).RotateVector(Camera->GetForwardVector()), FVector::UpVector);
+			FVector Forward = FVector::VectorPlaneProject((CapsuleComponent->GetComponentRotation() * -1.0f).RotateVector(Camera->GetForwardVector()), FVector::UpVector);
 
 			// Offset the spring arm (and therefore the camera) a bit so the player model
 			// isn't blocking the screen when we're trying to aim.
@@ -458,21 +469,19 @@ void AAuyron::Tick(float DeltaTime)
 
 					// Set trace parameters. I have no idea what these do but the raycast doesn't work
 					// if I don't put these here.
-					FCollisionQueryParams TraceParams(FName(TEXT("Trace")), true, *ActorItr);
-					TraceParams.bTraceComplex = true;
+					FHitResult f;
+					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
+					FCollisionQueryParams asdf = FCollisionQueryParams(ECC_WorldStatic);
 
 					// Don't want the ray to collide with the player model now do we?
-					TraceParams.AddIgnoredActor(*ActorItr);
-					TraceParams.AddIgnoredActor(this);
-					FHitResult f;
-					FCollisionObjectQueryParams asdf = FCollisionObjectQueryParams(ECC_WorldStatic);
+					asdf.AddIgnoredActor(this);
 
 					// Figure out if the ray is blocked by an object.
-					bool blocked = GetWorld()->LineTraceSingle(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
-					
-					// If it's not blocked and it's closer to where we're aiming at than
-					// any other TelePad, set it as the "closest" one.
-					if (dot > biggestdot && !blocked && displacement.Size() < TeleportRange) {
+					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
+
+					// If the trace hit a telepad and it's closer to where we're aiming
+					// at than any other TelePad, set it as the "closest" one.
+					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->GetClass()->GetName() == "Stick" && dot > biggestdot && blocked && displacement.Size() < TeleportRange) {
 						closest = *ActorItr;
 						biggestdot = dot;
 					}
@@ -556,7 +565,7 @@ void AAuyron::Tick(float DeltaTime)
 		Forward = Forward.GetSafeNormal();
 
 		// Set up acceleration vector using the movement inputs.
-		FVector AdjustedInput = MovementInput.ClampSize(0.0, 1.0);
+		FVector AdjustedInput = MovementInput.GetClampedToSize(0.0f, 1.0f);
 		FVector Acceleration = FVector::ZeroVector;
 		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? GroundAccelerationRate : AirAccelerationRate);
 
@@ -569,8 +578,12 @@ void AAuyron::Tick(float DeltaTime)
 			Acceleration += (MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime;
 		}
 
+		// Decreases the effect of deceleration when the player is moving near max speed
+		// and increases it when they are going slow. This makes decelerating feel much smoother.
+		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / MaxVelocity), FMath::Square(Velocity.Size() / MaxVelocity), Velocity.Size() / MaxVelocity), 0.0f, 1.0f);
+
 		// Apply deceleration.
-		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundDeceleration : AirDeceleration) * DeltaTime;
+		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundAccelerationRate / MaxVelocity : AirAccelerationRate / MaxVelocity) * slowfactor;
 
 		// Ask the movement component if we're on the ground and apply gravity if we aren't.
 		OnTheGround = MovementComponent->onground;
@@ -620,7 +633,7 @@ void AAuyron::Tick(float DeltaTime)
 		FVector temp;
 		temp = Velocity;
 		Velocity.Z = 0.0f;
-		Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
+		//Velocity = Velocity.GetClampedToMaxSize(MaxVelocity);
 		Velocity.Z = temp.Z;
 
 		// Handle jumping.
@@ -634,7 +647,7 @@ void AAuyron::Tick(float DeltaTime)
 			JustJumped = true;
 
 			// This ain't Megaman X, kiddo.
-			if (dashing) {
+			if (dashing&&!CanDashJump) {
 				DashParticles->DeactivateSystem();
 				dashing = false;
 				dashtimer = 0.0f;
@@ -658,6 +671,7 @@ void AAuyron::Tick(float DeltaTime)
 				temp = Velocity;
 				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y), MovementComponent->wallnormal.GetSafeNormal())*MaxVelocity);
 				Velocity.Z = temp.Z;
+				JustWallJumped = true;
 			}
 		}
 
@@ -995,4 +1009,17 @@ bool AAuyron::AboutToWarp() {
 	bool isitreally = itshappening;
 	itshappening = false;
 	return isitreally;
+}
+
+UParticleSystemComponent* AAuyron::GetTrailParticlesL() {
+	return TrailParticlesL;
+}
+
+UParticleSystemComponent* AAuyron::GetTrailParticlesR() {
+	return TrailParticlesR;
+}
+
+bool AAuyron::GetJustWallJumped()
+{
+	return JustWallJumped;
 }

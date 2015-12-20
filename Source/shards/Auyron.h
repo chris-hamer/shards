@@ -79,6 +79,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	uint8 GetGemAmount();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	UParticleSystemComponent* GetTrailParticlesL();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	UParticleSystemComponent* GetTrailParticlesR();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetJustWallJumped();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool AboutToWarp();
 
 	//UFUNCTION(BlueprintCallable, Category = "GO FUCK YOURSELF")
@@ -95,6 +101,8 @@ public:
 	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* FloatParticles;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesL;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesR;
 	UPROPERTY(EditAnywhere) UUserWidget* thehud;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 		TSubclassOf<class UUserWidget> asd;
@@ -105,12 +113,6 @@ public:
 	/* Rate that the player should accelerate while in the air. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float AirAccelerationRate;
 
-	/* Rate that the player should decelerate while on the ground. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float GroundDeceleration;
-
-	/* Rate that the player should decelerate while in the air. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float AirDeceleration;
-
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float MaxVelocity;
 
@@ -119,6 +121,9 @@ public:
 
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float DashDuration;
+
+	/* Whether or not the player maintains their dash velocity when jumping. */
+	UPROPERTY(EditAnywhere, Category = "Movement") bool CanDashJump;
 
 	/* The maximum slope angle in degrees that the player can walk on. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float MaxSlope;
@@ -209,6 +214,7 @@ private:
 	bool JumpNextFrame;
 	bool HoldingJump;
 	bool JustJumped;
+	bool JustWallJumped;
 	bool OnTheGround;
 	bool HelpEnabled;
 
