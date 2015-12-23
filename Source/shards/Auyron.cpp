@@ -12,6 +12,7 @@
 #include "MusicRegion.h"
 #include "TwoDimensionalMovementRegion.h"
 #include "WarpCrystal.h"
+#include "Switch.h"
 
 // Sets default values
 AAuyron::AAuyron()
@@ -475,7 +476,8 @@ void AAuyron::Tick(float DeltaTime)
 					// if I don't put these here.
 					FHitResult f;
 					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
-					FCollisionQueryParams asdf = FCollisionQueryParams(ECC_WorldStatic);
+					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+					FCollisionQueryParams asdf = FCollisionQueryParams();
 
 					// Don't want the ray to collide with the player model now do we?
 					asdf.AddIgnoredActor(this);
@@ -537,6 +539,52 @@ void AAuyron::Tick(float DeltaTime)
 			}
 			// Reset the "player wants to teleport" variable.
 			swish = false;
+
+			ASwitch* closestswitch = NULL;
+			biggestdot = 0.0f;
+
+			for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				if (ActorItr->GetClass()->GetName() == "Switch") {
+
+					// Get displacement vector from the player/camera to the TelePad.
+					FVector displacement = ActorItr->GetActorLocation() - source;
+
+					// Get the dot product between the displacement and the source.
+					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+					// Set trace parameters. I have no idea what these do but the raycast doesn't work
+					// if I don't put these here.
+					FHitResult f;
+					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
+					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+					FCollisionQueryParams asdf = FCollisionQueryParams();
+
+					// Don't want the ray to collide with the player model now do we?
+					asdf.AddIgnoredActor(this);
+
+					// Figure out if the ray is blocked by an object.
+					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
+
+					// If the trace hit a telepad and it's closer to where we're aiming
+					// at than any other TelePad, set it as the "closest" one.
+					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->GetClass()->GetName() == "Switch" && dot > biggestdot && blocked && displacement.Size() < TeleportRange) {
+						closestswitch = *ActorItr;
+						biggestdot = dot;
+					}
+				}
+
+				// Set the color of the "closest" TelePad as long as it's in range
+				// and within a certain angle tolerance and teleport he player to it
+				// if they are trying to teleport.
+				if (closestswitch != nullptr &&
+					FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+					(closestswitch->GetActorLocation() - GetActorLocation()).Size() < closestswitch->MaxDistance) {
+					if (ShouldActivate) {
+						closestswitch->Activate();
+						ShouldActivate = false;
+					}
+				}
+			}
 		}
 
 		// Lock the player's movement inputs if they're dashing.
@@ -748,6 +796,10 @@ void AAuyron::Tick(float DeltaTime)
 		if (dunk && OnTheGround) {
 			dunk = false;
 			SlamParticles->ActivateSystem();
+		}
+
+		if (ShouldActivate) {
+			ShouldActivate = false;
 		}
 
 		// How the hell did you end up down there?

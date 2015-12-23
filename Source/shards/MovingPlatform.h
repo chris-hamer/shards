@@ -30,9 +30,19 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual float nderiv(float x, float ctime, float(*f)(float, float), float c = 0.01);
 
+	UFUNCTION(BlueprintCallable, Category = "Moving Platform Interface") void Deactivate();
+	UFUNCTION(BlueprintCallable, Category = "Moving Platform Interface") void Activate();
+
 	UPROPERTY(EditAnywhere) USceneComponent* StartPosition;
 	UPROPERTY(EditAnywhere) USceneComponent* EndPosition;
 	UPROPERTY(EditAnywhere) UStaticMeshComponent* Model;
+
+	/* Whether or not this platform's movement sould be controlled exclusively by external mechnisms (such as blueprints).
+	Using one of the MovingPlatform class's default movement patterns yields greater accuracy. */
+	UPROPERTY(EditAnywhere, Category = "Movement") bool OverrideMovement;
+
+	/* Stops the platform from moving if true. Can be used for platforms that can be activated/deactivated. */
+	UPROPERTY(EditAnywhere, Category = "Movement") bool Deactivated;
 
 	/* Time in seconds it takes to complete one cycle. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float CycleTime;
@@ -44,5 +54,7 @@ public:
 	FVector Velocity;
 	
 	bool HasVelocityFunction;
+	FVector PreviousLocation;
+	FVector PreviousVelocity;
 
 };

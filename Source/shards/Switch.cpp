@@ -3,6 +3,7 @@
 #include "shards.h"
 #include "Auyron.h"
 #include "Switch.h"
+#include "ShardsMatineeActor.h"
 
 
 // Sets default values
@@ -27,24 +28,22 @@ void ASwitch::BeginPlay()
 void ASwitch::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
+}
 
-	for (TActorIterator<AAuyron> findPlayer(GetWorld()); findPlayer; ++findPlayer)
-	{
-		playerLoc = findPlayer->GetActorLocation();
-		activate = findPlayer->ShouldActivate;
-
-		// TODO: Probably some raycasting shit to make sure people can't press buttons through walls
-		if (playerNearby && activate)
-		{
-			// This is the part where stuff is supposed to happen
-
-			UE_LOG(LogTemp, Warning, TEXT("Pressed thing"));
-		}
-
-		findPlayer->ShouldActivate = false;
-		playerNearby = FVector::DistSquared(playerLoc, GetActorLocation()) < 11000.0f;
-
-		break;
+void ASwitch::Activate()
+{
+	if (!State) {
+		State = true;
+		FOutputDeviceNull ar;
+		SwitchEffect->CallFunctionByNameWithArguments(TEXT("Activate"), ar, NULL, true);
 	}
 }
 
+void ASwitch::Deactivate()
+{
+	if (State && Toggleable) {
+		State = false;
+		FOutputDeviceNull ar;
+		SwitchEffect->CallFunctionByNameWithArguments(TEXT("Deactivate"), ar, NULL, true);
+	}
+}

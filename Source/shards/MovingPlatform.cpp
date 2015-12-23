@@ -66,39 +66,53 @@ void AMovingPlatform::Tick( float DeltaTime )
 {
 	Super::Tick(DeltaTime);
 
-	// Switch the function used depending on the editor setting.
-	float (*f)(float, float) = &linear;
-	float (*v)(float, float) = &linear;
-	switch (MovementType) {
-	case LINEAR:
-		f = &linear;
-		break;
-	case WAVE:
-		f = &wave;
-		break;
-	case BLINK:
-		f = &blink;
-	}
+	if (!OverrideMovement) {
+		if (!Deactivated) {
+			// Switch the function used depending on the editor setting.
+			float(*f)(float, float) = &linear;
+			float(*v)(float, float) = &linear;
+			switch (MovementType) {
+			case LINEAR:
+				f = &linear;
+				break;
+			case WAVE:
+				f = &wave;
+				break;
+			case BLINK:
+				f = &blink;
+			}
 
-	// Increment the timer and find the platform's new position.
-	timer += DeltaTime;
-	FVector NewPosition = FMath::Lerp(StartPosition->GetComponentLocation(), EndPosition->GetComponentLocation(), f(timer, CycleTime));
-	FVector OldPosition = Model->GetComponentLocation();
+			// Increment the timer and find the platform's new position.
+			timer += DeltaTime;
+			FVector NewPosition = FMath::Lerp(StartPosition->GetComponentLocation(), EndPosition->GetComponentLocation(), f(timer, CycleTime));
+			FVector OldPosition = Model->GetComponentLocation();
 
-	if (HasVelocityFunction) {
-		// Get the platform's velocity from a user-provided function.
-		Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), v(timer, CycleTime));
+			if (HasVelocityFunction) {
+				// Get the platform's velocity from a user-provided function.
+				Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), v(timer, CycleTime));
+			} else {
+				// Estimate the platform's veloicty using a numerical derivative of its movement function.
+				Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
+			}
+
+			FVector start = StartPosition->GetComponentLocation();
+			FVector end = EndPosition->GetComponentLocation();
+
+			// Move the platform to its new location.
+			Model->SetWorldLocation(NewPosition);
+			StartPosition->SetWorldLocation(start);
+			EndPosition->SetWorldLocation(end);
+		}
 	} else {
-		// Estimate the platform's veloicty using a numerical derivative of its movement function.
-		Velocity = FMath::Lerp(FVector::ZeroVector, EndPosition->GetComponentLocation() - StartPosition->GetComponentLocation(), nderiv(timer, CycleTime, f));
+		Velocity = (Model->GetComponentLocation() - PreviousLocation) / DeltaTime;
+		PreviousLocation = Model->GetComponentLocation();
 	}
-
-	FVector start = StartPosition->GetComponentLocation();
-	FVector end = EndPosition->GetComponentLocation();
-
-	// Move the platform to its new location.
-	Model->SetWorldLocation(NewPosition);
-	StartPosition->SetWorldLocation(start);
-	EndPosition->SetWorldLocation(end);
 }
 
+void AMovingPlatform::Deactivate() {
+	Deactivated = true;
+}
+
+void AMovingPlatform::Activate() {
+	Deactivated = false;
+}

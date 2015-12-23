@@ -3,14 +3,15 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "ShardsMatineeActor.h"
 #include "Switch.generated.h"
 
 UCLASS()
 class SHARDS_API ASwitch : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ASwitch();
 
@@ -18,11 +19,26 @@ public:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
-	// Called every frame
-	virtual void Tick( float DeltaSeconds ) override;
 
-	FVector playerLoc;
-	bool playerNearby;
-	bool activate;
+	// Called every frame
+	virtual void Tick(float DeltaSeconds) override;
+
+	void Activate();
+	void Deactivate();
+
+	/* The state (activated / deactivated) of the switch. */
+	UPROPERTY(EditAnywhere) bool State;
+
+	/* Whether the switch can be turned back off after being turned on. */
+	UPROPERTY(EditAnywhere) bool Toggleable;
+
+	/* Maximum distance away from the switch that the player can be while still being able to activate it. */
+	UPROPERTY(EditAnywhere) float MaxDistance;
+
+	/* Blueprint that executes when the switch is turned on. */
+	UPROPERTY(EditAnywhere) AActor* SwitchEffect;
+
+	/* Blueprint that executes when the switch is turned off. */
+	UPROPERTY(EditAnywhere) AActor* ReverseEffect;
+
 };
