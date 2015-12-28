@@ -69,6 +69,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetSpeed();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	float GetModelOpacity();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsTurning();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsAiming();
@@ -86,6 +88,8 @@ public:
 	bool GetJustWallJumped();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool AboutToWarp();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetMaterial(int32 index, UMaterialInterface* newmat);
 	
 	FVector MovementInput;
 	FVector CameraInput;
@@ -198,11 +202,14 @@ public:
 	/* Factor that the camera lag should be multiplied by when aiming. Setting this to zero disables aiming lag. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float AimingLagMultiplier;
 
-	/* How rapidly the camera should turn with the player. */
+	/* The number of degrees the camera should rotate every second when automatically turning with the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraAutoTurnFactor;
 
 	/* How long the camera should wait after the last mouse input before reverting to automatic control. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraResetTime;
+
+	/* The minumum distance the camera can be from the player model before the player model begines to fade out. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float ModelFadeDistance;
 
 	bool ShouldActivate;
 	int GemCount;
@@ -220,6 +227,8 @@ private:
 	bool JustSlammed;
 	bool OnTheGround;
 	bool HelpEnabled;
+
+	FVector closecamera;
 
 	float DefaultGravity;
 

@@ -15,6 +15,7 @@ AWarpCrystal::AWarpCrystal()
 
 	WarpRegion = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	WarpRegion->AttachTo(Root);
+	WarpRegion->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 
 	WarpExit = CreateDefaultSubobject<USceneComponent>(TEXT("Exit"));
 	WarpExit->AttachTo(Root);

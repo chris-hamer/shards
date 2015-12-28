@@ -43,10 +43,11 @@ AAuyron::AAuyron()
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 1000.0f;
+	ModelFadeDistance = 250.0f;
 	CameraLag = 3.0f;
 	CameraRotationLag = 7.0f;
 	AimingLagMultiplier = 3.0f;
-	CameraAutoTurnFactor = 1.0f;
+	CameraAutoTurnFactor = 60.0f;
 	CameraResetTime = 1.0f;
 
 	HelpEnabled = false;
@@ -83,7 +84,7 @@ AAuyron::AAuyron()
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
-	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 60.0f), FRotator(-50.0f, 0.0f, 0.0f));
+	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 60.0f), FRotator(-30.0f, 0.0f, 0.0f));
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraLagSpeed = CameraLag;
@@ -255,6 +256,8 @@ void AAuyron::BeginPlay()
 	// Initialize gem count.
 	GemCount = 0;
 
+	closecamera = GetActorLocation();
+
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
@@ -287,6 +290,8 @@ void AAuyron::BeginPlay()
 void AAuyron::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	MovementInput.Normalize();
 
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
@@ -333,8 +338,8 @@ void AAuyron::Tick(float DeltaTime)
 			NewRotation.Yaw = NewRotation.Yaw + CameraInput.X;
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
-			if (TimeSinceLastMouseInput > CameraResetTime && !ztarget) {
-				NewRotation.Yaw = NewRotation.Yaw + MovementInput.X*CameraAutoTurnFactor;
+			if (TimeSinceLastMouseInput > CameraResetTime && !ztarget && !movementlocked) {
+				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * FMath::Sign(MovementInput.X) * DeltaTime * CameraAutoTurnFactor;
 			}
 
 			// Set the rotation of the camera.
@@ -366,7 +371,6 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
 			}
 		}
-
 
 		// The player is aiming.
 		if (ztarget&&!dashing) {
@@ -424,17 +428,19 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->TargetArmLength = DefaultArmLength;
 				SpringArm->CameraLagSpeed = CameraLag;
 				SpringArm->CameraRotationLagSpeed = 0.0f;
-				SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+				SpringArm->SetRelativeLocation(FVector::ZeroVector);
 				
 				// If we just stopped aiming, reset the camera's rotation as well.
 				if (wasztarget) {
-					SpringArm->SetRelativeRotation(FRotator(-45.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+					SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
 				}
 			}
 
 			// Re-enable the player's movement inputs.
 			movementlocked = false;
 		}
+
+		//PlayerModel->param
 
 		// Restore camera's old locked state.
 		cameralocked = cameralocktemp;
@@ -523,7 +529,7 @@ void AAuyron::Tick(float DeltaTime)
 						// If we were aiming, reset the camera's rotation.
 						if (wasztarget) {
 							SpringArm->CameraLagSpeed = 0.0f;
-							SpringArm->SetRelativeRotation(FRotator(-45.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+							SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
 						}
 
 						// Reset OnTheGround and glide variables.
@@ -541,7 +547,7 @@ void AAuyron::Tick(float DeltaTime)
 			swish = false;
 
 			ASwitch* closestswitch = NULL;
-			biggestdot = 0.0f;
+			biggestdot = -1.0f;
 
 			for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 				if (ActorItr->GetClass()->GetName() == "Switch") {
@@ -697,12 +703,6 @@ void AAuyron::Tick(float DeltaTime)
 			// OK this might be Megaman X a litle.
 			FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
 			if (!OnTheGround && wnproject.Size() > 0.95f) {
-				// Make the player face away from the wall we just jumped off of.
-				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
-				newmodelrotation.Yaw = (MovementComponent->wallnormal.GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), MovementComponent->wallnormal.GetSafeNormal())).Rotation().Yaw;
-				PlayerModel->SetWorldRotation(newmodelrotation);
-				TargetDirection = newmodelrotation;
-
 				// No cheating.
 				if (IsGliding||AlreadyGlided) {
 					AlreadyGlided = true;
@@ -711,9 +711,15 @@ void AAuyron::Tick(float DeltaTime)
 
 				// Set player velocity to be away from the wall.
 				FVector temp = Velocity;
-				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y), MovementComponent->wallnormal.GetSafeNormal())*MaxVelocity);
+				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()));
 				Velocity.Z = temp.Z;
 				JustWallJumped = true;
+
+				// Make the player face away from the wall we just jumped off of.
+				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
+				newmodelrotation.Yaw = (MovementComponent->wallnormal.GetSafeNormal() + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), MovementComponent->wallnormal.GetSafeNormal())).Rotation().Yaw;
+				PlayerModel->SetWorldRotation(newmodelrotation);
+				TargetDirection = newmodelrotation;
 			}
 		}
 
@@ -1034,6 +1040,13 @@ float AAuyron::GetSpeed()
 	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
 
+float AAuyron::GetModelOpacity()
+{
+	float dist = (Camera->GetComponentLocation() - GetActorLocation()).Size();
+	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(FMath::Clamp(dist / ModelFadeDistance, 0.0f, 1.0f)));
+	return FMath::Clamp(dist / ModelFadeDistance,0.0f,1.0f);
+}
+
 bool AAuyron::GetIsTurning() 
 {
 	FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
@@ -1071,6 +1084,11 @@ bool AAuyron::AboutToWarp() {
 	bool isitreally = itshappening;
 	itshappening = false;
 	return isitreally;
+}
+
+void AAuyron::SetMaterial(int32 index, UMaterialInterface * newmat)
+{
+	PlayerModel->SetMaterial(index,newmat);
 }
 
 UParticleSystemComponent* AAuyron::GetTrailParticlesL() {

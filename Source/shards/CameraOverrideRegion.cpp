@@ -15,6 +15,7 @@ ACameraOverrideRegion::ACameraOverrideRegion()
 
 	Region = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	Region->AttachTo(Root);
+	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 
 	TargetCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Target Camera"));
 	TargetCamera->AttachTo(Root);

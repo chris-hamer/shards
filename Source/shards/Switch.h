@@ -3,7 +3,6 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
-#include "ShardsMatineeActor.h"
 #include "Switch.generated.h"
 
 UCLASS()
