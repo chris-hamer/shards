@@ -121,11 +121,8 @@ public:
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float DashSpeed;
 
-	/* The player's maximum horizontal velocity. */
+	/* The maximum length of the player's dash in seconds. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float DashDuration;
-
-	/* Whether or not the player maintains their dash velocity when jumping. */
-	UPROPERTY(EditAnywhere, Category = "Movement") bool CanDashJump;
 
 	/* The maximum slope angle in degrees that the player can walk on. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float MaxSlope;
@@ -154,6 +151,15 @@ public:
 	/* Whether or not we can use teleport claw. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasTeleport;
 
+	/* Whether or not we can use dash. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasDash;
+
+	/* Whether or not the player can dash infinitely. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasInfiniteDash;
+
+	/* Whether or not the player can keep dashing after jumping. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasDashJump;
+
 	/* Whether or not we can use glide. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasGlide;
 
@@ -165,6 +171,9 @@ public:
 
 	/* Factor that the gravity should be multiplied by when gliding. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideGravityMultiplier;
+
+	/* Whether or not the player can use slam. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasSlam;
 
 	/* Downward velocity at which the player uses slam. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float SlamVelocity;

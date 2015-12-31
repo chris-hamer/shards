@@ -34,10 +34,7 @@ public:
 	/* Maximum distance away from the switch that the player can be while still being able to activate it. */
 	UPROPERTY(EditAnywhere) float MaxDistance;
 
-	/* Blueprint that executes when the switch is turned on. */
+	/* Blueprint that executes when the switch is pressed. */
 	UPROPERTY(EditAnywhere) AActor* SwitchEffect;
-
-	/* Blueprint that executes when the switch is turned off. */
-	UPROPERTY(EditAnywhere) AActor* ReverseEffect;
 
 };

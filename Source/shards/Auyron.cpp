@@ -291,6 +291,7 @@ void AAuyron::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// This isn't Doom.
 	MovementInput.Normalize();
 
 	// If there is a sharp change in the velocity of the platform that the player is
@@ -504,6 +505,7 @@ void AAuyron::Tick(float DeltaTime)
 			// and within a certain angle tolerance and teleport he player to it
 			// if they are trying to teleport.
 			if (closest != nullptr &&
+				HasTeleport &&
 				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
 				(closest->GetActorLocation() - GetActorLocation()).Size() < TeleportRange) {
 
@@ -552,16 +554,16 @@ void AAuyron::Tick(float DeltaTime)
 			for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 				if (ActorItr->GetClass()->GetName() == "Switch") {
 
-					// Get displacement vector from the player/camera to the TelePad.
+					// Get displacement vector from the player/camera to the switch.
 					FVector displacement = ActorItr->GetActorLocation() - source;
 
 					// Get the dot product between the displacement and the source.
 					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
 
-					// Set trace parameters. I have no idea what these do but the raycast doesn't work
-					// if I don't put these here.
+					// Set trace parameters. I have no idea what these do but
+					// the raycast doesn't work if I don't put these here.
 					FHitResult f;
-					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
+					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
 					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
 					FCollisionQueryParams asdf = FCollisionQueryParams();
 
@@ -571,17 +573,16 @@ void AAuyron::Tick(float DeltaTime)
 					// Figure out if the ray is blocked by an object.
 					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
 
-					// If the trace hit a telepad and it's closer to where we're aiming
-					// at than any other TelePad, set it as the "closest" one.
+					// If the trace hit a switch and it's closer to where we're aiming
+					// at than any other switch, set it as the "closest" one.
 					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->GetClass()->GetName() == "Switch" && dot > biggestdot && blocked && displacement.Size() < TeleportRange) {
 						closestswitch = *ActorItr;
 						biggestdot = dot;
 					}
 				}
 
-				// Set the color of the "closest" TelePad as long as it's in range
-				// and within a certain angle tolerance and teleport he player to it
-				// if they are trying to teleport.
+				// Activate the "closest" switch as long as it's in range
+				// and within a certain angle tolerance.
 				if (closestswitch != nullptr &&
 					FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
 					(closestswitch->GetActorLocation() - GetActorLocation()).Size() < closestswitch->MaxDistance) {
@@ -694,7 +695,7 @@ void AAuyron::Tick(float DeltaTime)
 			JustJumped = true;
 
 			// This ain't Megaman X, kiddo.
-			if (dashing&&!CanDashJump) {
+			if (dashing&&!HasDashJump) {
 				DashParticles->DeactivateSystem();
 				dashing = false;
 				dashtimer = 0.0f;
@@ -775,11 +776,13 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Set the player's horizontal velocity while preserving their vertical velocity.
 			float z = Velocity.Z;
-			Velocity = TargetDirection.Vector().GetSafeNormal()*1500.0f;
+			Velocity = TargetDirection.Vector().GetSafeNormal()*DashSpeed;
 			Velocity.Z = z;
 
 			// Tick up the dash timer.
-			dashtimer += DeltaTime;
+			if (!HasInfiniteDash) {
+				dashtimer += DeltaTime;
+			}
 
 			// Stop dashing if the player was dashing for too long.
 			if (dashtimer > DashDuration) {
@@ -964,7 +967,7 @@ void AAuyron::Jump()
 	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 		JumpNextFrame = true;
 	} else {
-		if (HasGlide) {
+		if (HasGlide&&!AlreadyGlided) {
 			GlideNextFrame = true;
 		}
 	}
@@ -1005,12 +1008,16 @@ void AAuyron::CameraModeToggle()
 // swish
 void AAuyron::Warp()
 {
-	swish = true;
+	if (HasTeleport) {
+		swish = true;
+	}
 }
 
 void AAuyron::Slam()
 {
-	SlamNextFrame = true;
+	if (HasSlam&&!OnTheGround) {
+		SlamNextFrame = true;
+	}
 }
 
 // I DON'T NEED YOUR HELP
@@ -1021,7 +1028,7 @@ void AAuyron::ToggleHelp() {
 // woosh
 void AAuyron::Dash()
 {
-	if (!dashing&&!ztarget) {
+	if (!dashing&&!ztarget&&HasDash) {
 		dash = true;
 	}
 }
@@ -1043,7 +1050,6 @@ float AAuyron::GetSpeed()
 float AAuyron::GetModelOpacity()
 {
 	float dist = (Camera->GetComponentLocation() - GetActorLocation()).Size();
-	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(FMath::Clamp(dist / ModelFadeDistance, 0.0f, 1.0f)));
 	return FMath::Clamp(dist / ModelFadeDistance,0.0f,1.0f);
 }
 

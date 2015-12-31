@@ -35,6 +35,8 @@ void ASwitch::Activate()
 		State = true;
 		FOutputDeviceNull ar;
 		SwitchEffect->CallFunctionByNameWithArguments(TEXT("Activate"), ar, NULL, true);
+	} else if (Toggleable) {
+		Deactivate();
 	}
 }
 
