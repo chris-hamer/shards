@@ -211,6 +211,9 @@ public:
 	/* Factor that the camera lag should be multiplied by when aiming. Setting this to zero disables aiming lag. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float AimingLagMultiplier;
 
+	/* Factor that the camera lag should be multiplied by when moving into a camera override region. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float OverrideRegionRotationLagMultiplier;
+
 	/* The number of degrees the camera should rotate every second when automatically turning with the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraAutoTurnFactor;
 
@@ -269,6 +272,7 @@ private:
 	bool CameraLockToPlayerZAxis;
 	bool MovementAxisLocked;
 	float LockedAxisValue;
+	FVector previousposition;
 
 	FVector RespawnPoint;
 	

@@ -45,8 +45,9 @@ AAuyron::AAuyron()
 	DefaultArmLength = 1000.0f;
 	ModelFadeDistance = 250.0f;
 	CameraLag = 3.0f;
-	CameraRotationLag = 7.0f;
-	AimingLagMultiplier = 3.0f;
+	CameraRotationLag = 10.0f;
+	AimingLagMultiplier = 0.0f;
+	OverrideRegionRotationLagMultiplier = 0.75f;
 	CameraAutoTurnFactor = 60.0f;
 	CameraResetTime = 1.0f;
 
@@ -88,7 +89,7 @@ AAuyron::AAuyron()
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraLagSpeed = CameraLag;
-	SpringArm->CameraRotationLagSpeed = 0.0f;
+	SpringArm->CameraRotationLagSpeed = CameraRotationLag;
 	SpringArm->CameraLagMaxDistance = 1000.0f;
 	SpringArm->AttachTo(CapsuleComponent);
 
@@ -256,6 +257,7 @@ void AAuyron::BeginPlay()
 	// Initialize gem count.
 	GemCount = 0;
 
+	previousposition = GetActorLocation();
 	closecamera = GetActorLocation();
 
 	// Sets the player's "true" facing direction to whatever
@@ -292,7 +294,7 @@ void AAuyron::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// This isn't Doom.
-	MovementInput.Normalize();
+	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
@@ -340,7 +342,8 @@ void AAuyron::Tick(float DeltaTime)
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraResetTime && !ztarget && !movementlocked) {
-				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * FMath::Sign(MovementInput.X) * DeltaTime * CameraAutoTurnFactor;
+				FVector actualvelocity = (GetActorLocation() - previousposition) / DeltaTime;
+				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(actualvelocity,FVector::UpVector)/MaxVelocity) * DeltaTime * CameraAutoTurnFactor;
 			}
 
 			// Set the rotation of the camera.
@@ -349,14 +352,14 @@ void AAuyron::Tick(float DeltaTime)
 			// Move the camera's pitch in response to the y input of the mouse/stick.
 			NewRotation = SpringArm->GetComponentRotation();
 			NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
-			SpringArm->CameraRotationLagSpeed = 0.0f;
+			SpringArm->CameraRotationLagSpeed = CameraRotationLag;
 			SpringArm->SetWorldRotation(NewRotation);
 
 		} else {
 
 			// If the camera is locked, put it at the override region's
 			// target location and rotation.
-			SpringArm->CameraRotationLagSpeed = CameraRotationLag;
+			SpringArm->CameraRotationLagSpeed = CameraRotationLag*OverrideRegionRotationLagMultiplier;
 			SpringArm->SetWorldRotation(CameraOverrideTargetRotation);
 			if (!CameraLockToPlayerXAxis&&!CameraLockToPlayerYAxis&&!CameraLockToPlayerZAxis) {
 				SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement);
@@ -396,8 +399,8 @@ void AAuyron::Tick(float DeltaTime)
 				if (MovementInput.IsNearlyZero()) {
 					NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
 				} else {
-					// ...unless the player is holding a direction, in which case
-					// face that direction.
+					// ...unless the player is holding a direction,
+					// in which case face that direction.
 					NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
 						(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
 				}
@@ -405,9 +408,10 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Face the player and camera to the new rotation.
 			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
-			SpringArm->SetRelativeRotation(NewRotation);
 			SpringArm->TargetArmLength = 300.0f;
-			SpringArm->CameraLagSpeed = CameraLag*AimingLagMultiplier;
+			SpringArm->CameraLagSpeed = CameraLag * AimingLagMultiplier;
+			SpringArm->CameraRotationLagSpeed = CameraRotationLag * AimingLagMultiplier;
+			SpringArm->SetRelativeRotation(NewRotation);
 
 			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
 			FVector Right = FVector::VectorPlaneProject(CapsuleComponent->GetComponentRotation().RotateVector(Camera->GetRightVector()), FVector::UpVector);
@@ -428,7 +432,7 @@ void AAuyron::Tick(float DeltaTime)
 			if (!cameralocked) {
 				SpringArm->TargetArmLength = DefaultArmLength;
 				SpringArm->CameraLagSpeed = CameraLag;
-				SpringArm->CameraRotationLagSpeed = 0.0f;
+				SpringArm->CameraRotationLagSpeed = CameraRotationLag;
 				SpringArm->SetRelativeLocation(FVector::ZeroVector);
 				
 				// If we just stopped aiming, reset the camera's rotation as well.
@@ -828,6 +832,8 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Store current velocity into previousgroundvelocity.
 		previousgroundvelocity = MovementComponent->groundvelocity;
+
+		previousposition = GetActorLocation();
 
 		// Store current aiming state into wasaiming.
 		wasztarget = ztarget;
