@@ -35,6 +35,7 @@ AAuyron::AAuyron()
 	TeleportAngleToleranceWhenAiming = 5.0f;
 	TeleportRangeWhenNotAiming = 900.0f;
 	TeleportAngleToleranceWhenNotAiming = 70.0f;
+	TeleportAnimationDuration = 0.5f;
 	TeleportLightColor = FColor(0x336FE6FF);
 	GlideDuration = 2.0f;
 	InitialGlideVelocity = 100.0f;
@@ -97,6 +98,7 @@ AAuyron::AAuyron()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
 	Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
 
+	// May god have mercy on your GPU.
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Particles/DashParticles"));
 	DashParticles->SetTemplate(dp.Object);
@@ -138,10 +140,45 @@ AAuyron::AAuyron()
 	// Apparently we need some newfangled "MovementComponent".
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
+
+	// BLAST PROCESSING.
+	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	PostProcess->AttachTo(RootComponent);
+
+	// NINTENDON'T DO 16 BIT.
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/bestmaterial"));
+	ScreenWarpMatBase = sw.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
+	HairMatBase = hair.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bandana(TEXT("/Game/Textures/Characters/Auyron/Headband"));
+	BandanaMatBase = bandana.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat"));
+	BodyMatBase = body.Object;
+
 }
 
 void AAuyron::Respawn() {
 	SetActorLocation(RespawnPoint);
+}
+
+void AAuyron::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	hairmat = UMaterialInstanceDynamic::Create(HairMatBase, this);
+	bandanamat = UMaterialInstanceDynamic::Create(BandanaMatBase, this);
+	bodymat = UMaterialInstanceDynamic::Create(BodyMatBase, this);
+
+	PlayerModel->SetMaterial(0, bodymat);
+	PlayerModel->SetMaterial(1, hairmat);
+	PlayerModel->SetMaterial(2, bandanamat);
+
+	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
+	PostProcess->bUnbound = true;
+	PostProcess->AddOrUpdateBlendable(screenwarpmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -266,6 +303,8 @@ void AAuyron::BeginPlay()
 
 	TeleClaw->AttachTo(PlayerModel, "RightHand", EAttachLocation::SnapToTargetIncludingScale);
 
+	((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
+
 	// Start with the particles off.
 	DashParticles->bAutoActivate = false;
 	DashParticles->DeactivateSystem();
@@ -273,7 +312,7 @@ void AAuyron::BeginPlay()
 	FloatParticles->DeactivateSystem();
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->DeactivateSystem();
-	
+
 	if (asd) {
 		// Create the widget and store it.
 		thehud = CreateWidget<UUserWidget>(GetWorld(), asd);
@@ -555,6 +594,7 @@ void AAuyron::Tick(float DeltaTime)
 			ASwitch* closestswitch = NULL;
 			biggestdot = -1.0f;
 
+			// Iterate over each Switch and cast a ray.
 			for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 				if (ActorItr->GetClass()->GetName() == "Switch") {
 
@@ -597,6 +637,27 @@ void AAuyron::Tick(float DeltaTime)
 				}
 			}
 		}
+
+		// Handle the screen warp animation.
+		if (warpanimtimer >= 0.0f) {
+			screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), FMath::Lerp(2.0f,0.0f, FMath::Pow(FMath::Clamp(warpanimtimer / TeleportAnimationDuration, 0.0f, 1.0f), 0.25f)));
+			warpanimtimer += DeltaTime;
+			if (warpanimtimer >= TeleportAnimationDuration) {
+				warpanimtimer = -1.0f;
+			}
+		}
+		
+		// Start the warp animation timer if the player just warped.
+		if (itshappening) {
+			itshappening = false;
+			warpanimtimer = 0.0f;
+		}
+
+		// Make the player model translucent if the camera gets too close.
+		float opacity = FMath::Clamp((Camera->GetComponentLocation() - GetActorLocation()).Size() / ModelFadeDistance, 0.0f, 1.0f);
+		hairmat->SetScalarParameterValue(TEXT("fade"), opacity);
+		bandanamat->SetScalarParameterValue(TEXT("fade"), opacity);
+		bodymat->SetScalarParameterValue(TEXT("fade"), opacity);
 
 		// Lock the player's movement inputs if they're dashing.
 		if (dashing) {

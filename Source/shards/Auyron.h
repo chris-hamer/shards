@@ -33,6 +33,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
+	virtual void PostInitializeComponents() override;
+
 	UPROPERTY(EditAnywhere) class UAuyronMovementComponent* MovementComponent;
 
 
@@ -106,8 +108,14 @@ public:
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesL;
 	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesR;
 	UPROPERTY(EditAnywhere) UUserWidget* thehud;
+	UPROPERTY(EditAnywhere) UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> asd;
+
+	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* ScreenWarpMatBase;
+	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* HairMatBase;
+	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* BandanaMatBase;
+	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* BodyMatBase;
 
 	/* Rate that the player should accelerate while on the ground. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float GroundAccelerationRate;
@@ -190,6 +198,9 @@ public:
 	/* The angle that you can be "off" from a target while not aiming but still be able to teleport to it. */
 	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleToleranceWhenNotAiming;
 
+	/* The time in seconds it takes the teleport screen warp animation to complete. */
+	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAnimationDuration;
+
 	/* The color that the telepads should turn when you're aiming at them. */
 	UPROPERTY(EditAnywhere, Category = "Teleporter") FColor TeleportLightColor;
 
@@ -226,6 +237,7 @@ public:
 	bool ShouldActivate;
 	int GemCount;
 
+
 private:
 	float TimeSinceLastRealignment;
 	float HowLong;
@@ -242,6 +254,11 @@ private:
 
 	FVector closecamera;
 
+	UMaterialInstanceDynamic* screenwarpmat;
+	UMaterialInstanceDynamic* hairmat;
+	UMaterialInstanceDynamic* bandanamat;
+	UMaterialInstanceDynamic* bodymat;
+
 	float DefaultGravity;
 
 	bool GlideNextFrame;
@@ -251,6 +268,8 @@ private:
 	float warptimer;
 
 	AStick* thisguy;
+
+	float warpanimtimer;
 
 	uint8 jumpsLeft;
 	bool justDoubleJumped;
