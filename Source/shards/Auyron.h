@@ -15,6 +15,195 @@
 #include "Checkpoint.h"
 #include "Auyron.generated.h"
 
+USTRUCT()
+struct FMovementPhysics
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* Rate that the player should accelerate while on the ground. */
+	UPROPERTY(EditAnywhere) float GroundAccelerationRate;
+
+	/* Rate that the player should accelerate while in the air. */
+	UPROPERTY(EditAnywhere) float AirAccelerationRate;
+
+	/* The player's maximum horizontal velocity. */
+	UPROPERTY(EditAnywhere) float MaxVelocity;
+
+	/* The player's maximum vertical velocity. */
+	UPROPERTY(EditAnywhere) float TerminalVelocity;
+
+	/* Minimum vertical velocity the player needs before drag is actually applied. */
+	UPROPERTY(EditAnywhere) float DragThreshold;
+
+	/* The magnitude of gravity. */
+	UPROPERTY(EditAnywhere) float Gravity;
+
+	/* The maximum slope angle in degrees that the player can walk on. */
+	UPROPERTY(EditAnywhere) float MaxSlope;
+};
+
+USTRUCT()
+struct FMovementJumping
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* The upward speed at which the player starts their jump. */
+	UPROPERTY(EditAnywhere) float JumpPower;
+
+	/* The amount of extra gravity to apply to the player after releasing the jump button. */
+	UPROPERTY(EditAnywhere) float UnjumpRate;
+
+	/* Time after falling off a ledge that the player can still jump. */
+	UPROPERTY(EditAnywhere) float OffGroundJumpTime;
+
+	/* The player's initial forward velocity when wall jumping, in multiples of their normal max velocity. */
+	UPROPERTY(EditAnywhere) float WallJumpMultiplier;
+};
+
+USTRUCT()
+struct FMovementTurning
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* The angle in degrees that the player can turn in one second. Only affects the player model, not movement. */
+	UPROPERTY(EditAnywhere) float TurnRate;
+
+	/* Minimum angle difference needed for the player model to snap to the direction the player is moving in. */
+	UPROPERTY(EditAnywhere, AdvancedDisplay) float FacingAngleSnapThreshold;
+};
+
+USTRUCT()
+struct FAbilitiesTeleport
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* Whether or not we can use teleport claw. */
+	UPROPERTY(EditAnywhere) bool HasTeleport;
+
+	/* The maximum range of your teleporter when aiming. */
+	UPROPERTY(EditAnywhere) float TeleportRangeWhenAiming;
+
+	/* The angle that you can be "off" from a target while aiming but still be able to teleport to it. */
+	UPROPERTY(EditAnywhere) float TeleportAngleToleranceWhenAiming;
+
+	/* The maximum range of your teleporter when not aiming. */
+	UPROPERTY(EditAnywhere) float TeleportRangeWhenNotAiming;
+
+	/* The angle that you can be "off" from a target while not aiming but still be able to teleport to it. */
+	UPROPERTY(EditAnywhere) float TeleportAngleToleranceWhenNotAiming;
+
+	/* The time in seconds it takes the teleport screen warp animation to complete. */
+	UPROPERTY(EditAnywhere) float TeleportAnimationDuration;
+
+	/* The color that the telepads should turn when you're aiming at them. */
+	UPROPERTY(EditAnywhere) FColor TeleportLightColor;
+};
+
+USTRUCT()
+struct FAbilitiesDash
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* Whether or not we can use dash. */
+	UPROPERTY(EditAnywhere) bool HasDash;
+
+	/* Whether or not the player can dash infinitely. */
+	UPROPERTY(EditAnywhere) bool HasInfiniteDash;
+
+	/* Whether or not the player can keep dashing after jumping. */
+	UPROPERTY(EditAnywhere) bool HasDashJump;
+
+	/* Whether or not the player can use dash wall jump. */
+	UPROPERTY(EditAnywhere) bool HasDashWallJump;
+
+	/* The player's maximum horizontal velocity. */
+	UPROPERTY(EditAnywhere) float DashSpeed;
+
+	/* The maximum length of the player's dash in seconds. */
+	UPROPERTY(EditAnywhere) float DashDuration;
+
+	/* The player's initial forward velocity when dash wall jumping, in multiples of their normal max velocity. */
+	UPROPERTY(EditAnywhere) float DashWallJumpMultiplier;
+};
+
+
+USTRUCT()
+struct FAbilitiesGlide
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* Whether or not we can use glide. */
+	UPROPERTY(EditAnywhere) bool HasGlide;
+
+	/* Duration of glide in seconds. */
+	UPROPERTY(EditAnywhere) float GlideDuration;
+
+	/* Initial upward velocity imparted on player when starting their glide. */
+	UPROPERTY(EditAnywhere) float InitialGlideVelocity;
+
+	/* Factor that the gravity should be multiplied by when gliding. */
+	UPROPERTY(EditAnywhere) float GlideGravityMultiplier;
+
+	/* Fraction of the default turn rate that should apply when gliding. */
+	UPROPERTY(EditAnywhere) float GlideTurnRateMultiplier;
+};
+
+
+USTRUCT()
+struct FAbilitiesSlam
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* Whether or not the player can use slam. */
+	UPROPERTY(EditAnywhere) bool HasSlam;
+
+	/* Downward velocity at which the player uses slam. */
+	UPROPERTY(EditAnywhere) float SlamVelocity;
+};
+
+USTRUCT()
+struct FCameraLag
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* The camera's movement lag when following the player. */
+	UPROPERTY(EditAnywhere) float CameraLag;
+
+	/* The camera's rotation lag when following the player. */
+	UPROPERTY(EditAnywhere) float CameraRotationLag;
+
+	/* Factor that the camera lag should be multiplied by when aiming. Setting this to zero disables aiming lag. */
+	UPROPERTY(EditAnywhere) float AimingLagMultiplier;
+
+	/* Factor that the camera lag should be multiplied by when moving into a camera override region. */
+	UPROPERTY(EditAnywhere) float OverrideRegionRotationLagMultiplier;
+};
+
+USTRUCT()
+struct FCameraAutoTurn
+{
+	GENERATED_USTRUCT_BODY()
+
+	/* The number of degrees the camera should rotate every second when automatically turning with the player. */
+	UPROPERTY(EditAnywhere) float CameraAutoTurnFactor;
+
+	/* How long the camera should wait after the last mouse input before reverting to automatic control. */
+	UPROPERTY(EditAnywhere) float CameraResetTime;
+};
+
+USTRUCT()
+struct FCameraModelFade
+{
+
+	GENERATED_USTRUCT_BODY()
+
+	/* Whether or not the model should fade out if the camera gets close. */
+	UPROPERTY(EditAnywhere) bool ModelFadeEnabled;
+
+	/* The minumum distance the camera can be from the player model before the player model begines to fade out. */
+	UPROPERTY(EditAnywhere) float ModelFadeDistance;
+};
+
 UCLASS()
 class AAuyron : public APawn
 {
@@ -35,9 +224,6 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
-	UPROPERTY(EditAnywhere) class UAuyronMovementComponent* MovementComponent;
-
-
 	//Input functions
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
@@ -57,8 +243,6 @@ public:
 	void UnDash();
 	void Respawn();
 	
-	//UFUNCTION()
-	//void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	UFUNCTION()
 	void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
@@ -98,159 +282,50 @@ public:
 	FVector MovementInput;
 	FVector CameraInput;
 
-	UPROPERTY(EditAnywhere) USceneComponent* Root;
-	UPROPERTY(EditAnywhere) USpringArmComponent* SpringArm;
-	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
-	UPROPERTY(EditAnywhere)	USkeletalMeshComponent* PlayerModel;
-	UPROPERTY(EditAnywhere)	UStaticMeshComponent* TeleClaw;
-	UPROPERTY(EditAnywhere) UCapsuleComponent* CapsuleComponent;
-	UPROPERTY(EditAnywhere) UParticleSystemComponent* DashParticles;
-	UPROPERTY(EditAnywhere) UParticleSystemComponent* FloatParticles;
-	UPROPERTY(EditAnywhere) UParticleSystemComponent* SlamParticles;
-	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesL;
-	UPROPERTY(EditAnywhere) UParticleSystemComponent* TrailParticlesR;
-	UPROPERTY(EditAnywhere) UUserWidget* thehud;
-	UPROPERTY(EditAnywhere) UPostProcessComponent* PostProcess;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<class UUserWidget> asd;
+	UPROPERTY(EditAnywhere, Category = "Components") USpringArmComponent* SpringArm;
+	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
+	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
+	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
+	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
+	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
+	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* SlamParticles;
+	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesL;
+	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesR;
+	UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
+	UPROPERTY(EditAnywhere, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* ScreenWarpMatBase;
-	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* HairMatBase;
-	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* BandanaMatBase;
-	UPROPERTY(EditAnywhere, Category = "Camera") UMaterialInterface* BodyMatBase;
+	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<class UUserWidget> Hud;
 
-	/* Rate that the player should accelerate while on the ground. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float GroundAccelerationRate;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* ScreenWarpMatBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* HairMatBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BandanaMatBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatBase;
 
-	/* Rate that the player should accelerate while in the air. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float AirAccelerationRate;
+	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
+	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
+	UPROPERTY(EditAnywhere, Category = "Movement") FMovementTurning TurnSettings;
 
-	/* The player's maximum horizontal velocity. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float MaxVelocity;
-
-	/* The player's maximum vertical velocity. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float TerminalVelocity;
-
-	/* Minimum vertical velocity the player needs before drag is actually applied. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float DragThreshold;
-
-	/* The player's maximum horizontal velocity. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float DashSpeed;
-
-	/* The maximum length of the player's dash in seconds. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float DashDuration;
-
-	/* The maximum slope angle in degrees that the player can walk on. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float MaxSlope;
-
-	/* The angle in degrees that the player can turn in one second. Only affects the player model, not movement. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float TurnRate;
-
-	/* Fraction of the default turn rate that should apply when gliding. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float GlideTurnRateMultiplier;
-
-	/* The upward speed at which the player starts their jump. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float JumpPower;
-
-	/* The player's initial forward velocity when wall jumping, in multiples of their normal max velocity. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float WallJumpMultiplier;
-
-	/* Time after falling off a ledge that the player can still jump. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float OffGroundJumpTime;
-
-	/* The magnitude of gravity. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float Gravity;
-
-	/* The amount of extra gravity to apply to the player after releasing the jump button. */
-	UPROPERTY(EditAnywhere, Category = "Movement") float UnjumpRate;
-
-	/* Minimum angle difference needed for the player model to snap to the direction the player is moving in. */
-	UPROPERTY(EditAnywhere, Category = "Movement", AdvancedDisplay) float FacingAngleSnapThreshold;
-
-	/* Whether or not we can use teleport claw. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasTeleport;
-
-	/* Whether or not we can use dash. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasDash;
-
-	/* Whether or not the player can dash infinitely. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasInfiniteDash;
-
-	/* Whether or not the player can keep dashing after jumping. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasDashJump;
-
-	/* Whether or not we can use glide. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasGlide;
-
-	/* Duration of glide in seconds. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideDuration;
-
-	/* Initial upward velocity imparted on player when starting their glide. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") float InitialGlideVelocity;
-
-	/* Factor that the gravity should be multiplied by when gliding. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") float GlideGravityMultiplier;
-
-	/* Whether or not the player can use slam. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") bool HasSlam;
-
-	/* Downward velocity at which the player uses slam. */
-	UPROPERTY(EditAnywhere, Category = "Abilities") float SlamVelocity;
-
-	/* The maximum range of your teleporter when aiming. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRangeWhenAiming;
-
-	/* The angle that you can be "off" from a target while aiming but still be able to teleport to it. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleToleranceWhenAiming;
-
-	/* The maximum range of your teleporter when not aiming. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportRangeWhenNotAiming;
-
-	/* The angle that you can be "off" from a target while not aiming but still be able to teleport to it. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAngleToleranceWhenNotAiming;
-
-	/* The time in seconds it takes the teleport screen warp animation to complete. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") float TeleportAnimationDuration;
-
-	/* The color that the telepads should turn when you're aiming at them. */
-	UPROPERTY(EditAnywhere, Category = "Teleporter") FColor TeleportLightColor;
+	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesTeleport TeleportSettings;
+	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesDash DashSettings;
+	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesGlide GlideSettings;
+	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesSlam SlamSettings;
 
 	/* Highest angle the camera is allowed to have. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraMaxAngle;
 
 	/* Lowest angle the camera is allowed to have. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraMinAngle;
-	
+
 	/* Default distance that the camera should be away from the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float DefaultArmLength;
 
-	/* How long it takes the camera to move to its final position when following the player. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float CameraLag;
-
-	/* How long it takes the camera to move to its final position when following the player. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float CameraRotationLag;
-
-	/* Factor that the camera lag should be multiplied by when aiming. Setting this to zero disables aiming lag. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float AimingLagMultiplier;
-
-	/* Factor that the camera lag should be multiplied by when moving into a camera override region. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float OverrideRegionRotationLagMultiplier;
-
-	/* The number of degrees the camera should rotate every second when automatically turning with the player. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float CameraAutoTurnFactor;
-
-	/* How long the camera should wait after the last mouse input before reverting to automatic control. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float CameraResetTime;
-
-	/* Whether or not the model should fade out if the camera gets close. */
-	UPROPERTY(EditAnywhere, Category = "Camera") bool ModelFadeEnabled;
-
-	/* The minumum distance the camera can be from the player model before the player model begines to fade out. */
-	UPROPERTY(EditAnywhere, Category = "Camera") float ModelFadeDistance;
+	UPROPERTY(EditAnywhere, Category = "Camera") FCameraLag CameraLagSettings;
+	UPROPERTY(EditAnywhere, Category = "Camera") FCameraAutoTurn CameraAutoTurnSettings;
+	UPROPERTY(EditAnywhere, Category = "Camera") FCameraModelFade CameraModelFadeSettings;
 
 	bool ShouldActivate;
 	int GemCount;
-
 
 private:
 	float TimeSinceLastRealignment;
@@ -265,6 +340,8 @@ private:
 	bool JustSlammed;
 	bool OnTheGround;
 	bool HelpEnabled;
+
+	UUserWidget* thehud;
 
 	FVector closecamera;
 
@@ -292,7 +369,8 @@ private:
 	FVector AppliedForce;
 	bool WasOnTheGround;
 	bool swish;
-	bool dash;
+	bool dashnextframe;
+	bool holdingdash;
 	bool dashing;
 	bool ztarget;
 	bool wasztarget;

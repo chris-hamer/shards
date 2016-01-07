@@ -19,41 +19,59 @@
 AAuyron::AAuyron()
 {	
 	// These should work.
-	GroundAccelerationRate = 5500.0f;
-	AirAccelerationRate = 500.0f;
-	MaxVelocity = 500.0f;
-	TerminalVelocity = 2000.0f;
-	DashSpeed = 1500.0f;
-	DashDuration = 0.25f;
-	MaxSlope = 45.0f;
-	TurnRate = 720.0f;
-	GlideTurnRateMultiplier = 1.0f;
-	JumpPower = 450.0f;
-	WallJumpMultiplier = 1.0f;
-	OffGroundJumpTime = 0.04f;
-	Gravity = 900.0f;
-	UnjumpRate = 1.5f;
-	FacingAngleSnapThreshold = 5.0f;
-	TeleportRangeWhenAiming = 1600.0f;
-	TeleportAngleToleranceWhenAiming = 5.0f;
-	TeleportRangeWhenNotAiming = 900.0f;
-	TeleportAngleToleranceWhenNotAiming = 70.0f;
-	TeleportAnimationDuration = 0.5f;
-	TeleportLightColor = FColor(0x336FE6FF);
-	GlideDuration = 2.0f;
-	InitialGlideVelocity = 100.0f;
-	GlideGravityMultiplier = 50.0f;
-	SlamVelocity = 1000.0f;
+	PhysicsSettings.GroundAccelerationRate = 5500.0f;
+	PhysicsSettings.AirAccelerationRate = 500.0f;
+	PhysicsSettings.MaxVelocity = 500.0f;
+	PhysicsSettings.TerminalVelocity = 2000.0f;
+	PhysicsSettings.Gravity = 900.0f;
+	PhysicsSettings.MaxSlope = 45.0f;
+
+	JumpSettings.JumpPower = 450.0f;
+	JumpSettings.WallJumpMultiplier = 1.0f;
+	JumpSettings.OffGroundJumpTime = 0.04f;
+	JumpSettings.UnjumpRate = 0.33f;
+
+	TurnSettings.TurnRate = 720.0f;
+	TurnSettings.FacingAngleSnapThreshold = 5.0f;
+
+	TeleportSettings.TeleportRangeWhenAiming = 6000.0f;
+	TeleportSettings.TeleportAngleToleranceWhenAiming = 5.0f;
+	TeleportSettings.TeleportRangeWhenNotAiming = 900.0f;
+	TeleportSettings.TeleportAngleToleranceWhenNotAiming = 70.0f;
+	TeleportSettings.TeleportAnimationDuration = 0.5f;
+	TeleportSettings.TeleportLightColor = FColor(0x336FE6FF);
+
+	DashSettings.HasDash = false;
+	DashSettings.HasInfiniteDash = false;
+	DashSettings.HasDashJump = false;
+	DashSettings.HasDashWallJump = false;
+	DashSettings.DashSpeed = 1500.0f;
+	DashSettings.DashDuration = 0.25f;
+	DashSettings.DashWallJumpMultiplier = 3.0f;
+
+	GlideSettings.HasGlide = false;
+	GlideSettings.GlideTurnRateMultiplier = 1.0f;
+	GlideSettings.GlideDuration = 2.0f;
+	GlideSettings.InitialGlideVelocity = 100.0f;
+	GlideSettings.GlideGravityMultiplier = 50.0f;
+
+	SlamSettings.HasSlam = false;
+	SlamSettings.SlamVelocity = 1000.0f;
+
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 1000.0f;
-	ModelFadeDistance = 250.0f;
-	CameraLag = 3.0f;
-	CameraRotationLag = 10.0f;
-	AimingLagMultiplier = 0.0f;
-	OverrideRegionRotationLagMultiplier = 0.75f;
-	CameraAutoTurnFactor = 60.0f;
-	CameraResetTime = 1.0f;
+
+	CameraLagSettings.CameraLag = 3.0f;
+	CameraLagSettings.CameraRotationLag = 10.0f;
+	CameraLagSettings.AimingLagMultiplier = 0.0f;
+	CameraLagSettings.OverrideRegionRotationLagMultiplier = 0.75f;
+
+	CameraAutoTurnSettings.CameraAutoTurnFactor = 60.0f;
+	CameraAutoTurnSettings.CameraResetTime = 1.0f;
+
+	CameraModelFadeSettings.ModelFadeEnabled = false;
+	CameraModelFadeSettings.ModelFadeDistance = 250.0f;
 
 	HelpEnabled = false;
 
@@ -63,9 +81,6 @@ AAuyron::AAuyron()
 
 	// Oh you better believe we're ticking every frame.
 	PrimaryActorTick.bCanEverTick = true;
-
-	//Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	//Root->AttachTo(RootComponent);
 
 	// I wanted to be a cylinder, but no, we gotta be a capsule.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
@@ -92,8 +107,8 @@ AAuyron::AAuyron()
 	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 60.0f), FRotator(-30.0f, 0.0f, 0.0f));
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->bEnableCameraRotationLag = true;
-	SpringArm->CameraLagSpeed = CameraLag;
-	SpringArm->CameraRotationLagSpeed = CameraRotationLag;
+	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
+	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 	SpringArm->CameraLagMaxDistance = 1000.0f;
 	SpringArm->AttachTo(CapsuleComponent);
 
@@ -291,12 +306,12 @@ void AAuyron::BeginPlay()
 	SpringArm->TargetArmLength = DefaultArmLength;
 
 	// Set the max slope and max off ground time for the movement component.
-	MovementComponent->maxslope = MaxSlope;
-	MovementComponent->MaxOffGroundTime = OffGroundJumpTime;
+	MovementComponent->maxslope = PhysicsSettings.MaxSlope;
+	MovementComponent->MaxOffGroundTime = JumpSettings.OffGroundJumpTime;
 
 	// Point gravuty downwards.
-	Gravity = -Gravity;
-	DefaultGravity = Gravity;
+	PhysicsSettings.Gravity = -PhysicsSettings.Gravity;
+	DefaultGravity = PhysicsSettings.Gravity;
 
 	// Initialize gem count.
 	GemCount = 0;
@@ -321,9 +336,9 @@ void AAuyron::BeginPlay()
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->DeactivateSystem();
 
-	if (asd) {
+	if (Hud) {
 		// Create the widget and store it.
-		thehud = CreateWidget<UUserWidget>(GetWorld(), asd);
+		thehud = CreateWidget<UUserWidget>(GetWorld(), Hud);
 
 		// now you can use the widget directly since you have a referance for it.
 		// Extra check to  make sure the pointer holds the widget.
@@ -365,8 +380,8 @@ void AAuyron::Tick(float DeltaTime)
 	bool cameralocktemp = cameralocked;
 
 	// Set and range and angle to the "short range" values.
-	float TeleportRange = TeleportRangeWhenNotAiming;
-	float TeleportAngleTolerance = TeleportAngleToleranceWhenNotAiming;
+	float TeleportRange = TeleportSettings.TeleportRangeWhenNotAiming;
+	float TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenNotAiming;
 
 	// Temporarily unlock the camera if the player is using the free camera mode.
 	if (cameramode) {
@@ -391,8 +406,8 @@ void AAuyron::Tick(float DeltaTime)
 			NewRotation.Yaw = NewRotation.Yaw + CameraInput.X;
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
-			if (TimeSinceLastMouseInput > CameraResetTime && !ztarget && !movementlocked) {
-				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(actualvelocity,FVector::UpVector)/MaxVelocity) * DeltaTime * CameraAutoTurnFactor;
+			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
+				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(actualvelocity,FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
 			}
 
 			// Set the rotation of the camera.
@@ -401,14 +416,14 @@ void AAuyron::Tick(float DeltaTime)
 			// Move the camera's pitch in response to the y input of the mouse/stick.
 			NewRotation = SpringArm->GetComponentRotation();
 			NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
-			SpringArm->CameraRotationLagSpeed = CameraRotationLag;
+			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 			SpringArm->SetWorldRotation(NewRotation);
 
 		} else {
 
 			// If the camera is locked, put it at the override region's
 			// target location and rotation.
-			SpringArm->CameraRotationLagSpeed = CameraRotationLag*OverrideRegionRotationLagMultiplier;
+			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*CameraLagSettings.OverrideRegionRotationLagMultiplier;
 			SpringArm->SetWorldRotation(CameraOverrideTargetRotation);
 			if (!CameraLockToPlayerXAxis&&!CameraLockToPlayerYAxis&&!CameraLockToPlayerZAxis) {
 				SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement);
@@ -429,8 +444,8 @@ void AAuyron::Tick(float DeltaTime)
 		if (ztarget&&!dashing) {
 
 			// Set teleport range and angle to the "long range" values.
-			TeleportRange = TeleportRangeWhenAiming;
-			TeleportAngleTolerance = TeleportAngleToleranceWhenAiming;
+			TeleportRange = TeleportSettings.TeleportRangeWhenAiming;
+			TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenAiming;
 
 			// Find the direction the player and camera should be facing.
 			FRotator NewRotation = SpringArm->RelativeRotation;
@@ -458,8 +473,8 @@ void AAuyron::Tick(float DeltaTime)
 			// Face the player and camera to the new rotation.
 			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
 			SpringArm->TargetArmLength = 300.0f;
-			SpringArm->CameraLagSpeed = CameraLag * AimingLagMultiplier;
-			SpringArm->CameraRotationLagSpeed = CameraRotationLag * AimingLagMultiplier;
+			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.AimingLagMultiplier;
+			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * CameraLagSettings.AimingLagMultiplier;
 			SpringArm->SetRelativeRotation(NewRotation);
 
 			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
@@ -480,8 +495,8 @@ void AAuyron::Tick(float DeltaTime)
 			// Return the spring arm (and camera) to its original location.
 			if (!cameralocked) {
 				SpringArm->TargetArmLength = DefaultArmLength;
-				SpringArm->CameraLagSpeed = CameraLag;
-				SpringArm->CameraRotationLagSpeed = CameraRotationLag;
+				SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
+				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 				SpringArm->SetRelativeLocation(FVector::ZeroVector);
 				
 				// If we just stopped aiming, reset the camera's rotation as well.
@@ -558,14 +573,14 @@ void AAuyron::Tick(float DeltaTime)
 			// and within a certain angle tolerance and teleport he player to it
 			// if they are trying to teleport.
 			if (closest != nullptr &&
-				HasTeleport &&
+				TeleportSettings.HasTeleport &&
 				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
 				(closest->GetActorLocation() - GetActorLocation()).Size() < TeleportRange) {
 
 				AStick* s = closest;
 
 				// Set the target TelePad's color and brightness so that it stands out.
-				s->PointLight->LightColor = TeleportLightColor;
+				s->PointLight->LightColor = TeleportSettings.TeleportLightColor;
 				s->PointLight->Intensity = 16.0*1385.76f;
 				s->PointLight->UpdateColorAndBrightness();
 
@@ -650,9 +665,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Handle the screen warp animation.
 		if (warpanimtimer >= 0.0f) {
-			screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), FMath::Lerp(2.0f,0.0f, FMath::Pow(FMath::Clamp(warpanimtimer / TeleportAnimationDuration, 0.0f, 1.0f), 0.25f)));
+			screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), FMath::Lerp(2.0f,0.0f, FMath::Pow(FMath::Clamp(warpanimtimer / TeleportSettings.TeleportAnimationDuration, 0.0f, 1.0f), 0.25f)));
 			warpanimtimer += DeltaTime;
-			if (warpanimtimer >= TeleportAnimationDuration) {
+			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
 				warpanimtimer = -1.0f;
 			}
 		}
@@ -664,10 +679,10 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Make the player model translucent if the camera gets too close.
-		float opacity = FMath::Clamp((Camera->GetComponentLocation() - GetActorLocation()).Size() / ModelFadeDistance, 0.0f, 1.0f);
-		hairmat->SetScalarParameterValue(TEXT("fade"), (ModelFadeEnabled ? opacity : 1.0f));
-		bandanamat->SetScalarParameterValue(TEXT("fade"), (ModelFadeEnabled ? opacity : 1.0f));
-		bodymat->SetScalarParameterValue(TEXT("fade"), (ModelFadeEnabled ? opacity : 1.0f));
+		float opacity = FMath::Clamp((Camera->GetComponentLocation() - GetActorLocation()).Size() / CameraModelFadeSettings.ModelFadeDistance, 0.0f, 1.0f);
+		hairmat->SetScalarParameterValue(TEXT("fade"), (CameraModelFadeSettings.ModelFadeEnabled ? opacity : 1.0f));
+		bandanamat->SetScalarParameterValue(TEXT("fade"), (CameraModelFadeSettings.ModelFadeEnabled ? opacity : 1.0f));
+		bodymat->SetScalarParameterValue(TEXT("fade"), (CameraModelFadeSettings.ModelFadeEnabled ? opacity : 1.0f));
 
 		// Lock the player's movement inputs if they're dashing.
 		if (dashing) {
@@ -696,7 +711,7 @@ void AAuyron::Tick(float DeltaTime)
 		// Set up acceleration vector using the movement inputs.
 		FVector AdjustedInput = MovementInput.GetClampedToSize(0.0f, 1.0f);
 		FVector Acceleration = FVector::ZeroVector;
-		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? GroundAccelerationRate : AirAccelerationRate);
+		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
 
 		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
 		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
@@ -709,16 +724,16 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Decreases the effect of deceleration when the player is moving near max speed
 		// and increases it when they are going slow. This makes decelerating feel much smoother.
-		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / MaxVelocity), FMath::Square(Velocity.Size() / MaxVelocity), Velocity.Size() / MaxVelocity), 0.0f, 1.0f);
+		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), Velocity.Size() / PhysicsSettings.MaxVelocity), 0.0f, 1.0f);
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
-		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundAccelerationRate / MaxVelocity : AirAccelerationRate / MaxVelocity) * slowfactor;
+		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
 
 		// Ask the movement component if we're on the ground and apply gravity if we aren't.
 		OnTheGround = MovementComponent->onground;
 		if (!OnTheGround) {
-			Acceleration += FVector(0.0f, 0.0f, Gravity);
+			Acceleration += FVector(0.0f, 0.0f, PhysicsSettings.Gravity);
 		} else if (WasOnTheGround) {
 			// Push the player into the ground a bit so we still get collisions every frame.
 			// Also keeps player from falling off slopes while running down them.
@@ -728,8 +743,8 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Apply drag.
-		if (!OnTheGround && FMath::Abs(Velocity.Z) > JumpPower) {
-			Acceleration -= FVector::UpVector * -Gravity * FMath::Pow(Velocity.Z / TerminalVelocity, 2.0f) * FMath::Sign(Velocity.Z);
+		if (!OnTheGround && FMath::Abs(Velocity.Z) > JumpSettings.JumpPower) {
+			Acceleration -= FVector::UpVector * -PhysicsSettings.Gravity * FMath::Pow(Velocity.Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(Velocity.Z);
 		}
 
 		Acceleration += AppliedForce;
@@ -773,7 +788,7 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity += Acceleration * DeltaTime;
 
 		// This ain't Megaman X, kiddo.
-		if (dashing&&!HasDashJump&&(!OnTheGround||JumpNextFrame)) {
+		if (dashing&&!DashSettings.HasDashJump&&(!OnTheGround||JumpNextFrame)) {
 			DashParticles->DeactivateSystem();
 			dashing = false;
 			dashtimer = 0.0f;
@@ -784,7 +799,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Jump while taking the floor's angle and vertical movement into account.
 			Velocity.Z = 0.5f * (MovementComponent->groundvelocity.Z >= 0.0f ? MovementComponent->groundverticalvelocity : -MovementComponent->groundvelocity.Z);
-			Velocity += JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal).GetSafeNormal();
+			Velocity += JumpSettings.JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal).GetSafeNormal();
 			JumpNextFrame = false;
 			WasOnTheGround = false;
 			JustJumped = true;
@@ -800,7 +815,11 @@ void AAuyron::Tick(float DeltaTime)
 
 				// Set player velocity to be away from the wall.
 				FVector temp = Velocity;
-				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity*WallJumpMultiplier + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()));
+				float multi = JumpSettings.WallJumpMultiplier;
+				if (DashSettings.HasDashWallJump&&holdingdash) {
+					multi = DashSettings.DashWallJumpMultiplier;
+				}
+				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()));
 				Velocity.Z = temp.Z;
 				JustWallJumped = true;
 
@@ -814,7 +833,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Start gliding.
 		if (GlideNextFrame&&!AlreadyGlided&&!dunk) {
-			Velocity.Z = InitialGlideVelocity;
+			Velocity.Z = GlideSettings.InitialGlideVelocity;
 			IsGliding = true;
 			AlreadyGlided = true;
 			GlideNextFrame = false;
@@ -824,15 +843,15 @@ void AAuyron::Tick(float DeltaTime)
 		// Handle gliding.
 		if (IsGliding) {
 			GlideTimer += DeltaTime;
-			Gravity = DefaultGravity / GlideGravityMultiplier;
+			PhysicsSettings.Gravity = DefaultGravity / GlideSettings.GlideGravityMultiplier;
 		} else {
 			FloatParticles->DeactivateSystem();
 			GlideTimer = 0.0f;
-			Gravity = DefaultGravity;
+			PhysicsSettings.Gravity = DefaultGravity;
 		}
 
 		// Stop gliding.
-		if (GlideTimer > GlideDuration || OnTheGround || !HoldingJump) {
+		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump) {
 			IsGliding = false;
 		}
 
@@ -848,13 +867,13 @@ void AAuyron::Tick(float DeltaTime)
 		// Apply a downward force if the player lets go of jump while still moving upwards.
 		// This allows for variable jump heights.
 		if (!HoldingJump && Velocity.Z > 0 && !AlreadyUnjumped) {
-			Velocity += FVector::UpVector * Gravity * UnjumpRate * (Velocity.Z / JumpPower);
+			Velocity += FVector::UpVector * PhysicsSettings.Gravity * JumpSettings.UnjumpRate * (Velocity.Z / JumpSettings.JumpPower);
 			AlreadyUnjumped = true;
 		}
 
 		// Make the player start dashing in response to input.
-		if (dash) {
-			dash = false;
+		if (dashnextframe) {
+			dashnextframe = false;
 			if (OnTheGround) {
 				DashParticles->ActivateSystem();
 				dashing = true;
@@ -866,16 +885,16 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Set the player's horizontal velocity while preserving their vertical velocity.
 			float z = Velocity.Z;
-			Velocity = TargetDirection.Vector().GetSafeNormal()*DashSpeed;
+			Velocity = TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed;
 			Velocity.Z = z;
 
 			// Tick up the dash timer.
-			if (!HasInfiniteDash) {
+			if (!DashSettings.HasInfiniteDash) {
 				dashtimer += DeltaTime;
 			}
 
 			// Stop dashing if the player was dashing for too long.
-			if (dashtimer > DashDuration) {
+			if (dashtimer > DashSettings.DashDuration) {
 				dashing = false;
 				DashParticles->DeactivateSystem();
 				dashtimer = 0.0f;
@@ -886,7 +905,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (SlamNextFrame) {
 			SlamNextFrame = false;
 			if (!OnTheGround) {
-				Velocity -= SlamVelocity * FVector::UpVector;
+				Velocity -= SlamSettings.SlamVelocity * FVector::UpVector;
 				dunk = true;
 			}
 		}
@@ -980,7 +999,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Snap to the target angle if we're close enough, otherwise just keep turning.
 			if (!ztarget) {
-				test = FQuat(dummy, FMath::DegreesToRadians(multiply*(IsGliding ? 1.0f : GlideTurnRateMultiplier)*TurnRate)*DeltaTime);
+				test = FQuat(dummy, FMath::DegreesToRadians(multiply*(IsGliding ? 1.0f : GlideSettings.GlideTurnRateMultiplier)*TurnSettings.TurnRate)*DeltaTime);
 				float angle2 = 0.0f;
 				test.ToAxisAndAngle(dummy, angle2);
 				if (FMath::Abs(angle2) > FMath::Abs(angle)) {
@@ -1055,10 +1074,10 @@ void AAuyron::Jump()
 	//   2. We haven't been off the ground for very long.
 	//   3. We are pushing into a wall (wall jump).
 	FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
-	if (OnTheGround || MovementComponent->offGroundTime < OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
+	if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 		JumpNextFrame = true;
 	} else {
-		if (HasGlide&&!AlreadyGlided) {
+		if (GlideSettings.HasGlide&&!AlreadyGlided) {
 			GlideNextFrame = true;
 		}
 	}
@@ -1099,14 +1118,14 @@ void AAuyron::CameraModeToggle()
 // swish
 void AAuyron::Warp()
 {
-	if (HasTeleport) {
+	if (TeleportSettings.HasTeleport) {
 		swish = true;
 	}
 }
 
 void AAuyron::Slam()
 {
-	if (HasSlam&&!OnTheGround) {
+	if (SlamSettings.HasSlam&&!OnTheGround) {
 		SlamNextFrame = true;
 	}
 }
@@ -1119,16 +1138,18 @@ void AAuyron::ToggleHelp() {
 // woosh
 void AAuyron::Dash()
 {
-	if (!dashing&&!ztarget&&HasDash) {
-		dash = true;
+	if (!dashing&&!ztarget&&DashSettings.HasDash) {
+		dashnextframe = true;
+		holdingdash = true;
 	}
 }
 
 // unwoosh
 void AAuyron::UnDash()
 {
+	holdingdash = false;
 	if (dashing) {
-		dashtimer = DashDuration + 100.0f;
+		dashtimer = DashSettings.DashDuration + 100.0f;
 	}
 }
 
@@ -1150,7 +1171,7 @@ float AAuyron::GetActualSpeed()
 float AAuyron::GetModelOpacity()
 {
 	float dist = (Camera->GetComponentLocation() - GetActorLocation()).Size();
-	return FMath::Clamp(dist / ModelFadeDistance,0.0f,1.0f);
+	return FMath::Clamp(dist / CameraModelFadeSettings.ModelFadeDistance,0.0f,1.0f);
 }
 
 bool AAuyron::GetIsTurning() 
@@ -1159,7 +1180,7 @@ bool AAuyron::GetIsTurning()
 	float angle = 0.0f;
 	FVector dummy;
 	test.ToAxisAndAngle(dummy, angle);
-	return (FMath::Abs(angle) > FMath::DegreesToRadians(FacingAngleSnapThreshold));
+	return (FMath::Abs(angle) > FMath::DegreesToRadians(TurnSettings.FacingAngleSnapThreshold));
 }
 
 bool AAuyron::GetIsAiming()
