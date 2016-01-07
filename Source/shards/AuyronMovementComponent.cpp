@@ -55,6 +55,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		if (Floor.GetActor() != nullptr && Floor.GetActor()->GetClass() != nullptr && (Floor.GetActor()->GetClass()->GetName() == "MovingPlatform" || Floor.GetActor()->GetClass()->GetName() == "RotatingPlatform")) {
 			// Record the platform's velocity and acceleration so the character controller can deal with it.
 			groundvelocity = ((AMovingPlatform*)Floor.GetActor())->Velocity;
+			groundvelocity *= (((AMovingPlatform*)Floor.GetActor())->Deactivated ? 0.0f : 1.0f);
 
 			// It's a ROTATING platform.
 			if (Floor.GetActor()->GetClass()->GetName() == "RotatingPlatform") {
@@ -64,6 +65,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 				// is rotating clockwise.  
 				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)Floor.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
 				platformangularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)Floor.GetActor())->AngularPeriod;
+				platformangularfrequency *= (((ARotatingPlatform*)Floor.GetActor())->Deactivated ? 0.0f : 1.0f);
 				platformspindir = (((ARotatingPlatform*)Floor.GetActor())->SpinDirection == ARotatingPlatform::CW ? -1 : 1);
 				groundvelocity += platformangularfrequency * displacement.Size() *
 								  FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *

@@ -71,6 +71,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetSpeed();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	float GetActualSpeed();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetModelOpacity();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsTurning();
@@ -126,6 +128,12 @@ public:
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float MaxVelocity;
 
+	/* The player's maximum vertical velocity. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float TerminalVelocity;
+
+	/* Minimum vertical velocity the player needs before drag is actually applied. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float DragThreshold;
+
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float DashSpeed;
 
@@ -143,6 +151,9 @@ public:
 
 	/* The upward speed at which the player starts their jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float JumpPower;
+
+	/* The player's initial forward velocity when wall jumping, in multiples of their normal max velocity. */
+	UPROPERTY(EditAnywhere, Category = "Movement") float WallJumpMultiplier;
 
 	/* Time after falling off a ledge that the player can still jump. */
 	UPROPERTY(EditAnywhere, Category = "Movement") float OffGroundJumpTime;
@@ -231,6 +242,9 @@ public:
 	/* How long the camera should wait after the last mouse input before reverting to automatic control. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float CameraResetTime;
 
+	/* Whether or not the model should fade out if the camera gets close. */
+	UPROPERTY(EditAnywhere, Category = "Camera") bool ModelFadeEnabled;
+
 	/* The minumum distance the camera can be from the player model before the player model begines to fade out. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float ModelFadeDistance;
 
@@ -263,6 +277,8 @@ private:
 
 	bool GlideNextFrame;
 	bool IsGliding;
+	bool AlreadyUnjumped;
+	FVector actualvelocity;
 	bool AlreadyGlided;
 	float GlideTimer;
 	float warptimer;
@@ -273,6 +289,7 @@ private:
 
 	uint8 jumpsLeft;
 	bool justDoubleJumped;
+	FVector AppliedForce;
 	bool WasOnTheGround;
 	bool swish;
 	bool dash;

@@ -11,6 +11,7 @@
 #include "TeleClaw.h"
 #include "MusicRegion.h"
 #include "TwoDimensionalMovementRegion.h"
+#include "ForceRegion.h"
 #include "WarpCrystal.h"
 #include "Switch.h"
 
@@ -21,12 +22,14 @@ AAuyron::AAuyron()
 	GroundAccelerationRate = 5500.0f;
 	AirAccelerationRate = 500.0f;
 	MaxVelocity = 500.0f;
+	TerminalVelocity = 2000.0f;
 	DashSpeed = 1500.0f;
 	DashDuration = 0.25f;
 	MaxSlope = 45.0f;
 	TurnRate = 720.0f;
 	GlideTurnRateMultiplier = 1.0f;
 	JumpPower = 450.0f;
+	WallJumpMultiplier = 1.0f;
 	OffGroundJumpTime = 0.04f;
 	Gravity = 900.0f;
 	UnjumpRate = 1.5f;
@@ -200,7 +203,9 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 				CameraOverrideTargetRotation = FRotator::ZeroRotator;
 			}
 		}
-
+		if (OtherActor->IsA(AForceRegion::StaticClass())) {
+			AppliedForce -= ((AForceRegion*)OtherActor)->Direction * ((AForceRegion*)OtherActor)->Magnitude;
+		}
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = false;
 		}
@@ -254,7 +259,9 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
-
+		if (OtherActor->IsA(AForceRegion::StaticClass())) {
+			AppliedForce += ((AForceRegion*)OtherActor)->Direction * ((AForceRegion*)OtherActor)->Magnitude;
+		}
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = true;
 			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
@@ -296,6 +303,7 @@ void AAuyron::BeginPlay()
 
 	previousposition = GetActorLocation();
 	closecamera = GetActorLocation();
+	RespawnPoint = GetActorLocation();
 
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
@@ -334,6 +342,9 @@ void AAuyron::Tick(float DeltaTime)
 
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
+
+	// Used for situations where the player's movement may be impeded and for debug info.
+	actualvelocity = (GetActorLocation() - previousposition) / DeltaTime;
 
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
@@ -381,7 +392,6 @@ void AAuyron::Tick(float DeltaTime)
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraResetTime && !ztarget && !movementlocked) {
-				FVector actualvelocity = (GetActorLocation() - previousposition) / DeltaTime;
 				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(actualvelocity,FVector::UpVector)/MaxVelocity) * DeltaTime * CameraAutoTurnFactor;
 			}
 
@@ -655,9 +665,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Make the player model translucent if the camera gets too close.
 		float opacity = FMath::Clamp((Camera->GetComponentLocation() - GetActorLocation()).Size() / ModelFadeDistance, 0.0f, 1.0f);
-		hairmat->SetScalarParameterValue(TEXT("fade"), opacity);
-		bandanamat->SetScalarParameterValue(TEXT("fade"), opacity);
-		bodymat->SetScalarParameterValue(TEXT("fade"), opacity);
+		hairmat->SetScalarParameterValue(TEXT("fade"), (ModelFadeEnabled ? opacity : 1.0f));
+		bandanamat->SetScalarParameterValue(TEXT("fade"), (ModelFadeEnabled ? opacity : 1.0f));
+		bodymat->SetScalarParameterValue(TEXT("fade"), (ModelFadeEnabled ? opacity : 1.0f));
 
 		// Lock the player's movement inputs if they're dashing.
 		if (dashing) {
@@ -702,7 +712,7 @@ void AAuyron::Tick(float DeltaTime)
 		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / MaxVelocity), FMath::Square(Velocity.Size() / MaxVelocity), Velocity.Size() / MaxVelocity), 0.0f, 1.0f);
 
 		// Apply a deceleration that scales with the player's velocity
-		// in such a waythat it limits it to MaxVelocity.
+		// in such a way that it limits it to MaxVelocity.
 		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? GroundAccelerationRate / MaxVelocity : AirAccelerationRate / MaxVelocity) * slowfactor;
 
 		// Ask the movement component if we're on the ground and apply gravity if we aren't.
@@ -714,6 +724,19 @@ void AAuyron::Tick(float DeltaTime)
 			// Also keeps player from falling off slopes while running down them.
 			if (MovementComponent->Floor.Normal.Z > 0.0f) {
 				Velocity.Z = -100.0f;
+			}
+		}
+
+		// Apply drag.
+		if (!OnTheGround && FMath::Abs(Velocity.Z) > JumpPower) {
+			Acceleration -= FVector::UpVector * -Gravity * FMath::Pow(Velocity.Z / TerminalVelocity, 2.0f) * FMath::Sign(Velocity.Z);
+		}
+
+		Acceleration += AppliedForce;
+		if (AppliedForce.Z > 0.0f) {
+			AlreadyUnjumped = true;
+			if(OnTheGround) {
+				Velocity.Z += 100.0f;
 			}
 		}
 
@@ -749,6 +772,13 @@ void AAuyron::Tick(float DeltaTime)
 		// Physiiiiicccss.
 		Velocity += Acceleration * DeltaTime;
 
+		// This ain't Megaman X, kiddo.
+		if (dashing&&!HasDashJump&&(!OnTheGround||JumpNextFrame)) {
+			DashParticles->DeactivateSystem();
+			dashing = false;
+			dashtimer = 0.0f;
+		}
+
 		// Handle jumping.
 		if (JumpNextFrame) {
 
@@ -758,13 +788,6 @@ void AAuyron::Tick(float DeltaTime)
 			JumpNextFrame = false;
 			WasOnTheGround = false;
 			JustJumped = true;
-
-			// This ain't Megaman X, kiddo.
-			if (dashing&&!HasDashJump) {
-				DashParticles->DeactivateSystem();
-				dashing = false;
-				dashtimer = 0.0f;
-			}
 
 			// OK this might be Megaman X a litle.
 			FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
@@ -777,7 +800,7 @@ void AAuyron::Tick(float DeltaTime)
 
 				// Set player velocity to be away from the wall.
 				FVector temp = Velocity;
-				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()));
+				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*MaxVelocity*WallJumpMultiplier + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()));
 				Velocity.Z = temp.Z;
 				JustWallJumped = true;
 
@@ -815,6 +838,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		if (OnTheGround) {
 			AlreadyGlided = false;
+			AlreadyUnjumped = false;
 		}
 
 		if (warptimer >= 0.0f) {
@@ -823,8 +847,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply a downward force if the player lets go of jump while still moving upwards.
 		// This allows for variable jump heights.
-		if (!HoldingJump && Velocity.Z > 0) {
-			Velocity += Gravity * FVector(0, 0, UnjumpRate) * DeltaTime;
+		if (!HoldingJump && Velocity.Z > 0 && !AlreadyUnjumped) {
+			Velocity += FVector::UpVector * Gravity * UnjumpRate * (Velocity.Z / JumpPower);
+			AlreadyUnjumped = true;
 		}
 
 		// Make the player start dashing in response to input.
@@ -901,7 +926,6 @@ void AAuyron::Tick(float DeltaTime)
 
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
-
 	}
 
 	// Handle rotating the player model in response to player input.
@@ -1111,7 +1135,16 @@ void AAuyron::UnDash()
 // Getter functions used by the animation blueprints.
 float AAuyron::GetSpeed()
 {
-	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
+	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity - AppliedForce, FVector::UpVector)).Size();
+}
+
+float AAuyron::GetActualSpeed()
+{
+	FVector temp = Velocity;
+	if (OnTheGround) {
+		temp.Z += 100.0f;
+	}
+	return temp.Size();
 }
 
 float AAuyron::GetModelOpacity()

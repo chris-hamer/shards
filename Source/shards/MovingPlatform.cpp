@@ -61,6 +61,13 @@ float blink(float x, float ctime) {
 	return 0.5f*(FMath::Sign(wave(x, ctime) - 0.5f) + 1);
 }
 
+float onewaylinear(float x, float ctime) {
+	if (x < ctime) {
+		return linear(x, ctime);
+	}
+	return 1.0f;
+}
+
 // Called every frame
 void AMovingPlatform::Tick( float DeltaTime )
 {
@@ -80,6 +87,8 @@ void AMovingPlatform::Tick( float DeltaTime )
 				break;
 			case BLINK:
 				f = &blink;
+			case ONEWAY:
+				f = &onewaylinear;
 			}
 
 			// Increment the timer and find the platform's new position.

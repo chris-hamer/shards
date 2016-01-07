@@ -15,6 +15,8 @@ void ARotatingPlatform::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	float angularfrequency = 1.0f / AngularPeriod;
-	Model->AddLocalRotation(FQuat(FVector::UpVector, (SpinDirection == CW ? 1 : -1) * (2.0f * 3.14159f) * angularfrequency * DeltaTime));
+	if (!Deactivated) {
+		Model->AddLocalRotation(FQuat(FVector::UpVector, (SpinDirection == CW ? 1 : -1) * (2.0f * 3.14159f) * angularfrequency * DeltaTime));
+	}
 }
 

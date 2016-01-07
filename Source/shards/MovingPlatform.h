@@ -10,9 +10,10 @@ class SHARDS_API AMovingPlatform : public AActor
 {
 	GENERATED_BODY()
 
-	UENUM() enum Type {
+		UENUM() enum Type {
 		LINEAR                UMETA(DisplayName = "Linear"),
 		WAVE                  UMETA(DisplayName = "Wave"),
+		ONEWAY				  UMETA(DisplayName = "OneWay"),
 		BLINK                 UMETA(DisplayName = "Blink")
 	};
 
