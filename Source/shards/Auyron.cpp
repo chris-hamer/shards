@@ -38,7 +38,10 @@ AAuyron::AAuyron()
 	TeleportSettings.TeleportAngleToleranceWhenAiming = 5.0f;
 	TeleportSettings.TeleportRangeWhenNotAiming = 900.0f;
 	TeleportSettings.TeleportAngleToleranceWhenNotAiming = 70.0f;
-	TeleportSettings.TeleportAnimationDuration = 0.5f;
+	TeleportSettings.TeleportAnimationDuration = 0.4f;
+	TeleportSettings.TeleportFOV = 160.0f;
+	TeleportSettings.TeleportAnimationPowerFactor = 4.0f;
+	TeleportSettings.TeleportAnimationRestoreThreshold = 0.15f;
 	TeleportSettings.TeleportLightColor = FColor(0x336FE6FF);
 
 	DashSettings.HasDash = false;
@@ -321,6 +324,8 @@ void AAuyron::BeginPlay()
 
 	// Initialize gem count.
 	GemCount = 0;
+
+	defaultfov = Camera->FieldOfView;
 
 	warpanimtimer = -1.0f;
 	screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), 0.0f);
@@ -673,11 +678,14 @@ void AAuyron::Tick(float DeltaTime)
 				}
 			}
 		}
-		
-		//screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), TeleportSettings.TeleportAngleToleranceWhenAiming);
+
 		// Handle the screen warp animation.
 		if (warpanimtimer >= 0.0f) {
-			screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), FMath::Lerp(2.0f,0.0f, FMath::Pow(FMath::Clamp(warpanimtimer / TeleportSettings.TeleportAnimationDuration, 0.0f, 1.0f), 1.0f)));
+			if (warpanimtimer < TeleportSettings.TeleportAnimationRestoreThreshold) {
+				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
+			} else {
+				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
+			}
 			warpanimtimer += DeltaTime;
 			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
 				warpanimtimer = -1.0f;

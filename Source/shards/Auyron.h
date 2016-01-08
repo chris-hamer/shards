@@ -95,6 +95,15 @@ struct FAbilitiesTeleport
 	/* The time in seconds it takes the teleport screen warp animation to complete. */
 	UPROPERTY(EditAnywhere) float TeleportAnimationDuration;
 
+	/* The field of view immediately after teleporting. This will lerp back to the default FOV. */
+	UPROPERTY(EditAnywhere) float TeleportFOV;
+
+	/* The exponent applied to the FOV lerp. Values greater than 1 make the restoring animation focus more on the initial part. */
+	UPROPERTY(EditAnywhere) float TeleportAnimationPowerFactor;
+
+	/* Time in seconds after teleporting when the teleport animation switches to warping in to warping out. */
+	UPROPERTY(EditAnywhere) float TeleportAnimationRestoreThreshold;
+
 	/* The color that the telepads should turn when you're aiming at them. */
 	UPROPERTY(EditAnywhere) FColor TeleportLightColor;
 };
@@ -392,6 +401,7 @@ private:
 
 	FVector RespawnPoint;
 	
+	float defaultfov;
 	TEnumAsByte<ATwoDimensionalMovementRegion::AxisEnum> LockedMovementAxis;
 	FVector CameraOverrideTargetDisplacement;
 	FVector CameraOverrideTargetLocation;
