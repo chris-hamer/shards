@@ -34,7 +34,7 @@ AAuyron::AAuyron()
 	TurnSettings.TurnRate = 720.0f;
 	TurnSettings.FacingAngleSnapThreshold = 5.0f;
 
-	TeleportSettings.TeleportRangeWhenAiming = 6000.0f;
+	TeleportSettings.TeleportRangeWhenAiming = 4000.0f;
 	TeleportSettings.TeleportAngleToleranceWhenAiming = 5.0f;
 	TeleportSettings.TeleportRangeWhenNotAiming = 900.0f;
 	TeleportSettings.TeleportAngleToleranceWhenNotAiming = 70.0f;
@@ -134,6 +134,12 @@ AAuyron::AAuyron()
 	SlamParticles->SetTemplate(sp.Object);
 	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	SlamParticles->AttachTo(PlayerModel);
+
+	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
+	SlamTrail->SetTemplate(st.Object);
+	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	SlamTrail->AttachTo(PlayerModel);
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
@@ -316,6 +322,9 @@ void AAuyron::BeginPlay()
 	// Initialize gem count.
 	GemCount = 0;
 
+	warpanimtimer = -1.0f;
+	screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), 0.0f);
+
 	previousposition = GetActorLocation();
 	closecamera = GetActorLocation();
 	RespawnPoint = GetActorLocation();
@@ -335,6 +344,8 @@ void AAuyron::BeginPlay()
 	FloatParticles->DeactivateSystem();
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->DeactivateSystem();
+	SlamTrail->bAutoActivate = false;
+	SlamTrail->DeactivateSystem();
 
 	if (Hud) {
 		// Create the widget and store it.
@@ -662,10 +673,11 @@ void AAuyron::Tick(float DeltaTime)
 				}
 			}
 		}
-
+		
+		//screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), TeleportSettings.TeleportAngleToleranceWhenAiming);
 		// Handle the screen warp animation.
 		if (warpanimtimer >= 0.0f) {
-			screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), FMath::Lerp(2.0f,0.0f, FMath::Pow(FMath::Clamp(warpanimtimer / TeleportSettings.TeleportAnimationDuration, 0.0f, 1.0f), 0.25f)));
+			screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), FMath::Lerp(2.0f,0.0f, FMath::Pow(FMath::Clamp(warpanimtimer / TeleportSettings.TeleportAnimationDuration, 0.0f, 1.0f), 1.0f)));
 			warpanimtimer += DeltaTime;
 			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
 				warpanimtimer = -1.0f;
@@ -902,18 +914,22 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// COME ON AND SLAM
-		if (SlamNextFrame) {
+		if (SlamNextFrame&&!dunk) {
 			SlamNextFrame = false;
 			if (!OnTheGround) {
 				Velocity -= SlamSettings.SlamVelocity * FVector::UpVector;
 				dunk = true;
+				SlamTrail->ActivateSystem();
 			}
 		}
 
 		// AND WELCOME TO THE JAM
-		if (dunk && OnTheGround) {
-			dunk = false;
-			SlamParticles->ActivateSystem();
+		if (dunk) {
+			if (OnTheGround) {
+				dunk = false;
+				SlamTrail->DeactivateSystem();
+				SlamParticles->ActivateSystem();
+			}
 		}
 
 		if (ShouldActivate) {

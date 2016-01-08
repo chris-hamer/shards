@@ -290,6 +290,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* SlamParticles;
+	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* SlamTrail;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesL;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesR;
 	UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
@@ -338,6 +339,7 @@ private:
 	bool JustWallJumped;
 	bool SlamNextFrame;
 	bool JustSlammed;
+	bool AlreadySlammed;
 	bool OnTheGround;
 	bool HelpEnabled;
 
