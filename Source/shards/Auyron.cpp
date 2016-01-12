@@ -252,7 +252,6 @@ void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherCom
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
-
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = true;
 			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
@@ -352,18 +351,18 @@ void AAuyron::BeginPlay()
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->DeactivateSystem();
 
-	if (Hud) {
+	//if (Hud) {
 		// Create the widget and store it.
-		thehud = CreateWidget<UUserWidget>(GetWorld(), Hud);
+		//thehud = CreateWidget<UUserWidget>(GetWorld(), Hud);
 
 		// now you can use the widget directly since you have a referance for it.
 		// Extra check to  make sure the pointer holds the widget.
-		if (thehud)
-		{
+		//if (thehud)
+		//{
 			//let add it to the view port
-			thehud->AddToViewport();
-		}
-	}
+			//thehud->AddToViewport();
+		//}
+	//}
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -1059,6 +1058,8 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Slam", IE_Pressed, this, &AAuyron::Slam);
 	InputComponent->BindAction("Dash", IE_Pressed, this, &AAuyron::Dash);
 	InputComponent->BindAction("Dash", IE_Released, this, &AAuyron::UnDash);
+	InputComponent->BindAction("Pause", IE_Pressed, this, &AAuyron::Pause);
+	InputComponent->BindAction("Unpause", IE_Pressed, this, &AAuyron::Unpause);
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
@@ -1089,6 +1090,16 @@ void AAuyron::ControllerYawCamera(float AxisValue)
 		AxisValue *= -1;
 	}
 	CameraInput.X += AxisValue;
+}
+
+void AAuyron::Pause()
+{
+	//UGameplayStatics::SetGamePaused(GetWorld(), true);
+}
+
+void AAuyron::Unpause()
+{
+	//UGameplayStatics::SetGamePaused(GetWorld(), false);
 }
 
 void AAuyron::Jump()

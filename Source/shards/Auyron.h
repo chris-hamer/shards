@@ -239,6 +239,8 @@ public:
 	void PitchCamera(float AxisValue);
 	void YawCamera(float AxisValue);
 	void ControllerYawCamera(float AxisValue);
+	void Pause();
+	void Unpause();
 	void Jump();
 	void Unjump();
 	void Use();
@@ -305,7 +307,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 
-	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<class UUserWidget> Hud;
+	//UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<class UUserWidget> Hud;
 
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* ScreenWarpMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* HairMatBase;
