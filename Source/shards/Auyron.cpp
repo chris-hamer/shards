@@ -688,6 +688,7 @@ void AAuyron::Tick(float DeltaTime)
 					FHitResult f;
 					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
 					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
 					FCollisionQueryParams asdf = FCollisionQueryParams();
 
 					// Don't want the ray to collide with the player model now do we?
@@ -698,7 +699,11 @@ void AAuyron::Tick(float DeltaTime)
 
 					// If the trace hit a switch and it's closer to where we're aiming
 					// at than any other switch, set it as the "closest" one.
-					if (f.GetActor() != nullptr && f.GetActor()->IsA(ASwitch::StaticClass()) && dot > biggestdot && blocked) {
+					if (f.GetActor() != nullptr &&
+						f.GetActor()->IsA(ASwitch::StaticClass()) &&
+						dot > biggestdot &&
+						blocked &&
+						displacement.Size() < ActorItr->MaxDistance) {
 						closestswitch = *ActorItr;
 						biggestdot = dot;
 					}
@@ -733,7 +738,7 @@ void AAuyron::Tick(float DeltaTime)
 					// the raycast doesn't work if I don't put these here.
 					FHitResult f;
 					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
-					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+					//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
 					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
 					FCollisionQueryParams asdf = FCollisionQueryParams();
 
@@ -745,7 +750,11 @@ void AAuyron::Tick(float DeltaTime)
 
 					// If the trace hit a NPC and it's closer to where we're aiming
 					// at than any other NPC, set it as the "closest" one.
-					if (f.GetActor() != nullptr && f.GetActor()->IsA(ANPC::StaticClass()) && dot > biggestdot && blocked) {
+					if (f.GetActor() != nullptr &&
+						f.GetActor()->IsA(ANPC::StaticClass()) &&
+						dot > biggestdot &&
+						blocked &&
+						displacement.Size() < ActorItr->MaxDistance) {
 						closestNPC = *ActorItr;
 						biggestdot = dot;
 					}
@@ -1128,6 +1137,8 @@ void AAuyron::Tick(float DeltaTime)
 		{
 			// Horrible quaternion voodoo. Viewer discretion is advised.
 			// I'm honestly still not quite sure what I did.
+			TargetDirection.Roll = 0.0f;
+			TargetDirection.Pitch = 0.0f;
 			FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
 			float angle = 0.0f;
 
