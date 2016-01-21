@@ -10,6 +10,8 @@
 #include "Checkpoint.h"
 #include "TeleClaw.h"
 #include "MusicRegion.h"
+#include "DialogueCut.h"
+#include "NPC.h"
 #include "TwoDimensionalMovementRegion.h"
 #include "ForceRegion.h"
 #include "WarpCrystal.h"
@@ -69,6 +71,7 @@ AAuyron::AAuyron()
 	CameraLagSettings.CameraRotationLag = 10.0f;
 	CameraLagSettings.AimingLagMultiplier = 0.0f;
 	CameraLagSettings.OverrideRegionRotationLagMultiplier = 0.75f;
+	CameraLagSettings.DialogueLagMultiplier = 3.0f;
 
 	CameraAutoTurnSettings.CameraAutoTurnFactor = 60.0f;
 	CameraAutoTurnSettings.CameraResetTime = 1.0f;
@@ -107,7 +110,7 @@ AAuyron::AAuyron()
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
-	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 60.0f), FRotator(-30.0f, 0.0f, 0.0f));
+	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 0.0f), FRotator(-30.0f, 0.0f, 0.0f));
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
@@ -280,6 +283,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			CameraLockToPlayerZAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerZAxis;
 			CameraOverrideLookAtPlayer = ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer;
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
+			CameraOverrideTargetOffset = ((ACameraOverrideRegion*)OtherActor)->TargetOffset;
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
 		if (OtherActor->IsA(AForceRegion::StaticClass())) {
@@ -398,6 +402,35 @@ void AAuyron::Tick(float DeltaTime)
 	float TeleportRange = TeleportSettings.TeleportRangeWhenNotAiming;
 	float TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenNotAiming;
 
+
+
+
+	// Looks like we're talking to someone.
+	if (IsInDialogue) {
+		// Don't be rude.
+		movementlocked = true;
+		MovementInput = FVector::ZeroVector;
+		FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
+		CurrentNPC->SetActorRotation(displacement.Rotation());
+		TargetDirection = (-displacement).Rotation();
+
+		// Gotta go all smooth like with the camera.
+		SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier;
+		SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier;
+		SpringArm->SetWorldTransform(CurrentCut->Camera->GetComponentTransform());
+		SpringArm->bDoCollisionTest = false;
+	}
+
+	//
+	if (JumpNextFrame&&IsInDialogue) {
+		IsInDialogue = false;
+		movementlocked = false;
+		JumpNextFrame = false;
+	}
+
+
+
+
 	// Temporarily unlock the camera if the player is using the free camera mode.
 	if (cameramode) {
 		cameralocked = false;
@@ -407,7 +440,10 @@ void AAuyron::Tick(float DeltaTime)
 	{
 
 		// Handle camera movement when the camera is controllable.
-		if (!cameralocked || ztarget) {
+		if ((!cameralocked || ztarget) && !IsInDialogue) {
+
+			timesinceoverrideenter = 0.0f;
+			SpringArm->bDoCollisionTest = true;
 
 			// Reset camera input timer if the camera controls were touched.
 			if (CameraInput.X != 0.0f || CameraInput.Y != 0.0f) {
@@ -434,22 +470,26 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 			SpringArm->SetWorldRotation(NewRotation);
 
-		} else {
+		} else if(cameralocked) {
 
 			// If the camera is locked, put it at the override region's
 			// target location and rotation.
+			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*CameraLagSettings.OverrideRegionRotationLagMultiplier;
 			SpringArm->SetWorldRotation(CameraOverrideTargetRotation);
+			timesinceoverrideenter += DeltaTime;
+			SpringArm->bDoCollisionTest = false;
+			SpringArm->TargetArmLength = FMath::Lerp((SpringArm->GetComponentLocation() - Camera->GetComponentLocation()).Size() , 0.0f, FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f));
 			if (!CameraLockToPlayerXAxis&&!CameraLockToPlayerYAxis&&!CameraLockToPlayerZAxis) {
 				SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement);
 			} else {
 				SpringArm->SetWorldLocation(FVector(
-					(CameraLockToPlayerXAxis ? GetActorLocation().X : CameraOverrideTargetDisplacement.X),
-					(CameraLockToPlayerYAxis ? GetActorLocation().Y : CameraOverrideTargetDisplacement.Y),
-					(CameraLockToPlayerZAxis ? GetActorLocation().Z : CameraOverrideTargetDisplacement.Z)));
+					(CameraLockToPlayerXAxis ? GetActorLocation().X + CameraOverrideTargetOffset.X : CameraOverrideTargetDisplacement.X),
+					(CameraLockToPlayerYAxis ? GetActorLocation().Y + CameraOverrideTargetOffset.Y : CameraOverrideTargetDisplacement.Y),
+					(CameraLockToPlayerZAxis ? GetActorLocation().Z + CameraOverrideTargetOffset.Z : CameraOverrideTargetDisplacement.Z)));
 			}
 
-			// Face the camera towards the player if the region specifies to do so.
+			// Face the camera towards the player if the region says to do so.
 			if (CameraOverrideLookAtPlayer) {
 				SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
 			}
@@ -508,7 +548,7 @@ void AAuyron::Tick(float DeltaTime)
 		} else {
 
 			// Return the spring arm (and camera) to its original location.
-			if (!cameralocked) {
+			if (!cameralocked&&!IsInDialogue) {
 				SpringArm->TargetArmLength = DefaultArmLength;
 				SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
 				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
@@ -620,7 +660,6 @@ void AAuyron::Tick(float DeltaTime)
 						// Reset OnTheGround and glide variables.
 						OnTheGround = false;
 						WasOnTheGround = false;
-						dunk = false;
 						if (IsGliding) {
 							AlreadyGlided = true;
 							IsGliding = false;
@@ -636,7 +675,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Iterate over each Switch and cast a ray.
 			for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-				if (ActorItr->GetClass()->GetName() == "Switch") {
+				if (ActorItr->IsA(ASwitch::StaticClass())) {
 
 					// Get displacement vector from the player/camera to the switch.
 					FVector displacement = ActorItr->GetActorLocation() - source;
@@ -659,21 +698,98 @@ void AAuyron::Tick(float DeltaTime)
 
 					// If the trace hit a switch and it's closer to where we're aiming
 					// at than any other switch, set it as the "closest" one.
-					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->GetClass()->GetName() == "Switch" && dot > biggestdot && blocked && displacement.Size() < TeleportRange) {
+					if (f.GetActor() != nullptr && f.GetActor()->IsA(ASwitch::StaticClass()) && dot > biggestdot && blocked) {
 						closestswitch = *ActorItr;
 						biggestdot = dot;
 					}
 				}
+			}
 
-				// Activate the "closest" switch as long as it's in range
-				// and within a certain angle tolerance.
-				if (closestswitch != nullptr &&
-					FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
-					(closestswitch->GetActorLocation() - GetActorLocation()).Size() < closestswitch->MaxDistance) {
-					if (ShouldActivate) {
-						closestswitch->Activate();
-						ShouldActivate = false;
+			// Activate the "closest" switch as long as it's in range
+			// and within a certain angle tolerance.
+			if (closestswitch != nullptr &&
+				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+				(closestswitch->GetActorLocation() - GetActorLocation()).Size() < closestswitch->MaxDistance) {
+				if (ShouldActivate) {
+					closestswitch->Activate();
+					ShouldActivate = false;
+				}
+			}
+
+			ANPC* closestNPC = NULL;
+			biggestdot = -1.0f;
+
+			// Iterate over each NPC and cast a ray.
+			for (TActorIterator<ANPC> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				if (ActorItr->IsA(ANPC::StaticClass())) {
+
+					// Get displacement vector from the player/camera to the NPC.
+					FVector displacement = ActorItr->GetActorLocation() - source;
+
+					// Get the dot product between the displacement and the source.
+					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+					// Set trace parameters. I have no idea what these do but
+					// the raycast doesn't work if I don't put these here.
+					FHitResult f;
+					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
+					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+					FCollisionQueryParams asdf = FCollisionQueryParams();
+
+					// Don't want the ray to collide with the player model now do we?
+					asdf.AddIgnoredActor(this);
+
+					// Figure out if the ray is blocked by an object.
+					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
+
+					// If the trace hit a NPC and it's closer to where we're aiming
+					// at than any other NPC, set it as the "closest" one.
+					if (f.GetActor() != nullptr && f.GetActor()->IsA(ANPC::StaticClass()) && dot > biggestdot && blocked) {
+						closestNPC = *ActorItr;
+						biggestdot = dot;
 					}
+				}
+			}
+
+			// Activate the "closest" NPC as long as it's in range
+			// and within a certain angle tolerance.
+			if (closestNPC != nullptr &&
+				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+				(closestNPC->GetActorLocation() - GetActorLocation()).Size() < closestNPC->MaxDistance) {
+				if (ShouldActivate && OnTheGround) {
+					// Start dialogue with the target NPC.
+					closestNPC->Activate();
+					IsInDialogue = true;
+
+					// Store information about that NPC and their root DialogueCut.
+					CurrentCut = closestNPC->CurrentCut;
+					CurrentNPC = closestNPC;
+					TArray<TCHAR> escape = TArray<TCHAR>();
+					escape.Add('\n');
+					CurrentLine = CurrentCut->asdf.ReplaceEscapedCharWithChar(&escape);
+
+					// Look at me when I'm talking to you!
+					FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
+					CurrentNPC->SetActorRotation(displacement.Rotation());
+					TargetDirection = (-displacement).Rotation();
+
+					// Code to prevent violations of personal space.
+					FVector target = displacement.GetSafeNormal()*150.0f;
+					SetActorLocation(target + CurrentNPC->GetActorLocation());
+					Velocity = FVector::ZeroVector;
+
+					// Snap the camera to the spring arm component's root (so we don't have to deal with
+					// its arm length) and place it where the camera used to be. This effectively "nullifies"
+					// the spring arm for the purposes of lerping the camera to its new DialogueCut-specified
+					// position.
+					FVector temp = Camera->GetComponentLocation();
+					SpringArm->CameraLagSpeed = 0.0f;
+					SpringArm->CameraRotationLagSpeed = 0.0f;
+					SpringArm->SetWorldLocation(temp);
+					SpringArm->TargetArmLength = 0.0f; FMath::Lerp(SpringArm->TargetArmLength, 0.0f, FMath::Pow(FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f), 0.25f));
+					
+					ShouldActivate = false;
 				}
 			}
 		}
@@ -921,9 +1037,9 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// COME ON AND SLAM
-		if (SlamNextFrame&&!dunk) {
+		if (SlamNextFrame) {
 			SlamNextFrame = false;
-			if (!OnTheGround) {
+			if (!OnTheGround && AppliedForce.Z <= 0.0f && !dunk && !ztarget) {
 				Velocity -= SlamSettings.SlamVelocity * FVector::UpVector;
 				dunk = true;
 				SlamTrail->ActivateSystem();
@@ -932,10 +1048,12 @@ void AAuyron::Tick(float DeltaTime)
 
 		// AND WELCOME TO THE JAM
 		if (dunk) {
-			if (OnTheGround) {
+			if (OnTheGround||Velocity.Z >= -SlamSettings.SlamVelocity / 2.0f||AppliedForce.Z<0.0f) {
 				dunk = false;
 				SlamTrail->DeactivateSystem();
-				SlamParticles->ActivateSystem();
+				if (OnTheGround) {
+					SlamParticles->ActivateSystem();
+				}
 			}
 		}
 
@@ -1264,4 +1382,14 @@ UParticleSystemComponent* AAuyron::GetTrailParticlesR() {
 bool AAuyron::GetJustWallJumped()
 {
 	return JustWallJumped;
+}
+
+bool AAuyron::GetIsInDialogue()
+{
+	return IsInDialogue;
+}
+
+FString AAuyron::GetDialogueText()
+{
+	return CurrentLine;
 }

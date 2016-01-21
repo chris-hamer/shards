@@ -11,6 +11,8 @@
 #include "Runtime/UMG/Public/IUMGModule.h"
 #include "TeleClaw.h"
 #include "Stick.h"
+#include "DialogueCut.h"
+#include "NPC.h"
 #include "TwoDimensionalMovementRegion.h"
 #include "Checkpoint.h"
 #include "Auyron.generated.h"
@@ -186,6 +188,9 @@ struct FCameraLag
 
 	/* Factor that the camera lag should be multiplied by when moving into a camera override region. */
 	UPROPERTY(EditAnywhere) float OverrideRegionRotationLagMultiplier;
+
+	/* Factor that the camera lag should be multiplied when in dialogue. */
+	UPROPERTY(EditAnywhere) float DialogueLagMultiplier;
 };
 
 USTRUCT()
@@ -286,6 +291,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetJustWallJumped();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetIsInDialogue();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetDialogueText();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool AboutToWarp();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetMaterial(int32 index, UMaterialInterface* newmat);
@@ -372,6 +381,13 @@ private:
 	bool AlreadyGlided;
 	float GlideTimer;
 	float warptimer;
+	float timesinceoverrideenter;
+
+	bool IsInDialogue;
+	ADialogueCut* CurrentCut;
+	ANPC* CurrentNPC;
+	FTransform DialogueCameraTransform;
+	FString CurrentLine;
 
 	AStick* thisguy;
 
@@ -406,6 +422,7 @@ private:
 	float defaultfov;
 	TEnumAsByte<ATwoDimensionalMovementRegion::AxisEnum> LockedMovementAxis;
 	FVector CameraOverrideTargetDisplacement;
+	FVector CameraOverrideTargetOffset;
 	FVector CameraOverrideTargetLocation;
 	FRotator CameraOverrideTargetRotation;
 	FRotator TargetDirection;

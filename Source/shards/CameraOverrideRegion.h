@@ -28,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerXAxis;
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerYAxis;
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerZAxis;
-	UPROPERTY(EditAnywhere, Category = "Camera") FVector TargetDisplacement;
+	UPROPERTY(EditAnywhere, Category = "Camera") FVector TargetOffset;
 	UPROPERTY(EditAnywhere, Category = "Camera") FRotator TargetRotation;
 	
 };
