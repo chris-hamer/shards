@@ -22,6 +22,7 @@ public:
 
 	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
+	UPROPERTY(EditAnywhere) ADialogueCut* Next;
 
 	UPROPERTY(EditAnywhere) FString asdf;
 	

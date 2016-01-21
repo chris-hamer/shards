@@ -25,6 +25,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
 	void Activate();
+	ADialogueCut* GetNextCut();
 
 	UPROPERTY(EditAnywhere) ADialogueCut* RootCut;
 	ADialogueCut* CurrentCut;

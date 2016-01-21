@@ -423,8 +423,15 @@ void AAuyron::Tick(float DeltaTime)
 
 	//
 	if (JumpNextFrame&&IsInDialogue) {
-		IsInDialogue = false;
-		movementlocked = false;
+		if (CurrentCut->Next != nullptr) {
+			CurrentCut = CurrentCut->Next;
+			TArray<TCHAR> escape = TArray<TCHAR>();
+			escape.Add('\n');
+			CurrentLine = CurrentCut->asdf.ReplaceEscapedCharWithChar(&escape);
+		} else {
+			IsInDialogue = false;
+			movementlocked = false;
+		}
 		JumpNextFrame = false;
 	}
 
@@ -739,7 +746,7 @@ void AAuyron::Tick(float DeltaTime)
 					FHitResult f;
 					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
 					//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
-					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel2);
 					FCollisionQueryParams asdf = FCollisionQueryParams();
 
 					// Don't want the ray to collide with the player model now do we?

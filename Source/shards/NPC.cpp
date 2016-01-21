@@ -11,8 +11,9 @@ ANPC::ANPC()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	//GetCapsuleComponent()->SetCollisionProfileName(TEXT("Custom"));
-	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel2);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Custom"));
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	//const ConstructorHelpers::FObjectFinder<USkeletalMesh> AIMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	//GetMesh()->SetSkeletalMesh(AIMeshObj.Object);
@@ -48,5 +49,10 @@ void ANPC::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 }
 
 void ANPC::Activate() {
+
+}
+
+ADialogueCut* ANPC::GetNextCut() {
+	return CurrentCut->Next;
 }
 
