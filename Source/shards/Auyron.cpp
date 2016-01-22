@@ -10,6 +10,7 @@
 #include "EngineUtils.h" 
 #include "Stick.h"  
 #include "Checkpoint.h"
+#include "DestructibleBox.h"
 #include "TeleClaw.h"
 #include "MusicRegion.h"
 #include "DialogueCut.h"
@@ -29,6 +30,8 @@ AAuyron::AAuyron()
 	PhysicsSettings.TerminalVelocity = 2000.0f;
 	PhysicsSettings.Gravity = 900.0f;
 	PhysicsSettings.MaxSlope = 45.0f;
+
+	AttackRange = 300.0f;
 
 	JumpSettings.JumpPower = 450.0f;
 	JumpSettings.WallJumpMultiplier = 1.0f;
@@ -669,8 +672,54 @@ void AAuyron::Tick(float DeltaTime)
 					}
 				}
 			}
+
+
+			ADestructibleBox* currentbox = NULL;
+			biggestdot = -1.0f;
+
+			// Iterate over each TelePad and cast a ray.
+			for (TActorIterator<ADestructibleBox> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				if (ActorItr->IsA(ADestructibleBox::StaticClass())) {
+
+					if (ActorItr->fadetimer != -1.0f) {
+						continue;
+					}
+
+					// Get displacement vector from the player/camera to the TelePad.
+					FVector displacement = ActorItr->GetActorLocation() - source;
+
+					// Get the dot product between the displacement and the source.
+					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+					// Set trace parameters. I have no idea what these do but the raycast doesn't work
+					// if I don't put these here.
+					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Destructible);
+					FCollisionQueryParams asdf = FCollisionQueryParams();
+					FHitResult f;
+
+					// Don't want the ray to collide with the player model now do we?
+					asdf.AddIgnoredActor(this);
+
+					// Figure out if the ray is blocked by an object.
+					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
+					
+					// If the trace hit a telepad and it's closer to where we're aiming
+					// at than any other TelePad, set it as the "closest" one.
+					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ADestructibleBox::StaticClass()) && blocked && displacement.Size() < AttackRange && dot > 0.65f) {
+						currentbox = (ADestructibleBox*)(f.GetActor());
+						if (currentbox!=nullptr&&AttackPressed) {
+							currentbox->Mesh->ApplyDamage(10.0f, currentbox->GetActorLocation(), FVector::UpVector, 10000.0f);
+							currentbox->BeginFadeout();
+						}
+					}
+				}
+			}
+
+			AttackPressed = false;
+
 			// Reset the "player wants to teleport" variable.
 			swish = false;
+
 
 			ASwitch* closestswitch = NULL;
 			biggestdot = -1.0f;
@@ -1205,6 +1254,7 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Slam", IE_Pressed, this, &AAuyron::Slam);
 	InputComponent->BindAction("Dash", IE_Pressed, this, &AAuyron::Dash);
 	InputComponent->BindAction("Dash", IE_Released, this, &AAuyron::UnDash);
+	InputComponent->BindAction("Attack", IE_Pressed, this, &AAuyron::Attack);
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AAuyron::Pause);
 	InputComponent->BindAction("Unpause", IE_Pressed, this, &AAuyron::Unpause);
 }
@@ -1333,6 +1383,11 @@ void AAuyron::UnDash()
 	if (dashing) {
 		dashtimer = DashSettings.DashDuration + 100.0f;
 	}
+}
+
+
+void AAuyron::Attack() {
+	AttackPressed = true;
 }
 
 // Getter functions used by the animation blueprints.

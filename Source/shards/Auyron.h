@@ -257,6 +257,7 @@ public:
 	void Slam();
 	void Dash();
 	void UnDash();
+	void Attack();
 	void Respawn();
 	
 	UFUNCTION()
@@ -324,6 +325,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementTurning TurnSettings;
+
+	/* I really hope I don't need to write a tooltip for this. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") float AttackRange;
 
 	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesTeleport TeleportSettings;
 	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesDash DashSettings;
@@ -394,6 +398,8 @@ private:
 	AStick* thisguy;
 
 	float warpanimtimer;
+
+	bool AttackPressed;
 
 	uint8 jumpsLeft;
 	bool justDoubleJumped;
