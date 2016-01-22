@@ -996,8 +996,13 @@ void AAuyron::Tick(float DeltaTime)
 
 		FCollisionQueryParams asdf2 = FCollisionQueryParams();
 		asdf2.AddIgnoredActor(this);
+
 		FCollisionShape shape = FCollisionShape::MakeCapsule(50.0f, 90.0f);
-		if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation(), FQuat::Identity, FCollisionObjectQueryParams::AllObjects, shape, asdf2)) {
+		FCollisionObjectQueryParams totallyawesomecollisionobjectquerycommands;
+		totallyawesomecollisionobjectquerycommands.AddObjectTypesToQuery(ECC_WorldStatic);
+		totallyawesomecollisionobjectquerycommands.AddObjectTypesToQuery(ECC_WorldDynamic);
+		totallyawesomecollisionobjectquerycommands.AddObjectTypesToQuery(ECC_Destructible);
+		if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation()-FVector::UpVector, FQuat::Identity, totallyawesomecollisionobjectquerycommands, shape, asdf2)) {
 			RidingWall = false;
 			StoredWallNormal = FVector::ZeroVector;
 		}

@@ -45,6 +45,7 @@ void ADestructibleBox::BeginFadeout()
 	if (fadetimer == -1.0f) {
 		SetLifeSpan(Lifespan);
 		Mesh->SetCollisionObjectType(ECC_GameTraceChannel3);
+		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 		Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 		Mesh->SetCollisionResponseToChannel(ECC_Destructible, ECR_Ignore);
 		Mesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
