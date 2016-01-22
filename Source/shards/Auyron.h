@@ -307,6 +307,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
+	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* WallJumpCapsuleComponent;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* SlamParticles;
@@ -315,6 +316,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesR;
 	UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, Category = "Components") class UAuyronMovementComponent* MovementComponent;
+	//UPROPERTY(EditAnywhere, Category = "Components") class UAuyronWallJumpMovementComponent* WallJumpMovementComponent;
 
 	//UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<class UUserWidget> Hud;
 
@@ -357,11 +359,15 @@ private:
 	bool HoldingJump;
 	bool JustJumped;
 	bool JustWallJumped;
+	bool RidingWall;
+	bool lastd;
 	bool SlamNextFrame;
 	bool JustSlammed;
 	bool AlreadySlammed;
 	bool OnTheGround;
 	bool HelpEnabled;
+
+	FVector StoredWallNormal;
 
 	UUserWidget* thehud;
 

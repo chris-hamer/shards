@@ -4,6 +4,7 @@
 #include "Gem.h"
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
+#include "AuyronWallJumpMovementComponent.h"
 #include "CameraOverrideRegion.h"
 #include "EngineUtils.h" 
 #include "Stick.h"  
@@ -101,6 +102,18 @@ AAuyron::AAuyron()
 	CapsuleComponent->AttachTo(RootComponent);
 	SetActorEnableCollision(true);
 
+	// I wanted to be a cylinder, but no, we gotta be a capsule.
+	WallJumpCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallJumpCollisionCapsule"));
+	WallJumpCapsuleComponent->InitCapsuleSize(50.0f, 90.0f);
+	WallJumpCapsuleComponent->SetCollisionProfileName(TEXT("Custom"));
+	WallJumpCapsuleComponent->SetCollisionResponseToAllChannels(ECR_Overlap);
+	//CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
+	//CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
+	WallJumpCapsuleComponent->SetSimulatePhysics(false);
+	WallJumpCapsuleComponent->SetEnableGravity(false);
+	//WallJumpCapsuleComponent->SetLinearDamping(10.0f);
+	WallJumpCapsuleComponent->AttachTo(RootComponent);
+
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
@@ -171,6 +184,10 @@ AAuyron::AAuyron()
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 
+	// And one for the wall jump.
+	//WallJumpMovementComponent = CreateDefaultSubobject<UAuyronWallJumpMovementComponent>(TEXT("WallJumpMovementComponent"));
+	//WallJumpMovementComponent->UpdatedComponent = WallJumpCapsuleComponent;
+	
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
 	PostProcess->AttachTo(RootComponent);
@@ -386,6 +403,14 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity = MovementComponent->groundvelocity + FVector(0.0f, 0.0f, -100.0f);
 	}
 
+	// Really nasty hack. Avert your eyes.
+	float tempz = Velocity.Z;
+	Velocity = Velocity.GetClampedToMaxSize(50.0f);
+	Velocity = FVector::VectorPlaneProject(actualvelocity, FVector::UpVector);
+	Velocity.Z = tempz;
+
+	//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, MovementComponent->wallnormal.ToString());
+
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	Velocity -= MovementComponent->groundvelocity;
 
@@ -403,7 +428,18 @@ void AAuyron::Tick(float DeltaTime)
 	float TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenNotAiming;
 
 
+	// Set trace parameters. I have no idea what these do but the raycast doesn't work
+	// if I don't put these here.
+	//FHitResult f;
+	//FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
+	//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+	FCollisionQueryParams asdf2 = FCollisionQueryParams();
 
+	// Don't want the ray to collide with the player model now do we?
+	asdf2.AddIgnoredActor(this);
+
+	// Figure out if the ray is blocked by an object.
+	//bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
 
 	// Looks like we're talking to someone.
 	if (IsInDialogue) {
@@ -434,9 +470,6 @@ void AAuyron::Tick(float DeltaTime)
 		}
 		JumpNextFrame = false;
 	}
-
-
-
 
 	// Temporarily unlock the camera if the player is using the free camera mode.
 	if (cameramode) {
@@ -851,7 +884,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
-		// The directions of "Right" and "Forward" depend on the direction that the camera's facing.
+		// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
 		FVector Right = Camera->GetRightVector();
 		Right.Z = 0.0f;
 		Right = Right.GetSafeNormal();
@@ -862,7 +895,7 @@ void AAuyron::Tick(float DeltaTime)
 		// Set up acceleration vector using the movement inputs.
 		FVector AdjustedInput = MovementInput.GetClampedToSize(0.0f, 1.0f);
 		FVector Acceleration = FVector::ZeroVector;
-		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y)*(OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
 
 		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
 		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
@@ -945,6 +978,17 @@ void AAuyron::Tick(float DeltaTime)
 			dashtimer = 0.0f;
 		}
 
+		if (!OnTheGround && FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector).Size() > 0.95f) {
+			RidingWall = true;
+			StoredWallNormal = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
+		}
+
+		FCollisionShape shape = FCollisionShape::MakeCapsule(50.0f, 90.0f);
+		if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation(), FQuat::Identity, FCollisionObjectQueryParams::AllStaticObjects, shape, asdf2)) {
+			RidingWall = false;
+			StoredWallNormal = FVector::ZeroVector;
+		}
+
 		// Handle jumping.
 		if (JumpNextFrame) {
 
@@ -956,7 +1000,7 @@ void AAuyron::Tick(float DeltaTime)
 			JustJumped = true;
 
 			// OK this might be Megaman X a litle.
-			FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
+			FVector wnproject = FVector::VectorPlaneProject(StoredWallNormal, FVector::UpVector);
 			if (!OnTheGround && wnproject.Size() > 0.95f) {
 				// No cheating.
 				if (IsGliding||AlreadyGlided) {
@@ -970,13 +1014,13 @@ void AAuyron::Tick(float DeltaTime)
 				if (DashSettings.HasDashWallJump&&holdingdash) {
 					multi = DashSettings.DashWallJumpMultiplier;
 				}
-				Velocity = (MovementComponent->wallnormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()));
+				Velocity = (StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()));
 				Velocity.Z = temp.Z;
 				JustWallJumped = true;
 
 				// Make the player face away from the wall we just jumped off of.
 				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
-				newmodelrotation.Yaw = (MovementComponent->wallnormal.GetSafeNormal() + FVector::VectorPlaneProject(Velocity, MovementComponent->wallnormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), MovementComponent->wallnormal.GetSafeNormal())).Rotation().Yaw;
+				newmodelrotation.Yaw = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
 				PlayerModel->SetWorldRotation(newmodelrotation);
 				TargetDirection = newmodelrotation;
 			}
@@ -1092,6 +1136,8 @@ void AAuyron::Tick(float DeltaTime)
 		// Store current on the ground state into WasOnTheGround.
 		WasOnTheGround = OnTheGround;
 
+		lastd = RidingWall;
+
 		// Store current velocity into previousgroundvelocity.
 		previousgroundvelocity = MovementComponent->groundvelocity;
 
@@ -1102,6 +1148,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// And now we get to actually move.
 		MovementComponent->AddInputVector(Velocity * DeltaTime);
+
 	}
 
 	// Handle rotating the player model in response to player input.
@@ -1245,7 +1292,7 @@ void AAuyron::Jump()
 	//   2. We haven't been off the ground for very long.
 	//   3. We are pushing into a wall (wall jump).
 	FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
-	if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.OffGroundJumpTime || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
+	if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.OffGroundJumpTime || RidingWall || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 		JumpNextFrame = true;
 	} else {
 		if (GlideSettings.HasGlide&&!AlreadyGlided) {
