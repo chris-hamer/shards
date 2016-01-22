@@ -6,6 +6,7 @@
 #include "AuyronMovementComponent.h"
 #include "AuyronWallJumpMovementComponent.h"
 #include "CameraOverrideRegion.h"
+#include "MovingPlatform.h"
 #include "EngineUtils.h" 
 #include "Stick.h"  
 #include "Checkpoint.h"
@@ -89,7 +90,7 @@ AAuyron::AAuyron()
 	// Oh you better believe we're ticking every frame.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// I wanted to be a cylinder, but no, we gotta be a capsule.
+	// *I* wanted to be a cylinder, but no, we gotta be a *capsule*.
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
 	CapsuleComponent->InitCapsuleSize(45.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
@@ -98,21 +99,10 @@ AAuyron::AAuyron()
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
 	CapsuleComponent->SetSimulatePhysics(true);
 	CapsuleComponent->SetEnableGravity(false);
+	CapsuleComponent->SetConstraintMode(EDOFMode::CustomPlane);
 	CapsuleComponent->SetLinearDamping(10.0f);
 	CapsuleComponent->AttachTo(RootComponent);
 	SetActorEnableCollision(true);
-
-	// I wanted to be a cylinder, but no, we gotta be a capsule.
-	WallJumpCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallJumpCollisionCapsule"));
-	WallJumpCapsuleComponent->InitCapsuleSize(50.0f, 90.0f);
-	WallJumpCapsuleComponent->SetCollisionProfileName(TEXT("Custom"));
-	WallJumpCapsuleComponent->SetCollisionResponseToAllChannels(ECR_Overlap);
-	//CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
-	//CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
-	WallJumpCapsuleComponent->SetSimulatePhysics(false);
-	WallJumpCapsuleComponent->SetEnableGravity(false);
-	//WallJumpCapsuleComponent->SetLinearDamping(10.0f);
-	WallJumpCapsuleComponent->AttachTo(RootComponent);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
@@ -183,10 +173,6 @@ AAuyron::AAuyron()
 	// Apparently we need some newfangled "MovementComponent".
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
-
-	// And one for the wall jump.
-	//WallJumpMovementComponent = CreateDefaultSubobject<UAuyronWallJumpMovementComponent>(TEXT("WallJumpMovementComponent"));
-	//WallJumpMovementComponent->UpdatedComponent = WallJumpCapsuleComponent;
 	
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
@@ -247,9 +233,11 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 				CameraOverrideTargetRotation = FRotator::ZeroRotator;
 			}
 		}
+
 		if (OtherActor->IsA(AForceRegion::StaticClass())) {
 			AppliedForce -= ((AForceRegion*)OtherActor)->Direction * ((AForceRegion*)OtherActor)->Magnitude;
 		}
+
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = false;
 		}
@@ -272,6 +260,7 @@ void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherCom
 			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
+
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = true;
 			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
@@ -303,9 +292,11 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			CameraOverrideTargetOffset = ((ACameraOverrideRegion*)OtherActor)->TargetOffset;
 			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
 		}
+
 		if (OtherActor->IsA(AForceRegion::StaticClass())) {
 			AppliedForce += ((AForceRegion*)OtherActor)->Direction * ((AForceRegion*)OtherActor)->Magnitude;
 		}
+
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = true;
 			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
@@ -371,19 +362,6 @@ void AAuyron::BeginPlay()
 	SlamParticles->DeactivateSystem();
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->DeactivateSystem();
-
-	//if (Hud) {
-		// Create the widget and store it.
-		//thehud = CreateWidget<UUserWidget>(GetWorld(), Hud);
-
-		// now you can use the widget directly since you have a referance for it.
-		// Extra check to  make sure the pointer holds the widget.
-		//if (thehud)
-		//{
-			//let add it to the view port
-			//thehud->AddToViewport();
-		//}
-	//}
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
@@ -405,11 +383,8 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Really nasty hack. Avert your eyes.
 	float tempz = Velocity.Z;
-	Velocity = Velocity.GetClampedToMaxSize(50.0f);
 	Velocity = FVector::VectorPlaneProject(actualvelocity, FVector::UpVector);
 	Velocity.Z = tempz;
-
-	//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, MovementComponent->wallnormal.ToString());
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	Velocity -= MovementComponent->groundvelocity;
@@ -426,17 +401,6 @@ void AAuyron::Tick(float DeltaTime)
 	// Set and range and angle to the "short range" values.
 	float TeleportRange = TeleportSettings.TeleportRangeWhenNotAiming;
 	float TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenNotAiming;
-
-
-	// Set trace parameters. I have no idea what these do but the raycast doesn't work
-	// if I don't put these here.
-	//FHitResult f;
-	//FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
-	//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
-	FCollisionQueryParams asdf2 = FCollisionQueryParams();
-
-	// Don't want the ray to collide with the player model now do we?
-	asdf2.AddIgnoredActor(this);
 
 	// Figure out if the ray is blocked by an object.
 	//bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
@@ -603,8 +567,6 @@ void AAuyron::Tick(float DeltaTime)
 			// Re-enable the player's movement inputs.
 			movementlocked = false;
 		}
-
-		//PlayerModel->param
 
 		// Restore camera's old locked state.
 		cameralocked = cameralocktemp;
@@ -908,7 +870,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Decreases the effect of deceleration when the player is moving near max speed
 		// and increases it when they are going slow. This makes decelerating feel much smoother.
-		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), Velocity.Size() / PhysicsSettings.MaxVelocity), 0.0f, 1.0f);
+		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity,2.0f)), 0.0f, 1.0f);
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
@@ -983,8 +945,10 @@ void AAuyron::Tick(float DeltaTime)
 			StoredWallNormal = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
 		}
 
+		FCollisionQueryParams asdf2 = FCollisionQueryParams();
+		asdf2.AddIgnoredActor(this);
 		FCollisionShape shape = FCollisionShape::MakeCapsule(50.0f, 90.0f);
-		if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation(), FQuat::Identity, FCollisionObjectQueryParams::AllStaticObjects, shape, asdf2)) {
+		if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation(), FQuat::Identity, FCollisionObjectQueryParams::AllObjects, shape, asdf2)) {
 			RidingWall = false;
 			StoredWallNormal = FVector::ZeroVector;
 		}

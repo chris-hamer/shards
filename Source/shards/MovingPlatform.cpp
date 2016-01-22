@@ -108,7 +108,7 @@ void AMovingPlatform::Tick( float DeltaTime )
 			FVector end = EndPosition->GetComponentLocation();
 
 			// Move the platform to its new location.
-			Model->SetWorldLocation(NewPosition);
+			Model->SetWorldLocation(NewPosition,false,(FHitResult*)nullptr,ETeleportType::TeleportPhysics);
 			StartPosition->SetWorldLocation(start);
 			EndPosition->SetWorldLocation(end);
 		}
