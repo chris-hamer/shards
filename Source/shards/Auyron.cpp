@@ -28,12 +28,12 @@ AAuyron::AAuyron()
 	PhysicsSettings.AirAccelerationRate = 500.0f;
 	PhysicsSettings.MaxVelocity = 500.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
-	PhysicsSettings.Gravity = 900.0f;
+	PhysicsSettings.Gravity = 1800.0f;
 	PhysicsSettings.MaxSlope = 45.0f;
 
 	AttackRange = 300.0f;
 
-	JumpSettings.JumpPower = 450.0f;
+	JumpSettings.JumpPower = 900.0f;
 	JumpSettings.WallJumpMultiplier = 1.0f;
 	JumpSettings.OffGroundJumpTime = 0.04f;
 	JumpSettings.UnjumpRate = 0.33f;
@@ -94,7 +94,7 @@ AAuyron::AAuyron()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// *I* wanted to be a cylinder, but no, we gotta be a *capsule*.
-	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
+	/*CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
 	CapsuleComponent->InitCapsuleSize(45.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
@@ -105,14 +105,29 @@ AAuyron::AAuyron()
 	CapsuleComponent->SetConstraintMode(EDOFMode::CustomPlane);
 	CapsuleComponent->SetLinearDamping(10.0f);
 	CapsuleComponent->AttachTo(RootComponent);
-	SetActorEnableCollision(true);
+	SetActorEnableCollision(true);*/
+
+	// GUESS WHAT SON I'M A CYLINDER NOW.
+	AAAA = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Collision Cylinder"));
+	AAAA->SetCollisionProfileName(TEXT("Pawn"));
+	AAAA->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
+	AAAA->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
+	AAAA->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
+	AAAA->SetSimulatePhysics(true);
+	AAAA->SetEnableGravity(false);
+	AAAA->SetConstraintMode(EDOFMode::CustomPlane);
+	AAAA->SetLinearDamping(10.0f);
+	AAAA->SetVisibility(false);
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> cy(TEXT("/Game/Cylinder_33"));
+	AAAA->SetStaticMesh(cy.Object);
+	AAAA->AttachTo(RootComponent);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
-	PlayerModel->AttachTo(CapsuleComponent);
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -80.0f));
+	PlayerModel->AttachTo(AAAA);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -122,7 +137,8 @@ AAuyron::AAuyron()
 	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
 	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 	SpringArm->CameraLagMaxDistance = 1000.0f;
-	SpringArm->AttachTo(CapsuleComponent);
+	SpringArm->ProbeSize = 5.0f;
+	SpringArm->AttachTo(AAAA);
 
 	// Camera so the casuals can "see what they're doing" or whatever.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
@@ -132,13 +148,13 @@ AAuyron::AAuyron()
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Particles/DashParticles"));
 	DashParticles->SetTemplate(dp.Object);
-	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
 	DashParticles->AttachTo(PlayerModel);
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
 	FloatParticles->SetTemplate(fp.Object);
-	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
 	FloatParticles->AttachTo(PlayerModel);
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
@@ -150,19 +166,19 @@ AAuyron::AAuyron()
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
 	SlamTrail->SetTemplate(st.Object);
-	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
 	SlamTrail->AttachTo(PlayerModel);
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesL->SetTemplate(tpl.Object);
-	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
 	TrailParticlesL->AttachTo(PlayerModel);
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesR->SetTemplate(tpr.Object);
-	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
 	TrailParticlesR->AttachTo(PlayerModel);
 
 	// Get the instance of the TeleClaw weapon.
@@ -175,7 +191,7 @@ AAuyron::AAuyron()
 
 	// Apparently we need some newfangled "MovementComponent".
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
-	MovementComponent->UpdatedComponent = CapsuleComponent;
+	MovementComponent->UpdatedComponent = AAAA;
 	
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
@@ -329,7 +345,7 @@ void AAuyron::BeginPlay()
 	SpringArm->TargetArmLength = DefaultArmLength;
 
 	// Set the max slope and max off ground time for the movement component.
-	MovementComponent->maxslope = PhysicsSettings.MaxSlope;
+	MovementComponent->maxslope = FMath::DegreesToRadians(PhysicsSettings.MaxSlope);
 	MovementComponent->MaxOffGroundTime = JumpSettings.OffGroundJumpTime;
 
 	// Point gravuty downwards.
@@ -421,6 +437,7 @@ void AAuyron::Tick(float DeltaTime)
 		SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier;
 		SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier;
 		SpringArm->SetWorldTransform(CurrentCut->Camera->GetComponentTransform());
+		SpringArm->SetWorldRotation(FRotator(SpringArm->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw, 0.0f));
 		SpringArm->bDoCollisionTest = false;
 	}
 
@@ -540,8 +557,8 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->SetRelativeRotation(NewRotation);
 
 			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
-			FVector Right = FVector::VectorPlaneProject(CapsuleComponent->GetComponentRotation().RotateVector(Camera->GetRightVector()), FVector::UpVector);
-			FVector Forward = FVector::VectorPlaneProject((CapsuleComponent->GetComponentRotation() * -1.0f).RotateVector(Camera->GetForwardVector()), FVector::UpVector);
+			FVector Right = FVector::VectorPlaneProject(AAAA->GetComponentRotation().RotateVector(Camera->GetRightVector()), FVector::UpVector);
+			FVector Forward = FVector::VectorPlaneProject((AAAA->GetComponentRotation() * -1.0f).RotateVector(Camera->GetForwardVector()), FVector::UpVector);
 
 			// Offset the spring arm (and therefore the camera) a bit so the player model
 			// isn't blocking the screen when we're trying to aim.
@@ -1006,6 +1023,8 @@ void AAuyron::Tick(float DeltaTime)
 			RidingWall = false;
 			StoredWallNormal = FVector::ZeroVector;
 		}
+
+		shape = FCollisionShape::MakeCapsule(10.0f, 90.0f);
 
 		// Handle jumping.
 		if (JumpNextFrame) {

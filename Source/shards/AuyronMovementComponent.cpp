@@ -38,16 +38,20 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 
 	// If we're not on a standable slope then we are not on the ground.
-	if (Floor.Normal.Z <= FMath::Sin((maxslope))) {
+	if (Floor.Normal.Z <= FMath::Cos(maxslope)) {
 		onground = false;
 		offGroundTime += DeltaTime;
-
-		// Make sure to slide down the slope and check if we hit a standable surface.
-		SlideAlongSurface(Vert, 1.0f - Floor.Time, Floor.Normal, Floor, true);
+	
+		if (Floor.Normal.Z > 0.0f) {
+			// Slope is too steep so we should be pushed back by it by taking its vertical normal into account.
+			Horiz *= 1.0f - Floor.Normal.Z;
+			Horiz += Vert;
+			toosteep = true;
+		}
 	}
 
 	// Looks like we're standing on something.
-	if (Floor.Normal.Z > FMath::Sin((maxslope))) {
+	if (Floor.Normal.Z > FMath::Cos((maxslope))) {
 		onground = true;
 		offGroundTime = 0.0f;
 
@@ -79,16 +83,12 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 				groundvelocity.Z = 0.0f;
 			}
 		}
-	} else {
-		// Slope is too steep so we should be pushed back by it by taking its vertical normal into account.
-		Horiz += Vert;
-		toosteep = true;
 	}
 
 	// Sets "Horizontal" movement to be up/down the slope you're standing on so long as the slope isn't too steep.
 	if (!toosteep&&!Floor.Normal.Equals(FVector::UpVector,0.1f)) {
 		// Look at this math. LOOK AT THIS MATH.
-		//Horiz.Z += Floor.Normal.RotateAngleAxis(FMath::Sign(Horiz | Floor.Normal)*-91.0f, FVector::CrossProduct(Floor.Normal, FVector::UpVector).GetSafeNormal()).Z*Horiz.Size();
+		Horiz.Z += Floor.Normal.RotateAngleAxis(FMath::Sign(Horiz | Floor.Normal)*-90.0f, FVector::CrossProduct(Floor.Normal, FVector::UpVector).GetSafeNormal()).Z*Horiz.Size();
 	}
 
 	// Move horizontally.
