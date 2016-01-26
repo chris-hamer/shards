@@ -24,6 +24,18 @@ public:
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere) ADialogueCut* Next;
 
+	/* The text to display. */
 	UPROPERTY(EditAnywhere) FString asdf;
 	
+	/* Blueprint that should execute when this cut is acivated. */
+	UPROPERTY(EditAnywhere) AActor* BlueprintToExecute;
+
+	/* Length of time that this cut should last. If less than zero, the cut won't be timed one. */
+	UPROPERTY(EditAnywhere) float CutDuration;
+
+	/* Disables display of the textbox. Generally for use with CutDuration and a blueprint that runs a matinee. */
+	UPROPERTY(EditAnywhere) bool NoText;
+	
+	float cuttimer;
+
 };

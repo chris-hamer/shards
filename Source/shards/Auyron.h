@@ -402,6 +402,8 @@ private:
 
 	bool AttackPressed;
 
+	bool currentdialoguebpactivated;
+
 	uint8 jumpsLeft;
 	bool justDoubleJumped;
 	FVector AppliedForce;

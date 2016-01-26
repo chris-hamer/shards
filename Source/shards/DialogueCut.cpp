@@ -10,6 +10,9 @@ ADialogueCut::ADialogueCut()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	CutDuration = 0.0f;
+	cuttimer = -1.0f;
+
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
@@ -28,6 +31,8 @@ void ADialogueCut::BeginPlay()
 void ADialogueCut::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
-
+	if (cuttimer >= 0.0f) {
+		cuttimer += DeltaTime;
+	}
 }
 

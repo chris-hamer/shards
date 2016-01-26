@@ -28,12 +28,12 @@ AAuyron::AAuyron()
 	PhysicsSettings.AirAccelerationRate = 500.0f;
 	PhysicsSettings.MaxVelocity = 500.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
-	PhysicsSettings.Gravity = 1800.0f;
-	PhysicsSettings.MaxSlope = 45.0f;
+	PhysicsSettings.Gravity = 2250.0f;
+	PhysicsSettings.MaxSlope = 30.0f;
 
 	AttackRange = 300.0f;
 
-	JumpSettings.JumpPower = 900.0f;
+	JumpSettings.JumpPower = 1000.0f;
 	JumpSettings.WallJumpMultiplier = 1.0f;
 	JumpSettings.OffGroundJumpTime = 0.04f;
 	JumpSettings.UnjumpRate = 0.33f;
@@ -66,7 +66,7 @@ AAuyron::AAuyron()
 	GlideSettings.GlideGravityMultiplier = 50.0f;
 
 	SlamSettings.HasSlam = false;
-	SlamSettings.SlamVelocity = 1000.0f;
+	SlamSettings.SlamVelocity = 1500.0f;
 
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
@@ -426,6 +426,7 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Looks like we're talking to someone.
 	if (IsInDialogue) {
+
 		// Don't be rude.
 		movementlocked = true;
 		MovementInput = FVector::ZeroVector;
@@ -439,15 +440,27 @@ void AAuyron::Tick(float DeltaTime)
 		SpringArm->SetWorldTransform(CurrentCut->Camera->GetComponentTransform());
 		SpringArm->SetWorldRotation(FRotator(SpringArm->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw, 0.0f));
 		SpringArm->bDoCollisionTest = false;
+
+		// Activates the attached blueprint (if the cut has one).
+		if (CurrentCut->BlueprintToExecute != nullptr && !currentdialoguebpactivated) {
+			currentdialoguebpactivated = true;
+			FOutputDeviceNull dummy;
+			CurrentCut->BlueprintToExecute->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
+		}
 	}
 
-	//
-	if (JumpNextFrame&&IsInDialogue) {
+	// Advances text.
+	if (IsInDialogue && ((JumpNextFrame && CurrentCut->CutDuration <= 0.0f) || CurrentCut->cuttimer > CurrentCut->CutDuration)) {
+		currentdialoguebpactivated = false;
 		if (CurrentCut->Next != nullptr) {
+			CurrentCut->cuttimer = -1.0f;
 			CurrentCut = CurrentCut->Next;
 			TArray<TCHAR> escape = TArray<TCHAR>();
 			escape.Add('\n');
 			CurrentLine = CurrentCut->asdf.ReplaceEscapedCharWithChar(&escape);
+			if (CurrentCut->CutDuration > 0.0f) {
+				CurrentCut->cuttimer = 0.0f;
+			}
 		} else {
 			IsInDialogue = false;
 			movementlocked = false;
@@ -584,8 +597,10 @@ void AAuyron::Tick(float DeltaTime)
 				}
 			}
 
-			// Re-enable the player's movement inputs.
-			movementlocked = false;
+			if (!IsInDialogue) {
+				// Re-enable the player's movement inputs.
+				movementlocked = false;
+			}
 		}
 
 		// Restore camera's old locked state.
@@ -866,6 +881,12 @@ void AAuyron::Tick(float DeltaTime)
 					SpringArm->SetWorldLocation(temp);
 					SpringArm->TargetArmLength = 0.0f; FMath::Lerp(SpringArm->TargetArmLength, 0.0f, FMath::Pow(FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f), 0.25f));
 					
+					// Activates the attached blueprint (if the cut has one).
+					if (CurrentCut->BlueprintToExecute != nullptr) {
+						FOutputDeviceNull dummy;
+						CurrentCut->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
+					}
+
 					ShouldActivate = false;
 				}
 			}
@@ -1027,7 +1048,7 @@ void AAuyron::Tick(float DeltaTime)
 		shape = FCollisionShape::MakeCapsule(10.0f, 90.0f);
 
 		// Handle jumping.
-		if (JumpNextFrame) {
+		if (JumpNextFrame&&!IsInDialogue) {
 
 			// Jump while taking the floor's angle and vertical movement into account.
 			Velocity.Z = 0.5f * (MovementComponent->groundvelocity.Z >= 0.0f ? MovementComponent->groundverticalvelocity : -MovementComponent->groundvelocity.Z);
@@ -1137,7 +1158,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (SlamNextFrame) {
 			SlamNextFrame = false;
 			if (!OnTheGround && AppliedForce.Z <= 0.0f && !dunk && !ztarget) {
-				Velocity -= SlamSettings.SlamVelocity * FVector::UpVector;
+				Velocity = -SlamSettings.SlamVelocity * FVector::UpVector;
 				dunk = true;
 				SlamTrail->ActivateSystem();
 			}
@@ -1494,7 +1515,7 @@ bool AAuyron::GetJustWallJumped()
 
 bool AAuyron::GetIsInDialogue()
 {
-	return IsInDialogue;
+	return IsInDialogue && !CurrentCut->NoText;
 }
 
 FString AAuyron::GetDialogueText()
