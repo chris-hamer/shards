@@ -15,13 +15,13 @@ ADestructibleBox::ADestructibleBox()
 
 	fadetimer = -1.0f;
 
-	Mesh = CreateDefaultSubobject<UDestructibleComponent>(TEXT("Mesh"));
-	Mesh->LargeChunkThreshold = 100000.0f;
-	Mesh->SetCollisionObjectType(ECC_Destructible);
-	Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	Mesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
-	Mesh->SetSimulatePhysics(true);
-	Mesh->AttachTo(RootComponent);
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
+	StaticMesh->SetCollisionObjectType(ECC_Destructible);
+	StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	StaticMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
+	StaticMesh->SetSimulatePhysics(true);
+	StaticMesh->AttachTo(RootComponent);
+	
 }
 
 // Called when the game starts or when spawned
@@ -37,19 +37,13 @@ void ADestructibleBox::Tick( float DeltaTime )
 	Super::Tick( DeltaTime );
 	if (fadetimer >= 0.0f) {
 		fadetimer += DeltaTime;
+		BrokenBox->Boom();
 	}
 }
 
 void ADestructibleBox::BeginFadeout()
 {
-	if (fadetimer == -1.0f) {
-		SetLifeSpan(Lifespan);
-		Mesh->SetCollisionObjectType(ECC_GameTraceChannel3);
-		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-		Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-		Mesh->SetCollisionResponseToChannel(ECC_Destructible, ECR_Ignore);
-		Mesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-		fadetimer = 0.0f;
-	}
+	BrokenBox = GetWorld()->SpawnActor<ABrokenBox>(GetActorLocation(), GetActorRotation());
+	Destroy();
 }
 

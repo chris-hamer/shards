@@ -4,6 +4,8 @@
 
 #include "shards.h"
 #include "AuyronMovementComponent.h"
+#include "stick.h"
+#include "DestructibleBox.h"
 #include "MovingPlatform.h"
 #include "RotatingPlatform.h"
 
@@ -11,6 +13,9 @@ UAuyronMovementComponent::UAuyronMovementComponent()
 {
 	offGroundTime = 0.0f;
 	groundverticalvelocity = 0.0f;
+	enforcementtimer = -1.0f;
+	minnormalz = 0.9f;
+	timerlimit = 0.15f;
 }
 
 //void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -18,87 +23,124 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Get (and also clear) the movement vector that we set in AAuyron::Tick
-	FVector DesiredMovementThisFrame = ConsumeInputVector();
+	FVector InputVector = ConsumeInputVector();
+	FVector Horiz = FVector::VectorPlaneProject(InputVector, FVector::UpVector);
+	FVector Vert = InputVector.Z*FVector::UpVector;
+	FHitResult HitResult;
 
-	// Separate movement vector into horizonal and vertical components.
-	FVector Horiz = FVector::VectorPlaneProject(DesiredMovementThisFrame, FVector::UpVector);
-	FVector Vert = FVector(0.0f, 0.0f, DesiredMovementThisFrame.Z);
+	SafeMoveUpdatedComponent(Horiz, UpdatedComponent->GetComponentRotation(), true, HitResult);
+	if (HitResult.IsValidBlockingHit()) {
+		Wall = FHitResult(HitResult);
+		if (Wall.GetActor() == nullptr || !Wall.GetActor()->IsA(AMovingPlatform::StaticClass())) {
+			WallNormal = Wall.Normal;
+		}
+		SlideAlongSurface(Horiz, 1.0 - HitResult.Time, HitResult.Normal, HitResult);
+	}
+	AActor* ActorToIgnore = HitResult.GetActor();
 
-	// Move vertically.
-	SafeMoveUpdatedComponent(Vert, UpdatedComponent->GetComponentRotation(), true, Floor);
+	SafeMoveUpdatedComponent(Vert, UpdatedComponent->GetComponentRotation(), true, HitResult);
+	if (HitResult.IsValidBlockingHit()) {
+		Floor = FHitResult(HitResult);
+		SlideAlongSurface(Vert, 1.0 - HitResult.Time, HitResult.Normal, HitResult);
+	}
 
-	// Is the slope too steep? I don't think it is. But it might be.
-	bool toosteep = false;
+	FHitResult ShapeTraceResult;
+	FCollisionShape shape = FCollisionShape::MakeCapsule(40.0f, 40.0f); //25,25
 
-	// Assume you're not on a moving platform.
-	groundvelocity = FVector::ZeroVector;
-	groundverticalvelocity = 0.0f;
-	platformangularfrequency = 0.0f;
-	platformspindir = 1;
+	FCollisionQueryParams Params;
+	Params.bFindInitialOverlaps = true;
+	if (ActorToIgnore != nullptr) {
+		Params.AddIgnoredActor(ActorToIgnore);
+	}
 
-	// If we're not on a standable slope then we are not on the ground.
-	if (Floor.Normal.Z <= FMath::Cos(maxslope)) {
-		onground = false;
-		offGroundTime += DeltaTime;
-	
-		if (Floor.Normal.Z > 0.0f) {
-			// Slope is too steep so we should be pushed back by it by taking its vertical normal into account.
-			Horiz *= 1.0f - Floor.Normal.Z;
-			Horiz += Vert;
-			toosteep = true;
+	// Telepads don't count.
+	for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		Params.AddIgnoredActor(ActorItr.operator->());
+	}
+
+	// Neither do destructibles.
+	for (TActorIterator<ADestructibleBox> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		// When they're broken, that is.
+		if (ActorItr->fadetimer >= 0.0f) {
+			Params.AddIgnoredActor(ActorItr.operator->());
 		}
 	}
 
-	// Looks like we're standing on something.
-	if (Floor.Normal.Z > FMath::Cos((maxslope))) {
+	FCollisionResponse a;
+	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+
+	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f*FVector::UpVector; // 50
+	float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
+	float RequiredDistance = (onground ? 50.0f : 5.0f); //50,1
+
+	if (!onground) {
+		offGroundTime += DeltaTime;
+	}
+
+	toosteep = false;
+	if (enforcementtimer >= 0.0f) {
+		enforcementtimer += DeltaTime;
+		toosteep = true;
+	}
+	
+	bool wasonground = onground;
+	onground = false;
+	groundvelocity = FVector::ZeroVector;
+
+	if (enforcementtimer < timerlimit && ShapeTraceResult.IsValidBlockingHit() && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground)) {
+		if (ShapeTraceResult.Normal.Z < minnormalz) {
+			if (enforcementtimer == -1.0f) {
+				enforcementtimer = 0.0f;
+			}
+		} else {
+			enforcementtimer = -1.0f;
+		}
 		onground = true;
 		offGroundTime = 0.0f;
 
 		// It's a moving platform.
-		if (Floor.GetActor() != nullptr && Floor.GetActor()->GetClass() != nullptr && (Floor.GetActor()->GetClass()->GetName() == "MovingPlatform" || Floor.GetActor()->GetClass()->GetName() == "RotatingPlatform")) {
+		if (ShapeTraceResult.GetActor() != nullptr && ShapeTraceResult.GetActor()->GetClass() != nullptr && (ShapeTraceResult.GetActor()->GetClass() == AMovingPlatform::StaticClass() || ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass())) {
 			// Record the platform's velocity and acceleration so the character controller can deal with it.
-			groundvelocity = ((AMovingPlatform*)Floor.GetActor())->Velocity;
-			groundvelocity *= (((AMovingPlatform*)Floor.GetActor())->Deactivated ? 0.0f : 1.0f);
+			groundvelocity = ((AMovingPlatform*)ShapeTraceResult.GetActor())->Velocity;
+			groundvelocity *= (((AMovingPlatform*)ShapeTraceResult.GetActor())->Deactivated ? 0.0f : 1.0f);
 
 			// It's a ROTATING platform.
-			if (Floor.GetActor()->GetClass()->GetName() == "RotatingPlatform") {
+			if (ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass()) {
 				// Add its rotational velocity, which we get my multiplying its magnitude (angular frequency
 				// times distance from center) by the unit vector in the angular direction (which we get by crossing
 				// the player's displacement from the center with the z axis), then make it negative if the platform
 				// is rotating clockwise.  
-				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)Floor.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
-				platformangularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)Floor.GetActor())->AngularPeriod;
-				platformangularfrequency *= (((ARotatingPlatform*)Floor.GetActor())->Deactivated ? 0.0f : 1.0f);
-				platformspindir = (((ARotatingPlatform*)Floor.GetActor())->SpinDirection == ARotatingPlatform::CW ? -1 : 1);
+				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)ShapeTraceResult.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
+				platformangularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)ShapeTraceResult.GetActor())->AngularPeriod;
+				platformangularfrequency *= (((ARotatingPlatform*)ShapeTraceResult.GetActor())->Deactivated ? 0.0f : 1.0f);
+				platformspindir = (((ARotatingPlatform*)ShapeTraceResult.GetActor())->SpinDirection == ARotatingPlatform::CW ? -1 : 1);
 				groundvelocity += platformangularfrequency * displacement.Size() *
-								  FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *
-								  platformspindir;
-			}
-
-			// If the platform is moving up, ignore the vertical part of its movement
-			// since collision detection will push the character upwards anyway.
-			if (groundvelocity.Z > 0.0f) {
-				groundverticalvelocity = groundvelocity.Z;
-				groundvelocity.Z = 0.0f;
+									FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *
+									platformspindir;
 			}
 		}
 	}
 
-	// Sets "Horizontal" movement to be up/down the slope you're standing on so long as the slope isn't too steep.
-	if (!toosteep&&!Floor.Normal.Equals(FVector::UpVector,0.1f)) {
-		// Look at this math. LOOK AT THIS MATH.
-		Horiz.Z += Floor.Normal.RotateAngleAxis(FMath::Sign(Horiz | Floor.Normal)*-90.0f, FVector::CrossProduct(Floor.Normal, FVector::UpVector).GetSafeNormal()).Z*Horiz.Size();
+	bool TraceBlocked;
+	FVector newlocation = UpdatedComponent->GetComponentLocation();
+
+	FHitResult TraceHitResult;
+	GetWorld()->LineTraceSingleByChannel(TraceHitResult, UpdatedComponent->GetComponentLocation(), ShapeTraceResult.ImpactPoint + (ShapeTraceResult.ImpactPoint - UpdatedComponent->GetComponentLocation()).GetSafeNormal(), ECC_Visibility);
+	TraceBlocked = GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint, ShapeTraceResult.ImpactPoint - RequiredDistance*FVector::UpVector, ECC_Visibility);
+	TraceBlocked = GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility);
+	if (TraceHitResult.Normal.Z > minnormalz) {
+		enforcementtimer = -1.0f;
 	}
 
-	// Move horizontally.
-	SafeMoveUpdatedComponent(Horiz, UpdatedComponent->GetComponentRotation(), true, Wall);
-	wallnormal = Wall.Normal;
+	if (onground) {
 
-	// Stop rubbing your face against the wall.
-	if (Wall.IsValidBlockingHit())
-	{
-		// I have to do all these calculations because you're too stupid to not run into walls.
-		SlideAlongSurface(Horiz, 1.0f - Wall.Time, Wall.Normal, Wall, true);
+		if (TraceBlocked) {
+			newlocation.Z = TraceHitResult.ImpactPoint.Z + 90.0f; // 50
+			GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility);
+			FloorNormal = TraceHitResult.ImpactNormal;
+		}
+
+		SafeMoveUpdatedComponent(newlocation - UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentRotation(), true, HitResult);
+		SlideAlongSurface(newlocation - UpdatedComponent->GetComponentLocation(), 1.0 - HitResult.Time, HitResult.Normal, HitResult);
 	}
 };

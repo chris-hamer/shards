@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "BrokenBox.h"
 #include "DestructibleBox.generated.h"
 
 UCLASS()
@@ -27,6 +28,8 @@ public:
 	float fadetimer;
 	UPROPERTY(EditAnywhere) float Lifespan;
 	UPROPERTY(EditAnywhere) float FadeDelay;
-	UPROPERTY(EditAnywhere) UDestructibleComponent* Mesh;
+	UPROPERTY(EditAnywhere) UStaticMeshComponent* StaticMesh;
+	UPROPERTY(EditAnywhere) UDestructibleComponent* DestructibleMesh;
+	UPROPERTY(EditAnywhere) ABrokenBox* BrokenBox;
 	
 };

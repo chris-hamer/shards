@@ -30,6 +30,7 @@ AAuyron::AAuyron()
 	PhysicsSettings.TerminalVelocity = 2000.0f;
 	PhysicsSettings.Gravity = 2250.0f;
 	PhysicsSettings.MaxSlope = 30.0f;
+	PhysicsSettings.SlopeSlideTime = 0.15f;
 
 	AttackRange = 300.0f;
 
@@ -53,6 +54,7 @@ AAuyron::AAuyron()
 
 	DashSettings.HasDash = false;
 	DashSettings.HasInfiniteDash = false;
+	DashSettings.HasDashControl = false;
 	DashSettings.HasDashJump = false;
 	DashSettings.HasDashWallJump = false;
 	DashSettings.DashSpeed = 1500.0f;
@@ -94,7 +96,7 @@ AAuyron::AAuyron()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// *I* wanted to be a cylinder, but no, we gotta be a *capsule*.
-	/*CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
+	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
 	CapsuleComponent->InitCapsuleSize(45.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
@@ -105,29 +107,14 @@ AAuyron::AAuyron()
 	CapsuleComponent->SetConstraintMode(EDOFMode::CustomPlane);
 	CapsuleComponent->SetLinearDamping(10.0f);
 	CapsuleComponent->AttachTo(RootComponent);
-	SetActorEnableCollision(true);*/
-
-	// GUESS WHAT SON I'M A CYLINDER NOW.
-	AAAA = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Collision Cylinder"));
-	AAAA->SetCollisionProfileName(TEXT("Pawn"));
-	AAAA->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
-	AAAA->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
-	AAAA->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
-	AAAA->SetSimulatePhysics(true);
-	AAAA->SetEnableGravity(false);
-	AAAA->SetConstraintMode(EDOFMode::CustomPlane);
-	AAAA->SetLinearDamping(10.0f);
-	AAAA->SetVisibility(false);
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> cy(TEXT("/Game/Cylinder_33"));
-	AAAA->SetStaticMesh(cy.Object);
-	AAAA->AttachTo(RootComponent);
+	SetActorEnableCollision(true);
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
-	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -80.0f));
-	PlayerModel->AttachTo(AAAA);
+	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
+	PlayerModel->AttachTo(CapsuleComponent);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -137,8 +124,8 @@ AAuyron::AAuyron()
 	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
 	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 	SpringArm->CameraLagMaxDistance = 1000.0f;
-	SpringArm->ProbeSize = 5.0f;
-	SpringArm->AttachTo(AAAA);
+	SpringArm->ProbeSize = 20.0f;
+	SpringArm->AttachTo(CapsuleComponent);
 
 	// Camera so the casuals can "see what they're doing" or whatever.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
@@ -148,13 +135,13 @@ AAuyron::AAuyron()
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Particles/DashParticles"));
 	DashParticles->SetTemplate(dp.Object);
-	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
+	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	DashParticles->AttachTo(PlayerModel);
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
 	FloatParticles->SetTemplate(fp.Object);
-	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
+	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	FloatParticles->AttachTo(PlayerModel);
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
@@ -166,32 +153,33 @@ AAuyron::AAuyron()
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
 	SlamTrail->SetTemplate(st.Object);
-	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
+	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	SlamTrail->AttachTo(PlayerModel);
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesL->SetTemplate(tpl.Object);
-	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
+	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesL->AttachTo(PlayerModel);
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesR->SetTemplate(tpr.Object);
-	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
+	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesR->AttachTo(PlayerModel);
 
 	// Get the instance of the TeleClaw weapon.
 	TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> tc(TEXT("/Game/Models/Weapons/TeleClaw"));
 	TeleClaw->SetStaticMesh(tc.Object);
+	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
 	// Apparently we need some newfangled "MovementComponent".
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
-	MovementComponent->UpdatedComponent = AAAA;
+	MovementComponent->UpdatedComponent = CapsuleComponent;
 	
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
@@ -213,7 +201,9 @@ AAuyron::AAuyron()
 }
 
 void AAuyron::Respawn() {
-	SetActorLocation(RespawnPoint);
+	Velocity = FVector::ZeroVector;
+	justteleported = true;
+	SetActorLocation(RespawnPoint, false,NULL,ETeleportType::TeleportPhysics);
 }
 
 void AAuyron::PostInitializeComponents()
@@ -243,7 +233,7 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 			if (CameraOverrideLookAtPlayer == ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer &&
 				CameraOverrideTargetDisplacement == ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation() &&
 				CameraOverrideTargetRotation == ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation()) {
-				cameralocked = false;
+				InCameraOverrideRegion = false;
 				CameraLockToPlayerXAxis = false;
 				CameraLockToPlayerYAxis = false;
 				CameraLockToPlayerZAxis = false;
@@ -271,7 +261,7 @@ void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherCom
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
 		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
-			cameralocked = true;
+			InCameraOverrideRegion = true;
 			CameraLockToPlayerXAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerXAxis;
 			CameraLockToPlayerYAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerYAxis;
 			CameraLockToPlayerZAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerZAxis;
@@ -302,7 +292,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 		// We just entered a camera override region.
 		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
 			// Lock the camera and place it at the position and rotation given by the region.
-			cameralocked = true;
+			InCameraOverrideRegion = true;
 			CameraLockToPlayerXAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerXAxis;
 			CameraLockToPlayerYAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerYAxis;
 			CameraLockToPlayerZAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerZAxis;
@@ -345,7 +335,8 @@ void AAuyron::BeginPlay()
 	SpringArm->TargetArmLength = DefaultArmLength;
 
 	// Set the max slope and max off ground time for the movement component.
-	MovementComponent->maxslope = FMath::DegreesToRadians(PhysicsSettings.MaxSlope);
+	MovementComponent->minnormalz = FMath::Cos(FMath::DegreesToRadians(PhysicsSettings.MaxSlope));
+	MovementComponent->timerlimit = PhysicsSettings.SlopeSlideTime;
 	MovementComponent->MaxOffGroundTime = JumpSettings.OffGroundJumpTime;
 
 	// Point gravuty downwards.
@@ -391,8 +382,39 @@ void AAuyron::Tick(float DeltaTime)
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
-	// Used for situations where the player's movement may be impeded and for debug info.
-	actualvelocity = (GetActorLocation() - previousposition) / DeltaTime;
+	if (GetActorLocation().Z < -1500.0f) {
+		Respawn();
+	}
+
+	// Going somewhere?
+	if (movementlocked) {
+		MovementInput = FVector::ZeroVector;
+
+		// Lock jumping and gliding as well unless we're dashing.
+		if (!dashing&&!IsInDialogue) {
+			JumpNextFrame = false;
+			GlideNextFrame = false;
+		}
+	}
+
+	if (dashing&&!DashSettings.HasDashControl) {
+		MovementInput = FVector::ZeroVector;
+	}
+
+	OnTheGround = MovementComponent->onground;
+	if (!justteleported) {
+		Velocity = (GetActorLocation() - previousposition) / DeltaTime;
+	}
+
+	justteleported = false;
+
+	// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
+	FVector Right = Camera->GetRightVector();
+	Right.Z = 0.0f;
+	Right = Right.GetSafeNormal();
+	FVector Forward = Camera->GetForwardVector();
+	Forward.Z = 0.0f;
+	Forward = Forward.GetSafeNormal();
 
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
@@ -400,84 +422,514 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity = MovementComponent->groundvelocity + FVector(0.0f, 0.0f, -100.0f);
 	}
 
-	// Really nasty hack. Avert your eyes.
-	float tempz = Velocity.Z;
-	Velocity = FVector::VectorPlaneProject(actualvelocity, FVector::UpVector);
-	Velocity.Z = tempz;
+	// Inform the MovementComponent of our velocity.
+	MovementComponent->PlayerVelocity = Velocity;
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	Velocity -= MovementComponent->groundvelocity;
-
-	// Update timing values.
-	TimeSinceLastMouseInput += DeltaTime;
-
-	// Reset temporary booleans.
-	JustJumped = false;
-	JustWallJumped = false;
-	SpringArm->bEnableCameraLag = true;
-	bool cameralocktemp = cameralocked;
-
-	// Set and range and angle to the "short range" values.
-	float TeleportRange = TeleportSettings.TeleportRangeWhenNotAiming;
-	float TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenNotAiming;
-
-	// Figure out if the ray is blocked by an object.
-	//bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
-
-	// Looks like we're talking to someone.
-	if (IsInDialogue) {
-
-		// Don't be rude.
-		movementlocked = true;
-		MovementInput = FVector::ZeroVector;
-		FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
-		CurrentNPC->SetActorRotation(displacement.Rotation());
-		TargetDirection = (-displacement).Rotation();
-
-		// Gotta go all smooth like with the camera.
-		SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier;
-		SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier;
-		SpringArm->SetWorldTransform(CurrentCut->Camera->GetComponentTransform());
-		SpringArm->SetWorldRotation(FRotator(SpringArm->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw, 0.0f));
-		SpringArm->bDoCollisionTest = false;
-
-		// Activates the attached blueprint (if the cut has one).
-		if (CurrentCut->BlueprintToExecute != nullptr && !currentdialoguebpactivated) {
-			currentdialoguebpactivated = true;
-			FOutputDeviceNull dummy;
-			CurrentCut->BlueprintToExecute->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
-		}
-	}
-
-	// Advances text.
-	if (IsInDialogue && ((JumpNextFrame && CurrentCut->CutDuration <= 0.0f) || CurrentCut->cuttimer > CurrentCut->CutDuration)) {
-		currentdialoguebpactivated = false;
-		if (CurrentCut->Next != nullptr) {
-			CurrentCut->cuttimer = -1.0f;
-			CurrentCut = CurrentCut->Next;
-			TArray<TCHAR> escape = TArray<TCHAR>();
-			escape.Add('\n');
-			CurrentLine = CurrentCut->asdf.ReplaceEscapedCharWithChar(&escape);
-			if (CurrentCut->CutDuration > 0.0f) {
-				CurrentCut->cuttimer = 0.0f;
-			}
-		} else {
-			IsInDialogue = false;
-			movementlocked = false;
-		}
-		JumpNextFrame = false;
-	}
-
-	// Temporarily unlock the camera if the player is using the free camera mode.
-	if (cameramode) {
-		cameralocked = false;
-	}
-
-	// Move the camera in response to mouse movement.
+	
 	{
+		{
+			FCollisionShape WallJumpCapsuleShape = FCollisionShape::MakeCapsule(50.0f, 90.0f);
+			FCollisionObjectQueryParams QueryParams;
+			QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+			QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+			QueryParams.AddObjectTypesToQuery(ECC_Destructible);
+			if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation() - FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)) {
+				RidingWall = false;
+				MovementComponent->WallNormal = FVector::ZeroVector;
+				StoredWallNormal = FVector::ZeroVector;
+			}
 
+			if (!OnTheGround && FVector::VectorPlaneProject(MovementComponent->WallNormal, FVector::UpVector).Size() > 0.95f) {
+				RidingWall = true;
+				StoredWallNormal = FVector::VectorPlaneProject(MovementComponent->WallNormal, FVector::UpVector);
+			}
+		}
+
+		// Handle jumping.
+		if (JumpNextFrame && !IsInDialogue) {
+			bool wouldhavebeenotg = OnTheGround;
+			if (OnTheGround || StoredWallNormal.Size() > 0.95f) {
+				// Jump while taking the floor's angle and vertical movement into account.
+				Velocity.Z = 0.0f;
+				Velocity += JumpSettings.JumpPower * (MovementComponent->FloorNormal.IsNearlyZero() ? FVector::UpVector : MovementComponent->FloorNormal).GetSafeNormal();
+				WasOnTheGround = false;
+				OnTheGround = false;
+				MovementComponent->onground = false;
+				AlreadyUnjumped = false;
+				if (StoredWallNormal.Size() > 0.95f&&!wouldhavebeenotg) {
+					// No cheating.
+					if (IsGliding || AlreadyGlided) {
+						AlreadyGlided = true;
+						IsGliding = false;
+					}
+
+					// Set player velocity to be away from the wall.
+					FVector temp = Velocity;
+					float multi = JumpSettings.WallJumpMultiplier;
+					if (DashSettings.HasDashWallJump&&holdingdash) {
+						multi = DashSettings.DashWallJumpMultiplier;
+					}
+					Velocity = (StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()));
+					Velocity.Z = temp.Z;
+					GlideNextFrame = false;
+					JustWallJumped = true;
+
+					// Make the player face away from the wall we just jumped off of.
+					FRotator newmodelrotation = PlayerModel->GetComponentRotation();
+					newmodelrotation.Yaw = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
+					PlayerModel->SetWorldRotation(newmodelrotation);
+					TargetDirection = newmodelrotation;
+				}
+			}
+		}
+
+		// Apply a downward force if the player lets go of jump while still moving upwards.
+		// This allows for variable jump heights.
+		if (!HoldingJump && Velocity.Z > 0 && !AlreadyUnjumped) {
+			Velocity += FVector::UpVector * PhysicsSettings.Gravity * JumpSettings.UnjumpRate * (Velocity.Z / JumpSettings.JumpPower);
+			AlreadyUnjumped = true;
+		}
+
+		// Start gliding.
+		if (GlideNextFrame&&!AlreadyGlided&&!dunk&&GlideSettings.HasGlide) {
+			Velocity.Z = GlideSettings.InitialGlideVelocity;
+			IsGliding = true;
+			AlreadyGlided = true;
+			GlideNextFrame = false;
+			FloatParticles->ActivateSystem();
+		}
+
+		// Handle gliding.
+		if (IsGliding) {
+			GlideTimer += DeltaTime;
+			PhysicsSettings.Gravity = DefaultGravity / GlideSettings.GlideGravityMultiplier;
+		} else {
+			FloatParticles->DeactivateSystem();
+			GlideTimer = 0.0f;
+			PhysicsSettings.Gravity = DefaultGravity;
+		}
+
+		// Stop gliding.
+		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump) {
+			IsGliding = false;
+		}
+
+		if (OnTheGround) {
+			AlreadyGlided = false;
+			AlreadyUnjumped = false;
+		}
+
+		if (warptimer >= 0.0f) {
+			warptimer += DeltaTime;
+		}
+
+		// Make the player start dashing in response to input.
+		if (DashNextFrame&&DashSettings.HasDash) {
+			DashNextFrame = false;
+			if (OnTheGround&&!MovementComponent->toosteep) {
+				DashParticles->ActivateSystem();
+				dashing = true;
+			}
+		}
+
+		// Handle dashing.
+		if (dashing) {
+
+			// Set the player's horizontal velocity while preserving their vertical velocity.
+			float z = Velocity.Z;
+			Velocity = TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed;
+			Velocity.Z = z;
+
+			// Tick up the dash timer.
+			if (!DashSettings.HasInfiniteDash) {
+				dashtimer += DeltaTime;
+			}
+
+			// Stop dashing if the player was dashing for too long.
+			if (dashtimer > DashSettings.DashDuration || MovementComponent->toosteep) {
+				dashing = false;
+				DashParticles->DeactivateSystem();
+				dashtimer = 0.0f;
+			}
+		}
+
+		// This ain't Megaman X, kiddo.
+		if (dashing&&!DashSettings.HasDashJump&&(!OnTheGround||JumpNextFrame)) {
+			DashParticles->DeactivateSystem();
+			dashing = false;
+			dashtimer = 0.0f;
+		}
+
+		// COME ON AND SLAM
+		if (SlamNextFrame&&SlamSettings.HasSlam) {
+			SlamNextFrame = false;
+			if (!OnTheGround && AppliedForce.Z <= 0.0f && !dunk && !ztarget) {
+				Velocity = -SlamSettings.SlamVelocity * FVector::UpVector;
+				dunk = true;
+				SlamTrail->ActivateSystem();
+			}
+		}
+
+		// AND WELCOME TO THE JAM
+		if (dunk) {
+			if (OnTheGround||Velocity.Z >= -SlamSettings.SlamVelocity / 2.0f||AppliedForce.Z<0.0f) {
+				dunk = false;
+				SlamTrail->DeactivateSystem();
+				if (OnTheGround) {
+					SlamParticles->ActivateSystem();
+					SlamParticles->ActivateSystem();
+				}
+			}
+		}
+
+		// Handle the screen warp animation.
+		if (warpanimtimer >= 0.0f) {
+			if (warpanimtimer < TeleportSettings.TeleportAnimationRestoreThreshold) {
+				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
+			} else {
+				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
+			}
+			warpanimtimer += DeltaTime;
+			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
+				warpanimtimer = -1.0f;
+			}
+		}
+			
+		// Start the warp animation timer if the player just warped.
+		if (itshappening) {
+			itshappening = false;
+			warpanimtimer = 0.0f;
+		}
+
+		// Looks like we're talking to someone.
+		if (IsInDialogue) {
+
+			// Don't be rude.
+			movementlocked = true;
+			MovementInput = FVector::ZeroVector;
+			Velocity = FVector::ZeroVector;
+			FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
+			TargetDirection = (-displacement).Rotation();
+
+			// Gotta go all smooth like with the camera.
+			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier * !CurrentCut->InstantTransition;
+			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier * !CurrentCut->InstantTransition;
+			SpringArm->SetWorldTransform(CurrentCut->Camera->GetComponentTransform());
+			SpringArm->SetWorldRotation(FRotator(SpringArm->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw, 0.0f));
+			SpringArm->bDoCollisionTest = false;
+
+			// Activates the attached blueprint (if the cut has one).
+			if (CurrentCut->BlueprintToExecute != nullptr && !currentdialoguebpactivated) {
+				currentdialoguebpactivated = true;
+				FOutputDeviceNull dummy;
+				CurrentCut->BlueprintToExecute->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
+			}
+		}
+
+		// Advances text.
+		if (IsInDialogue && ((JumpNextFrame && CurrentCut->CutDuration <= 0.0f) || CurrentCut->cuttimer > CurrentCut->CutDuration)) {
+			currentdialoguebpactivated = false;
+			if (CurrentCut->Next != nullptr) {
+				CurrentCut->cuttimer = -1.0f;
+				CurrentCut = CurrentCut->Next;
+				FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
+				TargetDirection = (-displacement).Rotation();
+				CurrentNPC->SetActorRotation(displacement.Rotation());
+				TArray<TCHAR> escape = TArray<TCHAR>();
+				escape.Add('\n');
+				CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
+				if (CurrentCut->CutDuration > 0.0f) {
+					CurrentCut->cuttimer = 0.0f;
+				}
+			} else {
+				IsInDialogue = false;
+				movementlocked = false;
+			}
+			JumpNextFrame = false;
+		}
+
+		// Use the player as the source for the teleport raycast...
+		FVector source = GetActorLocation();
+		FVector forward = PlayerModel->GetForwardVector();
+
+		// ...unless they're aiming, in which case use the camera.
+		if (ztarget) {
+			source = Camera->GetComponentLocation();
+			forward = Camera->GetForwardVector();
+		}
+
+		AStick* closest = NULL;
+		float biggestdot = -1.0f;
+
+		// Iterate over each TelePad and cast a ray.
+		for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->GetClass()->GetName() == "Stick") {
+
+				// Assume it's not being targeted, and set it to the default
+				// color and brightness.
+				ActorItr->PointLight->LightColor = FColor::White;
+				ActorItr->PointLight->Intensity = 1385.76f;
+				ActorItr->PointLight->UpdateColorAndBrightness();
+
+				// Get displacement vector from the player/camera to the TelePad.
+				FVector displacement = ActorItr->GetActorLocation() - source;
+
+				// Get the dot product between the displacement and the source.
+				float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+				// Set trace parameters. I have no idea what these do but the raycast doesn't work
+				// if I don't put these here.
+				FHitResult f;
+				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+
+				// Don't want the ray to collide with the player model now do we?
+				QueryParams.AddIgnoredActor(this);
+
+				// Figure out if the ray is blocked by an object.
+				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+
+				// If the trace hit a telepad and it's closer to where we're aiming
+				// at than any other TelePad, set it as the "closest" one.
+				if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->GetClass()->GetName() == "Stick" && dot > biggestdot && blocked && displacement.Size() < TeleportRange) {
+					closest = *ActorItr;
+					biggestdot = dot;
+				}
+			}
+		}
+
+		// Set the color of the "closest" TelePad as long as it's in range
+		// and within a certain angle tolerance and teleport he player to it
+		// if they are trying to teleport.
+		if (closest != nullptr &&
+			TeleportSettings.HasTeleport &&
+			FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+			(closest->GetActorLocation() - GetActorLocation()).Size() < TeleportRange) {
+
+			// Set the target TelePad's color and brightness so that it stands out.
+			closest->PointLight->LightColor = TeleportSettings.TeleportLightColor;
+			closest->PointLight->Intensity = 16.0*1385.76f;
+			closest->PointLight->UpdateColorAndBrightness();
+
+			// Teleport the player to the TelePad if they're trying to teleport
+			// and impart the post teleport velocity on them.
+			if (swish) {
+				if (closest != nullptr) {
+					// Move the player to the telepad's position and give them the perscribed velocity.
+					SetActorLocation(closest->gohere);
+					Velocity = closest->PostTeleportVelocity;
+					justteleported = true;
+					ztarget = false;
+
+					// Tell the animation blueprint that we're about to teleport.
+					itshappening = true;
+
+					// If we were aiming, reset the camera's rotation.
+					if (wasztarget) {
+						SpringArm->CameraLagSpeed = 0.0f;
+						SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+					}
+
+					// Reset OnTheGround and glide variables.
+					OnTheGround = false;
+					MovementComponent->onground = false;
+					WasOnTheGround = false;
+					if (IsGliding) {
+						AlreadyGlided = true;
+						IsGliding = false;
+					}
+				}
+			}
+		}
+
+		ADestructibleBox* currentbox = NULL;
+		biggestdot = -1.0f;
+
+		// Iterate over each DestructibleBox and cast a ray.
+		for (TActorIterator<ADestructibleBox> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->IsA(ADestructibleBox::StaticClass())) {
+
+				if (ActorItr->fadetimer != -1.0f) {
+					continue;
+				}
+
+				// Get displacement vector from the player/camera to the DestructibleBox.
+				FVector displacement = ActorItr->GetActorLocation() - source;
+
+				// Get the dot product between the displacement and the source.
+				float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+				// Set trace parameters. I have no idea what these do but the raycast doesn't work
+				// if I don't put these here.
+				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Destructible);
+				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+				FHitResult f;
+
+				// Don't want the ray to collide with the player model now do we?
+				QueryParams.AddIgnoredActor(this);
+
+				// Figure out if the ray is blocked by an object.
+				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+						
+				// If the trace hit a DestructibleBox and it's closer to where we're aiming
+				// at than any other DestructibleBox, set it as the "closest" one.
+				if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ADestructibleBox::StaticClass()) && blocked && displacement.Size() < AttackRange && dot > 0.65f) {
+					currentbox = (ADestructibleBox*)(f.GetActor());
+					if (currentbox!=nullptr&&AttackPressed) {
+						currentbox->BeginFadeout();
+					}
+				}
+			}
+		}
+
+		AttackPressed = false;
+
+		// Reset the "player wants to teleport" variable.
+		swish = false;
+
+		ASwitch* closestswitch = NULL;
+		biggestdot = -1.0f;
+
+		// Iterate over each Switch and cast a ray.
+		for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->IsA(ASwitch::StaticClass())) {
+
+				// Get displacement vector from the player/camera to the switch.
+				FVector displacement = ActorItr->GetActorLocation() - source;
+
+				// Get the dot product between the displacement and the source.
+				float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+				// Set trace parameters. I have no idea what these do but
+				// the raycast doesn't work if I don't put these here.
+				FHitResult f;
+				FCollisionObjectQueryParams TraceParams(ECC_Visibility);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+
+				// Don't want the ray to collide with the player model now do we?
+				QueryParams.AddIgnoredActor(this);
+
+				// Figure out if the ray is blocked by an object.
+				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+
+				// If the trace hit a switch and it's closer to where we're aiming
+				// at than any other switch, set it as the "closest" one.
+				if (f.GetActor() != nullptr &&
+					f.GetActor()->IsA(ASwitch::StaticClass()) &&
+					dot > biggestdot &&
+					blocked &&
+					displacement.Size() < ActorItr->MaxDistance) {
+					closestswitch = *ActorItr;
+					biggestdot = dot;
+				}
+			}
+		}
+
+		// Activate the "closest" switch as long as it's in range
+		// and within a certain angle tolerance.
+		if (closestswitch != nullptr &&
+			FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+			(closestswitch->GetActorLocation() - GetActorLocation()).Size() < closestswitch->MaxDistance) {
+			if (ActivateNextFrame) {
+				closestswitch->Activate();
+			}
+		}
+
+		ANPC* closestNPC = NULL;
+		biggestdot = -1.0f;
+
+		// Iterate over each NPC and cast a ray.
+		for (TActorIterator<ANPC> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->IsA(ANPC::StaticClass())) {
+
+				// Get displacement vector from the player/camera to the NPC.
+				FVector displacement = ActorItr->GetActorLocation() - source;
+
+				// Get the dot product between the displacement and the source.
+				float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+				// Set trace parameters. I have no idea what these do but
+				// the raycast doesn't work if I don't put these here.
+				FHitResult f;
+				FCollisionObjectQueryParams TraceParams(ECC_Visibility);
+				//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel2);
+				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+
+				// Don't want the ray to collide with the player model now do we?
+				QueryParams.AddIgnoredActor(this);
+
+				// Figure out if the ray is blocked by an object.
+				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+
+				// If the trace hit a NPC and it's closer to where we're aiming
+				// at than any other NPC, set it as the "closest" one.
+				if (f.GetActor() != nullptr &&
+					f.GetActor()->IsA(ANPC::StaticClass()) &&
+					dot > biggestdot &&
+					blocked &&
+					displacement.Size() < ActorItr->MaxDistance) {
+					closestNPC = *ActorItr;
+					biggestdot = dot;
+				}
+			}
+		}
+
+		// Activate the "closest" NPC as long as it's in
+		// range nd within a certain angle tolerance.
+		if (closestNPC != nullptr &&
+			FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+			(closestNPC->GetActorLocation() - GetActorLocation()).Size() < closestNPC->MaxDistance) {
+			if (ActivateNextFrame && OnTheGround) {
+				// Start dialogue with the target NPC.
+				closestNPC->Activate();
+				IsInDialogue = true;
+
+				// Store information about that NPC and their root DialogueCut.
+				CurrentCut = closestNPC->CurrentCut;
+				CurrentNPC = closestNPC;
+				TArray<TCHAR> escape = TArray<TCHAR>();
+				escape.Add('\n');
+				CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
+
+				// Look at me when I'm talking to you!
+				FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
+				CurrentNPC->SetActorRotation(displacement.Rotation());
+				TargetDirection = (-displacement).Rotation();
+
+				// Code to prevent violations of personal space.
+				FVector target = displacement.GetSafeNormal()*150.0f;
+				SetActorLocation(target + CurrentNPC->GetActorLocation());
+				Velocity = FVector::ZeroVector;
+
+				// Snap the camera to the spring arm component's root (so we don't have to deal with
+				// its arm length) and place it where the camera used to be. This effectively "nullifies"
+				// the spring arm for the purposes of lerping the camera to its new DialogueCut-specified
+				// position.
+				FVector temp = Camera->GetComponentLocation();
+				SpringArm->CameraLagSpeed = 0.0f;
+				SpringArm->CameraRotationLagSpeed = 0.0f;
+				SpringArm->SetWorldLocation(temp);
+				SpringArm->TargetArmLength = 0.0f; FMath::Lerp(SpringArm->TargetArmLength, 0.0f, FMath::Pow(FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f), 0.25f));
+						
+				// Activates the attached blueprint (if the cut has one).
+				if (CurrentCut->BlueprintToExecute != nullptr) {
+					FOutputDeviceNull dummy;
+					CurrentCut->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
+				}
+			}
+		}
+
+	}
+
+	{
 		// Handle camera movement when the camera is controllable.
-		if ((!cameralocked || ztarget) && !IsInDialogue) {
+		if ((!InCameraOverrideRegion || ztarget) && !IsInDialogue) {
 
 			timesinceoverrideenter = 0.0f;
 			SpringArm->bDoCollisionTest = true;
@@ -485,6 +937,8 @@ void AAuyron::Tick(float DeltaTime)
 			// Reset camera input timer if the camera controls were touched.
 			if (CameraInput.X != 0.0f || CameraInput.Y != 0.0f) {
 				TimeSinceLastMouseInput = 0.0f;
+			} else {
+				TimeSinceLastMouseInput += DeltaTime;
 			}
 
 			// Temporary variable to hold the camera's new rotation.
@@ -495,7 +949,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
-				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(actualvelocity,FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
+				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(Velocity,FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
 			}
 
 			// Set the rotation of the camera.
@@ -507,7 +961,10 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 			SpringArm->SetWorldRotation(NewRotation);
 
-		} else if(cameralocked) {
+		}
+		
+		// Handle CameraOverrideRegions.
+		if(InCameraOverrideRegion&&!ztarget) {
 
 			// If the camera is locked, put it at the override region's
 			// target location and rotation.
@@ -532,7 +989,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
-		// The player is aiming.
+		// Handle aiming.
 		if (ztarget&&!dashing) {
 
 			// Set teleport range and angle to the "long range" values.
@@ -569,10 +1026,6 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * CameraLagSettings.AimingLagMultiplier;
 			SpringArm->SetRelativeRotation(NewRotation);
 
-			// Get the camera's right and forward vectors and transform them from world to realtive vectors.
-			FVector Right = FVector::VectorPlaneProject(AAAA->GetComponentRotation().RotateVector(Camera->GetRightVector()), FVector::UpVector);
-			FVector Forward = FVector::VectorPlaneProject((AAAA->GetComponentRotation() * -1.0f).RotateVector(Camera->GetForwardVector()), FVector::UpVector);
-
 			// Offset the spring arm (and therefore the camera) a bit so the player model
 			// isn't blocking the screen when we're trying to aim.
 			FVector base = FVector(0.0f, 100.0f, 100.0f);
@@ -584,13 +1037,17 @@ void AAuyron::Tick(float DeltaTime)
 
 		} else {
 
+			// Set and range and angle to the "short range" values.
+			TeleportRange = TeleportSettings.TeleportRangeWhenNotAiming;
+			TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenNotAiming;
+
 			// Return the spring arm (and camera) to its original location.
-			if (!cameralocked&&!IsInDialogue) {
+			if (!InCameraOverrideRegion&&!IsInDialogue) {
 				SpringArm->TargetArmLength = DefaultArmLength;
 				SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
 				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 				SpringArm->SetRelativeLocation(FVector::ZeroVector);
-				
+					
 				// If we just stopped aiming, reset the camera's rotation as well.
 				if (wasztarget) {
 					SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
@@ -603,348 +1060,12 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
-		// Restore camera's old locked state.
-		cameralocked = cameralocktemp;
 	}
 
-	// Move the player in response to movement inputs.
 	{
-		{
-			// Use the player as the source for the teleport raycast...
-			FVector source = GetActorLocation();
-			FVector forward = PlayerModel->GetForwardVector();
-
-			// ...unless they're aiming, in which case use the camera.
-			if (ztarget) {
-				source = Camera->GetComponentLocation();
-				forward = Camera->GetForwardVector();
-			}
-
-			AStick* closest = NULL;
-			float biggestdot = -1.0f;
-
-			// Iterate over each TelePad and cast a ray.
-			for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-				if (ActorItr->GetClass()->GetName() == "Stick") {
-
-					// Assume it's not being targeted, and set it to the default
-					// color and brightness.
-					ActorItr->PointLight->LightColor = FColor::White;
-					ActorItr->PointLight->Intensity = 1385.76f;
-					ActorItr->PointLight->UpdateColorAndBrightness();
-
-					// Get displacement vector from the player/camera to the TelePad.
-					FVector displacement = ActorItr->GetActorLocation() - source;
-
-					// Get the dot product between the displacement and the source.
-					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
-
-					// Set trace parameters. I have no idea what these do but the raycast doesn't work
-					// if I don't put these here.
-					FHitResult f;
-					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
-					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
-					FCollisionQueryParams asdf = FCollisionQueryParams();
-
-					// Don't want the ray to collide with the player model now do we?
-					asdf.AddIgnoredActor(this);
-
-					// Figure out if the ray is blocked by an object.
-					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
-
-					// If the trace hit a telepad and it's closer to where we're aiming
-					// at than any other TelePad, set it as the "closest" one.
-					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->GetClass()->GetName() == "Stick" && dot > biggestdot && blocked && displacement.Size() < TeleportRange) {
-						closest = *ActorItr;
-						biggestdot = dot;
-					}
-				}
-			}
-
-			// Set the color of the "closest" TelePad as long as it's in range
-			// and within a certain angle tolerance and teleport he player to it
-			// if they are trying to teleport.
-			if (closest != nullptr &&
-				TeleportSettings.HasTeleport &&
-				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
-				(closest->GetActorLocation() - GetActorLocation()).Size() < TeleportRange) {
-
-				AStick* s = closest;
-
-				// Set the target TelePad's color and brightness so that it stands out.
-				s->PointLight->LightColor = TeleportSettings.TeleportLightColor;
-				s->PointLight->Intensity = 16.0*1385.76f;
-				s->PointLight->UpdateColorAndBrightness();
-
-				// Teleport the player to the TelePad if they're trying to teleport
-				// and impart the post teleport velocity on them.
-				if (swish) {
-					if (s != nullptr) {
-						// Move the player to the telepad's position and give them the perscribed velocity.
-						SetActorLocation(s->gohere);
-						Velocity = s->PostTeleportVelocity;
-						ztarget = false;
-
-						// Tell the animation blueprint that we're about to teleport.
-						itshappening = true;
-
-						// If we were aiming, reset the camera's rotation.
-						if (wasztarget) {
-							SpringArm->CameraLagSpeed = 0.0f;
-							SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
-						}
-
-						// Reset OnTheGround and glide variables.
-						OnTheGround = false;
-						WasOnTheGround = false;
-						if (IsGliding) {
-							AlreadyGlided = true;
-							IsGliding = false;
-						}
-					}
-				}
-			}
-
-
-			ADestructibleBox* currentbox = NULL;
-			biggestdot = -1.0f;
-
-			// Iterate over each TelePad and cast a ray.
-			for (TActorIterator<ADestructibleBox> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-				if (ActorItr->IsA(ADestructibleBox::StaticClass())) {
-
-					if (ActorItr->fadetimer != -1.0f) {
-						continue;
-					}
-
-					// Get displacement vector from the player/camera to the TelePad.
-					FVector displacement = ActorItr->GetActorLocation() - source;
-
-					// Get the dot product between the displacement and the source.
-					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
-
-					// Set trace parameters. I have no idea what these do but the raycast doesn't work
-					// if I don't put these here.
-					FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Destructible);
-					FCollisionQueryParams asdf = FCollisionQueryParams();
-					FHitResult f;
-
-					// Don't want the ray to collide with the player model now do we?
-					asdf.AddIgnoredActor(this);
-
-					// Figure out if the ray is blocked by an object.
-					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
-					
-					// If the trace hit a telepad and it's closer to where we're aiming
-					// at than any other TelePad, set it as the "closest" one.
-					if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ADestructibleBox::StaticClass()) && blocked && displacement.Size() < AttackRange && dot > 0.65f) {
-						currentbox = (ADestructibleBox*)(f.GetActor());
-						if (currentbox!=nullptr&&AttackPressed) {
-							currentbox->Mesh->ApplyDamage(10.0f, currentbox->GetActorLocation(), FVector::UpVector, 10000.0f);
-							currentbox->BeginFadeout();
-						}
-					}
-				}
-			}
-
-			AttackPressed = false;
-
-			// Reset the "player wants to teleport" variable.
-			swish = false;
-
-
-			ASwitch* closestswitch = NULL;
-			biggestdot = -1.0f;
-
-			// Iterate over each Switch and cast a ray.
-			for (TActorIterator<ASwitch> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-				if (ActorItr->IsA(ASwitch::StaticClass())) {
-
-					// Get displacement vector from the player/camera to the switch.
-					FVector displacement = ActorItr->GetActorLocation() - source;
-
-					// Get the dot product between the displacement and the source.
-					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
-
-					// Set trace parameters. I have no idea what these do but
-					// the raycast doesn't work if I don't put these here.
-					FHitResult f;
-					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
-					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
-					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-					FCollisionQueryParams asdf = FCollisionQueryParams();
-
-					// Don't want the ray to collide with the player model now do we?
-					asdf.AddIgnoredActor(this);
-
-					// Figure out if the ray is blocked by an object.
-					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
-
-					// If the trace hit a switch and it's closer to where we're aiming
-					// at than any other switch, set it as the "closest" one.
-					if (f.GetActor() != nullptr &&
-						f.GetActor()->IsA(ASwitch::StaticClass()) &&
-						dot > biggestdot &&
-						blocked &&
-						displacement.Size() < ActorItr->MaxDistance) {
-						closestswitch = *ActorItr;
-						biggestdot = dot;
-					}
-				}
-			}
-
-			// Activate the "closest" switch as long as it's in range
-			// and within a certain angle tolerance.
-			if (closestswitch != nullptr &&
-				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
-				(closestswitch->GetActorLocation() - GetActorLocation()).Size() < closestswitch->MaxDistance) {
-				if (ShouldActivate) {
-					closestswitch->Activate();
-					ShouldActivate = false;
-				}
-			}
-
-			ANPC* closestNPC = NULL;
-			biggestdot = -1.0f;
-
-			// Iterate over each NPC and cast a ray.
-			for (TActorIterator<ANPC> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-				if (ActorItr->IsA(ANPC::StaticClass())) {
-
-					// Get displacement vector from the player/camera to the NPC.
-					FVector displacement = ActorItr->GetActorLocation() - source;
-
-					// Get the dot product between the displacement and the source.
-					float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
-
-					// Set trace parameters. I have no idea what these do but
-					// the raycast doesn't work if I don't put these here.
-					FHitResult f;
-					FCollisionObjectQueryParams TraceParams(ECC_Visibility);
-					//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
-					TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel2);
-					FCollisionQueryParams asdf = FCollisionQueryParams();
-
-					// Don't want the ray to collide with the player model now do we?
-					asdf.AddIgnoredActor(this);
-
-					// Figure out if the ray is blocked by an object.
-					bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, asdf);
-
-					// If the trace hit a NPC and it's closer to where we're aiming
-					// at than any other NPC, set it as the "closest" one.
-					if (f.GetActor() != nullptr &&
-						f.GetActor()->IsA(ANPC::StaticClass()) &&
-						dot > biggestdot &&
-						blocked &&
-						displacement.Size() < ActorItr->MaxDistance) {
-						closestNPC = *ActorItr;
-						biggestdot = dot;
-					}
-				}
-			}
-
-			// Activate the "closest" NPC as long as it's in range
-			// and within a certain angle tolerance.
-			if (closestNPC != nullptr &&
-				FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
-				(closestNPC->GetActorLocation() - GetActorLocation()).Size() < closestNPC->MaxDistance) {
-				if (ShouldActivate && OnTheGround) {
-					// Start dialogue with the target NPC.
-					closestNPC->Activate();
-					IsInDialogue = true;
-
-					// Store information about that NPC and their root DialogueCut.
-					CurrentCut = closestNPC->CurrentCut;
-					CurrentNPC = closestNPC;
-					TArray<TCHAR> escape = TArray<TCHAR>();
-					escape.Add('\n');
-					CurrentLine = CurrentCut->asdf.ReplaceEscapedCharWithChar(&escape);
-
-					// Look at me when I'm talking to you!
-					FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
-					CurrentNPC->SetActorRotation(displacement.Rotation());
-					TargetDirection = (-displacement).Rotation();
-
-					// Code to prevent violations of personal space.
-					FVector target = displacement.GetSafeNormal()*150.0f;
-					SetActorLocation(target + CurrentNPC->GetActorLocation());
-					Velocity = FVector::ZeroVector;
-
-					// Snap the camera to the spring arm component's root (so we don't have to deal with
-					// its arm length) and place it where the camera used to be. This effectively "nullifies"
-					// the spring arm for the purposes of lerping the camera to its new DialogueCut-specified
-					// position.
-					FVector temp = Camera->GetComponentLocation();
-					SpringArm->CameraLagSpeed = 0.0f;
-					SpringArm->CameraRotationLagSpeed = 0.0f;
-					SpringArm->SetWorldLocation(temp);
-					SpringArm->TargetArmLength = 0.0f; FMath::Lerp(SpringArm->TargetArmLength, 0.0f, FMath::Pow(FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f), 0.25f));
-					
-					// Activates the attached blueprint (if the cut has one).
-					if (CurrentCut->BlueprintToExecute != nullptr) {
-						FOutputDeviceNull dummy;
-						CurrentCut->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
-					}
-
-					ShouldActivate = false;
-				}
-			}
-		}
-
-		// Handle the screen warp animation.
-		if (warpanimtimer >= 0.0f) {
-			if (warpanimtimer < TeleportSettings.TeleportAnimationRestoreThreshold) {
-				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
-			} else {
-				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
-			}
-			warpanimtimer += DeltaTime;
-			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
-				warpanimtimer = -1.0f;
-			}
-		}
-		
-		// Start the warp animation timer if the player just warped.
-		if (itshappening) {
-			itshappening = false;
-			warpanimtimer = 0.0f;
-		}
-
-		// Make the player model translucent if the camera gets too close.
-		float opacity = FMath::Clamp((Camera->GetComponentLocation() - GetActorLocation()).Size() / CameraModelFadeSettings.ModelFadeDistance, 0.0f, 1.0f);
-		hairmat->SetScalarParameterValue(TEXT("fade"), (CameraModelFadeSettings.ModelFadeEnabled ? opacity : 1.0f));
-		bandanamat->SetScalarParameterValue(TEXT("fade"), (CameraModelFadeSettings.ModelFadeEnabled ? opacity : 1.0f));
-		bodymat->SetScalarParameterValue(TEXT("fade"), (CameraModelFadeSettings.ModelFadeEnabled ? opacity : 1.0f));
-
-		// Lock the player's movement inputs if they're dashing.
-		if (dashing) {
-			movementlocked = true;
-		}
-
-		// If you can't move, don't move.
-		if (movementlocked) {
-			MovementInput = FVector::ZeroVector;
-
-			// Lock jumping and gliding as well unless we're dashing.
-			if (!dashing) {
-				JumpNextFrame = false;
-				GlideNextFrame = false;
-			}
-		}
-
-		// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
-		FVector Right = Camera->GetRightVector();
-		Right.Z = 0.0f;
-		Right = Right.GetSafeNormal();
-		FVector Forward = Camera->GetForwardVector();
-		Forward.Z = 0.0f;
-		Forward = Forward.GetSafeNormal();
 
 		// Set up acceleration vector using the movement inputs.
-		FVector AdjustedInput = MovementInput.GetClampedToSize(0.0f, 1.0f);
-		FVector Acceleration = FVector::ZeroVector;
-		Acceleration = (Right*AdjustedInput.X + Forward*AdjustedInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		FVector Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
 
 		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
 		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
@@ -957,24 +1078,18 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Decreases the effect of deceleration when the player is moving near max speed
 		// and increases it when they are going slow. This makes decelerating feel much smoother.
-		float slowfactor = FMath::Clamp(FMath::Lerp(FMath::Sqrt(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity,2.0f)), 0.0f, 1.0f);
+		float slowfactor = FMath::Clamp(FMath::Lerp(1.0f, FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity, 0.5f)), 0.0f, 1.0f);
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
 		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
 
-		// Ask the movement component if we're on the ground and apply gravity if we aren't.
-		OnTheGround = MovementComponent->onground;
 		if (!OnTheGround) {
 			Acceleration += FVector(0.0f, 0.0f, PhysicsSettings.Gravity);
 		} else if (WasOnTheGround) {
-			// Push the player into the ground a bit so we still get collisions every frame.
-			// Also keeps player from falling off slopes while running down them.
-			if (MovementComponent->Floor.Normal.Z > 0.0f) {
-				Velocity.Z = -100.0f;
-			}
+			Velocity.Z = 0.0f;
 		}
-
+		
 		// Apply drag.
 		if (!OnTheGround && FMath::Abs(Velocity.Z) > JumpSettings.JumpPower) {
 			Acceleration -= FVector::UpVector * -PhysicsSettings.Gravity * FMath::Pow(Velocity.Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(Velocity.Z);
@@ -1001,13 +1116,11 @@ void AAuyron::Tick(float DeltaTime)
 					newpos.X = LockedAxisValue;
 					Velocity.X = 0.0f;
 					MovementInput.Y = 0.0f;
-					AdjustedInput.Y = 0.0f;
 					break;
 				case ATwoDimensionalMovementRegion::YAXIS:
 					newpos.Y = LockedAxisValue;
 					Velocity.Y = 0.0f;
 					MovementInput.Y = 0.0f;
-					AdjustedInput.Y = 0.0f;
 					break;
 				case ATwoDimensionalMovementRegion::ZAXIS:
 					newpos.Z = LockedAxisValue;
@@ -1020,193 +1133,27 @@ void AAuyron::Tick(float DeltaTime)
 		// Physiiiiicccss.
 		Velocity += Acceleration * DeltaTime;
 
-		// This ain't Megaman X, kiddo.
-		if (dashing&&!DashSettings.HasDashJump&&(!OnTheGround||JumpNextFrame)) {
-			DashParticles->DeactivateSystem();
-			dashing = false;
-			dashtimer = 0.0f;
-		}
-
-		if (!OnTheGround && FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector).Size() > 0.95f) {
-			RidingWall = true;
-			StoredWallNormal = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
-		}
-
-		FCollisionQueryParams asdf2 = FCollisionQueryParams();
-		asdf2.AddIgnoredActor(this);
-
-		FCollisionShape shape = FCollisionShape::MakeCapsule(50.0f, 90.0f);
-		FCollisionObjectQueryParams totallyawesomecollisionobjectquerycommands;
-		totallyawesomecollisionobjectquerycommands.AddObjectTypesToQuery(ECC_WorldStatic);
-		totallyawesomecollisionobjectquerycommands.AddObjectTypesToQuery(ECC_WorldDynamic);
-		totallyawesomecollisionobjectquerycommands.AddObjectTypesToQuery(ECC_Destructible);
-		if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation()-FVector::UpVector, FQuat::Identity, totallyawesomecollisionobjectquerycommands, shape, asdf2)) {
-			RidingWall = false;
-			StoredWallNormal = FVector::ZeroVector;
-		}
-
-		shape = FCollisionShape::MakeCapsule(10.0f, 90.0f);
-
-		// Handle jumping.
-		if (JumpNextFrame&&!IsInDialogue) {
-
-			// Jump while taking the floor's angle and vertical movement into account.
-			Velocity.Z = 0.5f * (MovementComponent->groundvelocity.Z >= 0.0f ? MovementComponent->groundverticalvelocity : -MovementComponent->groundvelocity.Z);
-			Velocity += JumpSettings.JumpPower * (MovementComponent->offGroundTime > 0 ? FVector::UpVector : MovementComponent->Floor.Normal).GetSafeNormal();
-			JumpNextFrame = false;
-			WasOnTheGround = false;
-			JustJumped = true;
-
-			// OK this might be Megaman X a litle.
-			FVector wnproject = FVector::VectorPlaneProject(StoredWallNormal, FVector::UpVector);
-			if (!OnTheGround && wnproject.Size() > 0.95f) {
-				// No cheating.
-				if (IsGliding||AlreadyGlided) {
-					AlreadyGlided = true;
-					IsGliding = false;
-				}
-
-				// Set player velocity to be away from the wall.
-				FVector temp = Velocity;
-				float multi = JumpSettings.WallJumpMultiplier;
-				if (DashSettings.HasDashWallJump&&holdingdash) {
-					multi = DashSettings.DashWallJumpMultiplier;
-				}
-				Velocity = (StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()));
-				Velocity.Z = temp.Z;
-				JustWallJumped = true;
-
-				// Make the player face away from the wall we just jumped off of.
-				FRotator newmodelrotation = PlayerModel->GetComponentRotation();
-				newmodelrotation.Yaw = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*AdjustedInput.X + Forward*AdjustedInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
-				PlayerModel->SetWorldRotation(newmodelrotation);
-				TargetDirection = newmodelrotation;
-			}
-		}
-
-		// Start gliding.
-		if (GlideNextFrame&&!AlreadyGlided&&!dunk) {
-			Velocity.Z = GlideSettings.InitialGlideVelocity;
-			IsGliding = true;
-			AlreadyGlided = true;
-			GlideNextFrame = false;
-			FloatParticles->ActivateSystem();
-		}
-
-		// Handle gliding.
-		if (IsGliding) {
-			GlideTimer += DeltaTime;
-			PhysicsSettings.Gravity = DefaultGravity / GlideSettings.GlideGravityMultiplier;
-		} else {
-			FloatParticles->DeactivateSystem();
-			GlideTimer = 0.0f;
-			PhysicsSettings.Gravity = DefaultGravity;
-		}
-
-		// Stop gliding.
-		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump) {
-			IsGliding = false;
-		}
-
-		if (OnTheGround) {
-			AlreadyGlided = false;
-			AlreadyUnjumped = false;
-		}
-
-		if (warptimer >= 0.0f) {
-			warptimer += DeltaTime;
-		}
-
-		// Apply a downward force if the player lets go of jump while still moving upwards.
-		// This allows for variable jump heights.
-		if (!HoldingJump && Velocity.Z > 0 && !AlreadyUnjumped) {
-			Velocity += FVector::UpVector * PhysicsSettings.Gravity * JumpSettings.UnjumpRate * (Velocity.Z / JumpSettings.JumpPower);
-			AlreadyUnjumped = true;
-		}
-
-		// Make the player start dashing in response to input.
-		if (dashnextframe) {
-			dashnextframe = false;
-			if (OnTheGround) {
-				DashParticles->ActivateSystem();
-				dashing = true;
-			}
-		}
-
-		// Handle dashing.
-		if (dashing) {
-
-			// Set the player's horizontal velocity while preserving their vertical velocity.
-			float z = Velocity.Z;
-			Velocity = TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed;
-			Velocity.Z = z;
-
-			// Tick up the dash timer.
-			if (!DashSettings.HasInfiniteDash) {
-				dashtimer += DeltaTime;
-			}
-
-			// Stop dashing if the player was dashing for too long.
-			if (dashtimer > DashSettings.DashDuration) {
-				dashing = false;
-				DashParticles->DeactivateSystem();
-				dashtimer = 0.0f;
-			}
-		}
-
-		// COME ON AND SLAM
-		if (SlamNextFrame) {
-			SlamNextFrame = false;
-			if (!OnTheGround && AppliedForce.Z <= 0.0f && !dunk && !ztarget) {
-				Velocity = -SlamSettings.SlamVelocity * FVector::UpVector;
-				dunk = true;
-				SlamTrail->ActivateSystem();
-			}
-		}
-
-		// AND WELCOME TO THE JAM
-		if (dunk) {
-			if (OnTheGround||Velocity.Z >= -SlamSettings.SlamVelocity / 2.0f||AppliedForce.Z<0.0f) {
-				dunk = false;
-				SlamTrail->DeactivateSystem();
-				if (OnTheGround) {
-					SlamParticles->ActivateSystem();
-				}
-			}
-		}
-
-		if (ShouldActivate) {
-			ShouldActivate = false;
-		}
-
-		// How the hell did you end up down there?
-		if (GetActorLocation().Z < -2000.0f) {
-			SpringArm->bEnableCameraLag = false;
-			Respawn();
-		}
-
 		// Put Velocity back in the reference frame of the stationary world.
 		Velocity += MovementComponent->groundvelocity;
 
-		// Tad's Shame
-		//WasOnTheGround = !WasOnTheGround && (MovementComponent->offGroundTime < OffGroundJumpTime ? false : OnTheGround);
+		MovementComponent->AddInputVector(Velocity*DeltaTime);
 
-		// Store current on the ground state into WasOnTheGround.
+	}
+
+	{
 		WasOnTheGround = OnTheGround;
-
-		lastd = RidingWall;
-
-		// Store current velocity into previousgroundvelocity.
+		previousposition = GetActorLocation();
+		wasztarget = ztarget;
 		previousgroundvelocity = MovementComponent->groundvelocity;
 
-		previousposition = GetActorLocation();
+		JumpNextFrame = false;
+		ActivateNextFrame = false;
+		SlamNextFrame = false;
+		DashNextFrame = false;
+		GlideNextFrame = false;
+		swish = false;
 
-		// Store current aiming state into wasaiming.
-		wasztarget = ztarget;
-
-		// And now we get to actually move.
-		MovementComponent->AddInputVector(Velocity * DeltaTime);
-
+		justteleported = false;
 	}
 
 	// Handle rotating the player model in response to player input.
@@ -1221,7 +1168,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
-		if (!ztarget && ( OnTheGround || IsGliding) && !JustJumped) {
+		if (!ztarget && (OnTheGround || IsGliding)) {
 			// I'ma tell ya not even Unity was stupid enough to use -180 -> 180 for rotations.
 			int8 reflect = (MovementInput.X >= 0 ? 1 : -1);
 
@@ -1281,7 +1228,7 @@ void AAuyron::Tick(float DeltaTime)
 void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	Super::SetupPlayerInputComponent(InputComponent);
-	InputComponent->bBlockInput = true;
+	//InputComponent->bBlockInput = true;
 	InputComponent->Priority = 1000;
 	InputComponent->BindAxis("MoveX", this, &AAuyron::MoveRight);
 	InputComponent->BindAxis("MoveY", this, &AAuyron::MoveForward);
@@ -1350,14 +1297,18 @@ void AAuyron::Jump()
 	//   1. We're on the ground.
 	//   2. We haven't been off the ground for very long.
 	//   3. We are pushing into a wall (wall jump).
-	FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
-	if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.OffGroundJumpTime || RidingWall || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
+	//FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
+	//if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.OffGroundJumpTime || RidingWall || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
+	//if (OnTheGround) {
 		JumpNextFrame = true;
-	} else {
-		if (GlideSettings.HasGlide&&!AlreadyGlided) {
+		if (!OnTheGround) {
 			GlideNextFrame = true;
 		}
-	}
+	//} else {
+		//if (GlideSettings.HasGlide&&!AlreadyGlided) {
+			//GlideNextFrame = true;
+		//}
+	//}
 	HoldingJump = true;
 }
 
@@ -1369,7 +1320,7 @@ void AAuyron::Unjump()
 
 void AAuyron::Use()
 {
-	ShouldActivate = true;
+	ActivateNextFrame = true;
 }
 
 // HEY LINK TALK TO ME USING Z TARGETING
@@ -1415,8 +1366,8 @@ void AAuyron::ToggleHelp() {
 // woosh
 void AAuyron::Dash()
 {
-	if (!dashing&&!ztarget&&DashSettings.HasDash) {
-		dashnextframe = true;
+	if (!dashing&&!ztarget) {
+		DashNextFrame = true;
 		holdingdash = true;
 	}
 }
@@ -1438,14 +1389,14 @@ void AAuyron::Attack() {
 // Getter functions used by the animation blueprints.
 float AAuyron::GetSpeed()
 {
-	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity - AppliedForce, FVector::UpVector)).Size();
+	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
 
 float AAuyron::GetActualSpeed()
 {
 	FVector temp = Velocity;
 	if (OnTheGround) {
-		temp.Z += 100.0f;
+		//temp.Z += 100.0f;
 	}
 	return temp.Size();
 }

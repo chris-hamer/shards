@@ -12,8 +12,4 @@ void AShardsGameMode2::StartPlay()
 
 	StartMatch();
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("AAAAAAAAAAAAAAAA"));
-	}
 }

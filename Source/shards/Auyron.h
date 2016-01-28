@@ -42,6 +42,9 @@ struct FMovementPhysics
 
 	/* The maximum slope angle in degrees that the player can walk on. */
 	UPROPERTY(EditAnywhere) float MaxSlope;
+
+	/* The time in seconds that you can walk on a too-steep slope before sliding down. */
+	UPROPERTY(EditAnywhere) float SlopeSlideTime;
 };
 
 USTRUCT()
@@ -120,6 +123,9 @@ struct FAbilitiesDash
 
 	/* Whether or not the player can dash infinitely. */
 	UPROPERTY(EditAnywhere) bool HasInfiniteDash;
+
+	/* Whether or not the player can control their direction while dashing. */
+	UPROPERTY(EditAnywhere) bool HasDashControl;
 
 	/* Whether or not the player can keep dashing after jumping. */
 	UPROPERTY(EditAnywhere) bool HasDashJump;
@@ -307,7 +313,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
-	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* AAAA;
 	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
@@ -348,7 +353,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraAutoTurn CameraAutoTurnSettings;
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraModelFade CameraModelFadeSettings;
 
-	bool ShouldActivate;
+	bool ActivateNextFrame;
 	int GemCount;
 
 private:
@@ -356,6 +361,8 @@ private:
 	float HowLong;
 	float dashtimer;
 	float TimeSinceLastMouseInput;
+	float TeleportRange;
+	float TeleportAngleTolerance;
 	bool JumpNextFrame;
 	bool HoldingJump;
 	bool JustJumped;
@@ -398,6 +405,8 @@ private:
 
 	AStick* thisguy;
 
+	bool justteleported;
+
 	float warpanimtimer;
 
 	bool AttackPressed;
@@ -409,13 +418,13 @@ private:
 	FVector AppliedForce;
 	bool WasOnTheGround;
 	bool swish;
-	bool dashnextframe;
+	bool DashNextFrame;
 	bool holdingdash;
 	bool dashing;
 	bool ztarget;
 	bool wasztarget;
 	bool movementlocked;
-	bool cameralocked;
+	bool InCameraOverrideRegion;
 	bool itshappening;
 	bool dunk;
 	bool cameramode;
