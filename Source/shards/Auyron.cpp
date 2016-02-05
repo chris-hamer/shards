@@ -1074,8 +1074,12 @@ void AAuyron::Tick(float DeltaTime)
 
 	{
 
+		FVector Acceleration = FVector::ZeroVector;
+
 		// Set up acceleration vector using the movement inputs.
-		FVector Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		if (!dashing) {
+			Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		}
 
 		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
 		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
@@ -1092,7 +1096,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
-		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
+		if (!dashing) {
+			Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
+		}
 
 		if (!OnTheGround) {
 			Acceleration += FVector(0.0f, 0.0f, PhysicsSettings.Gravity);
