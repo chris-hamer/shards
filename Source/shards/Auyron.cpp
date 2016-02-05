@@ -766,6 +766,7 @@ void AAuyron::Tick(float DeltaTime)
 				// if I don't put these here.
 				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Destructible);
 				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+				QueryParams.AddIgnoredActor(this);
 				FHitResult f;
 
 				// Don't want the ray to collide with the player model now do we?
@@ -773,7 +774,7 @@ void AAuyron::Tick(float DeltaTime)
 
 				// Figure out if the ray is blocked by an object.
 				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
-						
+
 				// If the trace hit a DestructibleBox and it's closer to where we're aiming
 				// at than any other DestructibleBox, set it as the "closest" one.
 				if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ADestructibleBox::StaticClass()) && blocked && displacement.Size() < AttackRange && dot > 0.65f) {
