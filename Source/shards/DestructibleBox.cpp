@@ -17,7 +17,7 @@ ADestructibleBox::ADestructibleBox()
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 	StaticMesh->SetCollisionObjectType(ECC_Destructible);
-	StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
 	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 	StaticMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
 	StaticMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);

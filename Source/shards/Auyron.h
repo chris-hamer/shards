@@ -264,6 +264,8 @@ public:
 	void Dash();
 	void UnDash();
 	void Attack();
+	void CameraZoomIn();
+	void CameraZoomOut();
 	void Respawn();
 	
 	UFUNCTION()
@@ -348,6 +350,21 @@ public:
 
 	/* Default distance that the camera should be away from the player. */
 	UPROPERTY(EditAnywhere, Category = "Camera") float DefaultArmLength;
+
+	/* Minimum distance from the player that the camera can be zoomed in to. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float MinimumArmLength;
+
+	/* Maximum distance from the player that the camera can be zoomed out to. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float MaximumArmLength;
+
+	/* Number (from 0 to 1) that controlls how fast the camera moves to its new zoom level. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float CameraZoomRate;
+
+	/* Distance between each camera zoom level. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float CameraZoomStep;
+
+	/* Number to multiply the camera lag factor by for each zoom level closer than the default one. */
+	UPROPERTY(EditAnywhere, Category = "Camera") float CameraLagZoomScale;
 
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraLag CameraLagSettings;
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraAutoTurn CameraAutoTurnSettings;
@@ -438,6 +455,9 @@ private:
 	FVector previousposition;
 
 	FVector RespawnPoint;
+
+	float ActualDefaultArmLength;
+	float TargetDefaultArmLength;
 	
 	float defaultfov;
 	TEnumAsByte<ATwoDimensionalMovementRegion::AxisEnum> LockedMovementAxis;

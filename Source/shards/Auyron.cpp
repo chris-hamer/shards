@@ -73,6 +73,11 @@ AAuyron::AAuyron()
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 1000.0f;
+	MinimumArmLength = 600.0f;
+	MaximumArmLength = 1400.0f;
+	CameraZoomRate = 0.05f;
+	CameraZoomStep = 200.0f;
+	CameraLagZoomScale = 2.0f;
 
 	CameraLagSettings.CameraLag = 3.0f;
 	CameraLagSettings.CameraRotationLag = 10.0f;
@@ -333,6 +338,8 @@ void AAuyron::BeginPlay()
 
 	// Set the spring arm's length.
 	SpringArm->TargetArmLength = DefaultArmLength;
+	ActualDefaultArmLength = DefaultArmLength;
+	TargetDefaultArmLength = DefaultArmLength;
 
 	// Set the max slope and max off ground time for the movement component.
 	MovementComponent->minnormalz = FMath::Cos(FMath::DegreesToRadians(PhysicsSettings.MaxSlope));
@@ -405,6 +412,8 @@ void AAuyron::Tick(float DeltaTime)
 	if (!justteleported) {
 		Velocity = (GetActorLocation() - previousposition) / DeltaTime;
 	}
+
+	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
 
 	justteleported = false;
 
@@ -1104,11 +1113,6 @@ void AAuyron::Tick(float DeltaTime)
 			}
 		}
 
-		// You done bonked yer head on that there ceiling.
-		if (MovementComponent->Floor.Normal.Z < -0.6f) {
-			Velocity.Z = 0.0f;
-		}
-
 		// This is a 2D platformer now.
 		if (MovementAxisLocked) {
 			FVector newpos(GetActorLocation());
@@ -1250,6 +1254,8 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Attack", IE_Pressed, this, &AAuyron::Attack);
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AAuyron::Pause);
 	InputComponent->BindAction("Unpause", IE_Pressed, this, &AAuyron::Unpause);
+	InputComponent->BindAction("CameraZoomIn", IE_Pressed, this, &AAuyron::CameraZoomIn);
+	InputComponent->BindAction("CameraZoomOut", IE_Pressed, this, &AAuyron::CameraZoomOut);
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
@@ -1385,6 +1391,24 @@ void AAuyron::UnDash()
 
 void AAuyron::Attack() {
 	AttackPressed = true;
+}
+
+void AAuyron::CameraZoomIn() {
+	if (TargetDefaultArmLength > MinimumArmLength) {
+		if (TargetDefaultArmLength<ActualDefaultArmLength) {
+			CameraLagSettings.CameraLag *= CameraLagZoomScale;
+		}
+		TargetDefaultArmLength -= CameraZoomStep;
+	}
+}
+
+void AAuyron::CameraZoomOut() {
+	if (TargetDefaultArmLength < MaximumArmLength) {
+		TargetDefaultArmLength += CameraZoomStep;
+		if (TargetDefaultArmLength<ActualDefaultArmLength) {
+			CameraLagSettings.CameraLag /= CameraLagZoomScale;
+		}
+	}
 }
 
 // Getter functions used by the animation blueprints.
