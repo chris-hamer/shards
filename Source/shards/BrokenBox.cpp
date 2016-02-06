@@ -15,9 +15,10 @@ ABrokenBox::ABrokenBox()
 	const ConstructorHelpers::FObjectFinder<UDestructibleMesh> dm(TEXT("/Game/Models/Box_DM"));
 	DestructibleMesh->SetDestructibleMesh(dm.Object);
 	DestructibleMesh->LargeChunkThreshold = 100000.0f;
-	DestructibleMesh->SetCollisionObjectType(ECC_Destructible);
+	DestructibleMesh->SetCollisionObjectType(ECollisionChannel::ECC_EngineTraceChannel3);
 	DestructibleMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	DestructibleMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	DestructibleMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	DestructibleMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
 	DestructibleMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	DestructibleMesh->SetSimulatePhysics(true);

@@ -73,6 +73,11 @@ AAuyron::AAuyron()
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 1000.0f;
+	MinimumArmLength = 600.0f;
+	MaximumArmLength = 1400.0f;
+	CameraZoomRate = 0.05f;
+	CameraZoomStep = 200.0f;
+	CameraLagZoomScale = 2.0f;
 
 	CameraLagSettings.CameraLag = 3.0f;
 	CameraLagSettings.CameraRotationLag = 10.0f;
@@ -182,8 +187,8 @@ AAuyron::AAuyron()
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 	
 	// BLAST PROCESSING.
-	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
-	PostProcess->AttachTo(RootComponent);
+	//PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	//PostProcess->AttachTo(RootComponent);
 
 	// NINTENDON'T DO 16 BIT.
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/bestmaterial"));
@@ -219,8 +224,8 @@ void AAuyron::PostInitializeComponents()
 	PlayerModel->SetMaterial(2, bandanamat);
 
 	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
-	PostProcess->bUnbound = true;
-	PostProcess->AddOrUpdateBlendable(screenwarpmat);
+	//PostProcess->bUnbound = true;
+	//PostProcess->AddOrUpdateBlendable(screenwarpmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -333,6 +338,8 @@ void AAuyron::BeginPlay()
 
 	// Set the spring arm's length.
 	SpringArm->TargetArmLength = DefaultArmLength;
+	ActualDefaultArmLength = DefaultArmLength;
+	TargetDefaultArmLength = DefaultArmLength;
 
 	// Set the max slope and max off ground time for the movement component.
 	MovementComponent->minnormalz = FMath::Cos(FMath::DegreesToRadians(PhysicsSettings.MaxSlope));
@@ -405,6 +412,8 @@ void AAuyron::Tick(float DeltaTime)
 	if (!justteleported) {
 		Velocity = (GetActorLocation() - previousposition) / DeltaTime;
 	}
+
+	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
 
 	justteleported = false;
 
@@ -512,7 +521,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Stop gliding.
-		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump) {
+		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump || Velocity.Z > JumpSettings.JumpPower/4.0f) {
 			IsGliding = false;
 		}
 
@@ -766,6 +775,7 @@ void AAuyron::Tick(float DeltaTime)
 				// if I don't put these here.
 				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Destructible);
 				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+				QueryParams.AddIgnoredActor(this);
 				FHitResult f;
 
 				// Don't want the ray to collide with the player model now do we?
@@ -773,7 +783,7 @@ void AAuyron::Tick(float DeltaTime)
 
 				// Figure out if the ray is blocked by an object.
 				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
-						
+
 				// If the trace hit a DestructibleBox and it's closer to where we're aiming
 				// at than any other DestructibleBox, set it as the "closest" one.
 				if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ADestructibleBox::StaticClass()) && blocked && displacement.Size() < AttackRange && dot > 0.65f) {
@@ -1026,6 +1036,9 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * CameraLagSettings.AimingLagMultiplier;
 			SpringArm->SetRelativeRotation(NewRotation);
 
+			//Camera->bConstrainAspectRatio = true;
+			//Camera->AspectRatio = 2.5f;
+
 			// Offset the spring arm (and therefore the camera) a bit so the player model
 			// isn't blocking the screen when we're trying to aim.
 			FVector base = FVector(0.0f, 100.0f, 100.0f);
@@ -1048,6 +1061,8 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 				SpringArm->SetRelativeLocation(FVector::ZeroVector);
 					
+				//Camera->bConstrainAspectRatio = false;
+
 				// If we just stopped aiming, reset the camera's rotation as well.
 				if (wasztarget) {
 					SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
@@ -1064,8 +1079,12 @@ void AAuyron::Tick(float DeltaTime)
 
 	{
 
+		FVector Acceleration = FVector::ZeroVector;
+
 		// Set up acceleration vector using the movement inputs.
-		FVector Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		if (!dashing) {
+			Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		}
 
 		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
 		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
@@ -1082,7 +1101,9 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
-		Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
+		if (!dashing) {
+			Acceleration -= (FVector::VectorPlaneProject(Velocity, FVector::UpVector)) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
+		}
 
 		if (!OnTheGround) {
 			Acceleration += FVector(0.0f, 0.0f, PhysicsSettings.Gravity);
@@ -1101,11 +1122,6 @@ void AAuyron::Tick(float DeltaTime)
 			if(OnTheGround) {
 				Velocity.Z += 100.0f;
 			}
-		}
-
-		// You done bonked yer head on that there ceiling.
-		if (MovementComponent->Floor.Normal.Z < -0.6f) {
-			Velocity.Z = 0.0f;
 		}
 
 		// This is a 2D platformer now.
@@ -1249,6 +1265,8 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAction("Attack", IE_Pressed, this, &AAuyron::Attack);
 	InputComponent->BindAction("Pause", IE_Pressed, this, &AAuyron::Pause);
 	InputComponent->BindAction("Unpause", IE_Pressed, this, &AAuyron::Unpause);
+	InputComponent->BindAction("CameraZoomIn", IE_Pressed, this, &AAuyron::CameraZoomIn);
+	InputComponent->BindAction("CameraZoomOut", IE_Pressed, this, &AAuyron::CameraZoomOut);
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
@@ -1384,6 +1402,24 @@ void AAuyron::UnDash()
 
 void AAuyron::Attack() {
 	AttackPressed = true;
+}
+
+void AAuyron::CameraZoomIn() {
+	if (TargetDefaultArmLength > MinimumArmLength) {
+		if (TargetDefaultArmLength<ActualDefaultArmLength) {
+			CameraLagSettings.CameraLag *= CameraLagZoomScale;
+		}
+		TargetDefaultArmLength -= CameraZoomStep;
+	}
+}
+
+void AAuyron::CameraZoomOut() {
+	if (TargetDefaultArmLength < MaximumArmLength) {
+		TargetDefaultArmLength += CameraZoomStep;
+		if (TargetDefaultArmLength<ActualDefaultArmLength) {
+			CameraLagSettings.CameraLag /= CameraLagZoomScale;
+		}
+	}
 }
 
 // Getter functions used by the animation blueprints.

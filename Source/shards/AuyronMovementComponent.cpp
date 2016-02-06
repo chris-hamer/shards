@@ -86,6 +86,9 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	bool wasonground = onground;
 	onground = false;
 	groundvelocity = FVector::ZeroVector;
+	platformangularfrequency = 0.0f;
+	platformspindir = 1;
+	FloorNormal = FVector::ZeroVector;
 
 	if (enforcementtimer < timerlimit && ShapeTraceResult.IsValidBlockingHit() && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground)) {
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
