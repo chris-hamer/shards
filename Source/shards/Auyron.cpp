@@ -187,8 +187,8 @@ AAuyron::AAuyron()
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 	
 	// BLAST PROCESSING.
-	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
-	PostProcess->AttachTo(RootComponent);
+	//PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	//PostProcess->AttachTo(RootComponent);
 
 	// NINTENDON'T DO 16 BIT.
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/bestmaterial"));
@@ -224,8 +224,8 @@ void AAuyron::PostInitializeComponents()
 	PlayerModel->SetMaterial(2, bandanamat);
 
 	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
-	PostProcess->bUnbound = true;
-	PostProcess->AddOrUpdateBlendable(screenwarpmat);
+	//PostProcess->bUnbound = true;
+	//PostProcess->AddOrUpdateBlendable(screenwarpmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -521,7 +521,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Stop gliding.
-		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump) {
+		if (GlideTimer > GlideSettings.GlideDuration || OnTheGround || !HoldingJump || Velocity.Z > JumpSettings.JumpPower/4.0f) {
 			IsGliding = false;
 		}
 
@@ -1036,6 +1036,9 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * CameraLagSettings.AimingLagMultiplier;
 			SpringArm->SetRelativeRotation(NewRotation);
 
+			//Camera->bConstrainAspectRatio = true;
+			//Camera->AspectRatio = 2.5f;
+
 			// Offset the spring arm (and therefore the camera) a bit so the player model
 			// isn't blocking the screen when we're trying to aim.
 			FVector base = FVector(0.0f, 100.0f, 100.0f);
@@ -1058,6 +1061,8 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 				SpringArm->SetRelativeLocation(FVector::ZeroVector);
 					
+				//Camera->bConstrainAspectRatio = false;
+
 				// If we just stopped aiming, reset the camera's rotation as well.
 				if (wasztarget) {
 					SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
