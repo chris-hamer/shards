@@ -28,6 +28,7 @@ AAuyron::AAuyron()
 	PhysicsSettings.GroundAccelerationRate = 5500.0f;
 	PhysicsSettings.AirAccelerationRate = 500.0f;
 	PhysicsSettings.MaxVelocity = 500.0f;
+	PhysicsSettings.MinVelocity = 10.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
 	PhysicsSettings.Gravity = 2250.0f;
 	PhysicsSettings.MaxSlope = 30.0f;
@@ -408,7 +409,8 @@ void AAuyron::Tick(float DeltaTime)
 	if (!justteleported) {
 		Velocity = (GetActorLocation() - previousposition) / DeltaTime;
 	}
-
+	
+	actualvelocity = (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector));
 	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
 
 	justteleported = false;
@@ -424,7 +426,7 @@ void AAuyron::Tick(float DeltaTime)
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
 	if (!MovementComponent->groundvelocity.IsNearlyZero() && !JumpNextFrame && FMath::Abs((FVector::VectorPlaneProject(MovementComponent->groundvelocity,FVector::UpVector) - FVector::VectorPlaneProject(previousgroundvelocity,FVector::UpVector)).Size()) > 200.0f) {
-		Velocity = MovementComponent->groundvelocity + FVector(0.0f, 0.0f, -100.0f);
+		Velocity = MovementComponent->groundvelocity;
 	}
 
 	// Inform the MovementComponent of our velocity.
@@ -432,7 +434,11 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	Velocity -= MovementComponent->groundvelocity + pushvelocity;
-	
+
+	if (Velocity.Size() < PhysicsSettings.MinVelocity) {
+		Velocity = FVector::ZeroVector;
+	}
+
 	{
 		{
 			FCollisionShape WallJumpCapsuleShape = FCollisionShape::MakeCapsule(55.0f, 90.0f);
@@ -1428,11 +1434,7 @@ float AAuyron::GetSpeed()
 
 float AAuyron::GetActualSpeed()
 {
-	FVector temp = Velocity;
-	if (OnTheGround) {
-		//temp.Z += 100.0f;
-	}
-	return temp.Size();
+	return actualvelocity.Size();
 }
 
 float AAuyron::GetModelOpacity()

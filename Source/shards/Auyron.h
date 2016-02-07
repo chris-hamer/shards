@@ -31,6 +31,9 @@ struct FMovementPhysics
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere) float MaxVelocity;
 
+	/* If the player's velocity falls below this value, it snaps to zero. */
+	UPROPERTY(EditAnywhere) float MinVelocity;
+
 	/* The player's maximum vertical velocity. */
 	UPROPERTY(EditAnywhere) float TerminalVelocity;
 
@@ -460,6 +463,7 @@ private:
 	bool MovementAxisLocked;
 	float LockedAxisValue;
 	FVector previousposition;
+	FVector previousvelocity;
 
 	FVector RespawnPoint;
 
