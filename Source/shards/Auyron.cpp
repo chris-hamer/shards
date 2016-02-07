@@ -190,11 +190,11 @@ AAuyron::AAuyron()
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 	
 	// BLAST PROCESSING.
-	//PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
-	//PostProcess->AttachTo(RootComponent);
+	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	PostProcess->AttachTo(RootComponent);
 
 	// NINTENDON'T DO 16 BIT.
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/bestmaterial"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/screenwarpmat"));
 	ScreenWarpMatBase = sw.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
@@ -227,8 +227,8 @@ void AAuyron::PostInitializeComponents()
 	PlayerModel->SetMaterial(2, bandanamat);
 
 	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
-	//PostProcess->bUnbound = true;
-	//PostProcess->AddOrUpdateBlendable(screenwarpmat);
+	PostProcess->bUnbound = true;
+	PostProcess->AddOrUpdateBlendable(screenwarpmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -591,10 +591,11 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Handle the screen warp animation.
 		if (warpanimtimer >= 0.0f) {
+			screenwarpmat->SetScalarParameterValue("Timer", 1.0f - warpanimtimer / TeleportSettings.TeleportAnimationDuration);
 			if (warpanimtimer < TeleportSettings.TeleportAnimationRestoreThreshold) {
-				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
+				//Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
 			} else {
-				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
+				//Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
 			}
 			warpanimtimer += DeltaTime;
 			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
