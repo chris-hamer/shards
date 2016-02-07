@@ -45,6 +45,12 @@ struct FMovementPhysics
 
 	/* The time in seconds that you can walk on a too-steep slope before sliding down. */
 	UPROPERTY(EditAnywhere) float SlopeSlideTime;
+
+	/* Controls how strongly the player pushes physics objects. */
+	UPROPERTY(EditAnywhere) float PushForceFactor;
+
+	/* Exponent applied to the pushing force when the player is going faster than their normal max speed. */
+	UPROPERTY(EditAnywhere) float HighVelocityForceExponent;
 };
 
 USTRUCT()
@@ -274,7 +280,6 @@ public:
 	void Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	UFUNCTION()
 	void UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	FVector GetPlayerLocation();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
@@ -396,6 +401,8 @@ private:
 
 	UUserWidget* thehud;
 
+	FVector pushvelocity;
+
 	FVector closecamera;
 
 	UMaterialInstanceDynamic* screenwarpmat;
@@ -456,7 +463,10 @@ private:
 
 	FVector RespawnPoint;
 
+	bool WasInCameraOverrideRegion;
+
 	float ActualDefaultArmLength;
+	float ActualDefaultCameraLag;
 	float TargetDefaultArmLength;
 	
 	float defaultfov;
