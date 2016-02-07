@@ -591,13 +591,8 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Handle the screen warp animation.
 		if (warpanimtimer >= 0.0f) {
-			screenwarpmat->SetScalarParameterValue("Timer", 1.0f - warpanimtimer / TeleportSettings.TeleportAnimationDuration);
-			if (warpanimtimer < TeleportSettings.TeleportAnimationRestoreThreshold) {
-				//Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
-			} else {
-				//Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
-			}
 			warpanimtimer += DeltaTime;
+			screenwarpmat->SetScalarParameterValue("Timer", 1.0f - warpanimtimer / TeleportSettings.TeleportAnimationDuration);
 			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
 				warpanimtimer = -1.0f;
 			}
