@@ -31,6 +31,9 @@ struct FMovementPhysics
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere) float MaxVelocity;
 
+	/* If the player's velocity falls below this value, it snaps to zero. */
+	UPROPERTY(EditAnywhere) float MinVelocity;
+
 	/* The player's maximum vertical velocity. */
 	UPROPERTY(EditAnywhere) float TerminalVelocity;
 
@@ -45,6 +48,12 @@ struct FMovementPhysics
 
 	/* The time in seconds that you can walk on a too-steep slope before sliding down. */
 	UPROPERTY(EditAnywhere) float SlopeSlideTime;
+
+	/* Controls how strongly the player pushes physics objects. */
+	UPROPERTY(EditAnywhere) float PushForceFactor;
+
+	/* Exponent applied to the pushing force when the player is going faster than their normal max speed. */
+	UPROPERTY(EditAnywhere) float HighVelocityForceExponent;
 };
 
 USTRUCT()
@@ -274,7 +283,6 @@ public:
 	void Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	UFUNCTION()
 	void UnHit(class AActor * OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	FVector GetPlayerLocation();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
@@ -322,7 +330,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* SlamTrail;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesL;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* TrailParticlesR;
-	//UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
+	UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* ScreenWarpMatBase;
@@ -396,6 +404,8 @@ private:
 
 	UUserWidget* thehud;
 
+	FVector pushvelocity;
+
 	FVector closecamera;
 
 	UMaterialInstanceDynamic* screenwarpmat;
@@ -453,10 +463,14 @@ private:
 	bool MovementAxisLocked;
 	float LockedAxisValue;
 	FVector previousposition;
+	FVector previousvelocity;
 
 	FVector RespawnPoint;
 
+	bool WasInCameraOverrideRegion;
+
 	float ActualDefaultArmLength;
+	float ActualDefaultCameraLag;
 	float TargetDefaultArmLength;
 	
 	float defaultfov;

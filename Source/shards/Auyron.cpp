@@ -7,6 +7,7 @@
 #include "AuyronWallJumpMovementComponent.h"
 #include "CameraOverrideRegion.h"
 #include "MovingPlatform.h"
+#include "RotatingPlatform.h"
 #include "EngineUtils.h" 
 #include "Stick.h"  
 #include "Checkpoint.h"
@@ -27,10 +28,13 @@ AAuyron::AAuyron()
 	PhysicsSettings.GroundAccelerationRate = 5500.0f;
 	PhysicsSettings.AirAccelerationRate = 500.0f;
 	PhysicsSettings.MaxVelocity = 500.0f;
+	PhysicsSettings.MinVelocity = 10.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
 	PhysicsSettings.Gravity = 2250.0f;
 	PhysicsSettings.MaxSlope = 30.0f;
 	PhysicsSettings.SlopeSlideTime = 0.15f;
+	PhysicsSettings.PushForceFactor = 50.0f;
+	PhysicsSettings.HighVelocityForceExponent = 2.5f;
 
 	AttackRange = 300.0f;
 
@@ -109,8 +113,8 @@ AAuyron::AAuyron()
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
 	CapsuleComponent->SetSimulatePhysics(true);
 	CapsuleComponent->SetEnableGravity(false);
-	CapsuleComponent->SetConstraintMode(EDOFMode::CustomPlane);
-	CapsuleComponent->SetLinearDamping(10.0f);
+	CapsuleComponent->SetLinearDamping(1000000.0f);
+	CapsuleComponent->SetAngularDamping(1000000.0f);
 	CapsuleComponent->AttachTo(RootComponent);
 	SetActorEnableCollision(true);
 
@@ -187,11 +191,11 @@ AAuyron::AAuyron()
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 	
 	// BLAST PROCESSING.
-	//PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
-	//PostProcess->AttachTo(RootComponent);
+	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	PostProcess->AttachTo(RootComponent);
 
 	// NINTENDON'T DO 16 BIT.
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/bestmaterial"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/screenwarpmat"));
 	ScreenWarpMatBase = sw.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
@@ -224,8 +228,8 @@ void AAuyron::PostInitializeComponents()
 	PlayerModel->SetMaterial(2, bandanamat);
 
 	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
-	//PostProcess->bUnbound = true;
-	//PostProcess->AddOrUpdateBlendable(screenwarpmat);
+	PostProcess->bUnbound = true;
+	PostProcess->AddOrUpdateBlendable(screenwarpmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -265,20 +269,11 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
-		if (OtherActor->IsA(ACameraOverrideRegion::StaticClass())) {
-			InCameraOverrideRegion = true;
-			CameraLockToPlayerXAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerXAxis;
-			CameraLockToPlayerYAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerYAxis;
-			CameraLockToPlayerZAxis = ((ACameraOverrideRegion*)OtherActor)->LockToPlayerZAxis;
-			CameraOverrideLookAtPlayer = ((ACameraOverrideRegion*)OtherActor)->LookAtPlayer;
-			CameraOverrideTargetDisplacement = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentLocation();
-			CameraOverrideTargetRotation = ((ACameraOverrideRegion*)OtherActor)->TargetCamera->GetComponentRotation();
-		}
-
-		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
-			MovementAxisLocked = true;
-			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
-			LockedMovementAxis = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedAxis;
+		// Get out mah way!
+		if (OtherComp->IsSimulatingPhysics()) {
+			float scalefactor = FVector::VectorPlaneProject(Velocity,FVector::UpVector).Size() / PhysicsSettings.MaxVelocity;
+			scalefactor = (scalefactor > 1.0f ? FMath::Pow(scalefactor, PhysicsSettings.HighVelocityForceExponent) : 1.0f);
+			OtherComp->AddImpulse((OtherComp->GetComponentLocation() - GetActorLocation()).GetSafeNormal()*scalefactor*PhysicsSettings.PushForceFactor, NAME_None, true);
 		}
 	}
 }
@@ -327,6 +322,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 
 		if (OtherActor->IsA(AWarpCrystal::StaticClass())) {
 			SetActorLocation(((AWarpCrystal*)OtherActor)->WarpExit->GetComponentLocation());
+			justteleported = true;
 		}
 	}
 }
@@ -340,6 +336,7 @@ void AAuyron::BeginPlay()
 	SpringArm->TargetArmLength = DefaultArmLength;
 	ActualDefaultArmLength = DefaultArmLength;
 	TargetDefaultArmLength = DefaultArmLength;
+	ActualDefaultCameraLag = CameraLagSettings.CameraLag;
 
 	// Set the max slope and max off ground time for the movement component.
 	MovementComponent->minnormalz = FMath::Cos(FMath::DegreesToRadians(PhysicsSettings.MaxSlope));
@@ -412,7 +409,8 @@ void AAuyron::Tick(float DeltaTime)
 	if (!justteleported) {
 		Velocity = (GetActorLocation() - previousposition) / DeltaTime;
 	}
-
+	
+	actualvelocity = (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector));
 	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
 
 	justteleported = false;
@@ -428,18 +426,22 @@ void AAuyron::Tick(float DeltaTime)
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
 	if (!MovementComponent->groundvelocity.IsNearlyZero() && !JumpNextFrame && FMath::Abs((FVector::VectorPlaneProject(MovementComponent->groundvelocity,FVector::UpVector) - FVector::VectorPlaneProject(previousgroundvelocity,FVector::UpVector)).Size()) > 200.0f) {
-		Velocity = MovementComponent->groundvelocity + FVector(0.0f, 0.0f, -100.0f);
+		Velocity = MovementComponent->groundvelocity;
 	}
 
 	// Inform the MovementComponent of our velocity.
 	MovementComponent->PlayerVelocity = Velocity;
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
-	Velocity -= MovementComponent->groundvelocity;
-	
+	Velocity -= MovementComponent->groundvelocity + pushvelocity;
+
+	if (Velocity.Size() < PhysicsSettings.MinVelocity) {
+		Velocity = FVector::ZeroVector;
+	}
+
 	{
 		{
-			FCollisionShape WallJumpCapsuleShape = FCollisionShape::MakeCapsule(50.0f, 90.0f);
+			FCollisionShape WallJumpCapsuleShape = FCollisionShape::MakeCapsule(55.0f, 90.0f);
 			FCollisionObjectQueryParams QueryParams;
 			QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
 			QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
@@ -462,12 +464,12 @@ void AAuyron::Tick(float DeltaTime)
 			if (OnTheGround || StoredWallNormal.Size() > 0.95f) {
 				// Jump while taking the floor's angle and vertical movement into account.
 				Velocity.Z = 0.0f;
-				Velocity += JumpSettings.JumpPower * (MovementComponent->FloorNormal.IsNearlyZero() ? FVector::UpVector : MovementComponent->FloorNormal).GetSafeNormal();
+				Velocity += JumpSettings.JumpPower * FVector::UpVector;// *(MovementComponent->FloorNormal.IsNearlyZero() ? FVector::UpVector : MovementComponent->FloorNormal).GetSafeNormal();
 				WasOnTheGround = false;
 				OnTheGround = false;
 				MovementComponent->onground = false;
 				AlreadyUnjumped = false;
-				if (StoredWallNormal.Size() > 0.95f&&!wouldhavebeenotg) {
+				if (StoredWallNormal.Size() > 0.2f&&!wouldhavebeenotg) {
 					// No cheating.
 					if (IsGliding || AlreadyGlided) {
 						AlreadyGlided = true;
@@ -575,7 +577,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (SlamNextFrame&&SlamSettings.HasSlam) {
 			SlamNextFrame = false;
 			if (!OnTheGround && AppliedForce.Z <= 0.0f && !dunk && !ztarget) {
-				Velocity = -SlamSettings.SlamVelocity * FVector::UpVector;
+				Velocity.Z = -SlamSettings.SlamVelocity;
 				dunk = true;
 				SlamTrail->ActivateSystem();
 			}
@@ -595,12 +597,8 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Handle the screen warp animation.
 		if (warpanimtimer >= 0.0f) {
-			if (warpanimtimer < TeleportSettings.TeleportAnimationRestoreThreshold) {
-				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((TeleportSettings.TeleportAnimationRestoreThreshold - warpanimtimer) / TeleportSettings.TeleportAnimationRestoreThreshold, TeleportSettings.TeleportAnimationPowerFactor));
-			} else {
-				Camera->FieldOfView = FMath::Lerp(TeleportSettings.TeleportFOV, defaultfov, FMath::Pow((warpanimtimer - TeleportSettings.TeleportAnimationRestoreThreshold) / (TeleportSettings.TeleportAnimationDuration - TeleportSettings.TeleportAnimationRestoreThreshold), TeleportSettings.TeleportAnimationPowerFactor));
-			}
 			warpanimtimer += DeltaTime;
+			screenwarpmat->SetScalarParameterValue("Timer", 1.0f - warpanimtimer / TeleportSettings.TeleportAnimationDuration);
 			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
 				warpanimtimer = -1.0f;
 			}
@@ -623,8 +621,8 @@ void AAuyron::Tick(float DeltaTime)
 			TargetDirection = (-displacement).Rotation();
 
 			// Gotta go all smooth like with the camera.
-			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier * !CurrentCut->InstantTransition;
-			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.DialogueLagMultiplier * !CurrentCut->InstantTransition;
+			SpringArm->CameraLagSpeed = ActualDefaultCameraLag * CameraLagSettings.DialogueLagMultiplier * !CurrentCut->InstantTransition;
+			SpringArm->CameraRotationLagSpeed = ActualDefaultCameraLag * CameraLagSettings.DialogueLagMultiplier * !CurrentCut->InstantTransition;
 			SpringArm->SetWorldTransform(CurrentCut->Camera->GetComponentTransform());
 			SpringArm->SetWorldRotation(FRotator(SpringArm->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw, 0.0f));
 			SpringArm->bDoCollisionTest = false;
@@ -691,8 +689,9 @@ void AAuyron::Tick(float DeltaTime)
 				// Set trace parameters. I have no idea what these do but the raycast doesn't work
 				// if I don't put these here.
 				FHitResult f;
-				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_WorldStatic);
+				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Visibility);
 				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
 				FCollisionQueryParams QueryParams = FCollisionQueryParams();
 
 				// Don't want the ray to collide with the player model now do we?
@@ -925,8 +924,8 @@ void AAuyron::Tick(float DeltaTime)
 				SpringArm->CameraLagSpeed = 0.0f;
 				SpringArm->CameraRotationLagSpeed = 0.0f;
 				SpringArm->SetWorldLocation(temp);
-				SpringArm->TargetArmLength = 0.0f; FMath::Lerp(SpringArm->TargetArmLength, 0.0f, FMath::Pow(FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f), 0.25f));
-						
+				SpringArm->TargetArmLength = 0.0f;
+
 				// Activates the attached blueprint (if the cut has one).
 				if (CurrentCut->BlueprintToExecute != nullptr) {
 					FOutputDeviceNull dummy;
@@ -975,22 +974,24 @@ void AAuyron::Tick(float DeltaTime)
 		
 		// Handle CameraOverrideRegions.
 		if(InCameraOverrideRegion&&!ztarget) {
-
-			// If the camera is locked, put it at the override region's
-			// target location and rotation.
-			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
-			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*CameraLagSettings.OverrideRegionRotationLagMultiplier;
+			
+			if (!wasztarget) {
+				SpringArm->CameraLagSpeed = ActualDefaultCameraLag;
+				SpringArm->CameraRotationLagSpeed = ActualDefaultCameraLag;// *CameraLagSettings.OverrideRegionRotationLagMultiplier;
+			}
+			SpringArm->TargetArmLength = DefaultArmLength;
 			SpringArm->SetWorldRotation(CameraOverrideTargetRotation);
 			timesinceoverrideenter += DeltaTime;
 			SpringArm->bDoCollisionTest = false;
-			SpringArm->TargetArmLength = FMath::Lerp((SpringArm->GetComponentLocation() - Camera->GetComponentLocation()).Size() , 0.0f, FMath::Clamp(timesinceoverrideenter / 0.25f, 0.0f, 1.0f));
+
 			if (!CameraLockToPlayerXAxis&&!CameraLockToPlayerYAxis&&!CameraLockToPlayerZAxis) {
-				SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement);
+				SpringArm->SetWorldLocation(CameraOverrideTargetDisplacement + CameraOverrideTargetRotation.Vector()*DefaultArmLength);
 			} else {
 				SpringArm->SetWorldLocation(FVector(
 					(CameraLockToPlayerXAxis ? GetActorLocation().X + CameraOverrideTargetOffset.X : CameraOverrideTargetDisplacement.X),
 					(CameraLockToPlayerYAxis ? GetActorLocation().Y + CameraOverrideTargetOffset.Y : CameraOverrideTargetDisplacement.Y),
-					(CameraLockToPlayerZAxis ? GetActorLocation().Z + CameraOverrideTargetOffset.Z : CameraOverrideTargetDisplacement.Z)));
+					(CameraLockToPlayerZAxis ? GetActorLocation().Z + CameraOverrideTargetOffset.Z : CameraOverrideTargetDisplacement.Z))
+					+ CameraOverrideTargetRotation.Vector()*DefaultArmLength);
 			}
 
 			// Face the camera towards the player if the region says to do so.
@@ -1150,7 +1151,7 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity += Acceleration * DeltaTime;
 
 		// Put Velocity back in the reference frame of the stationary world.
-		Velocity += MovementComponent->groundvelocity;
+		Velocity += MovementComponent->groundvelocity + pushvelocity;
 
 		MovementComponent->AddInputVector(Velocity*DeltaTime);
 
@@ -1158,9 +1159,12 @@ void AAuyron::Tick(float DeltaTime)
 
 	{
 		WasOnTheGround = OnTheGround;
+		WasInCameraOverrideRegion = InCameraOverrideRegion;
 		previousposition = GetActorLocation();
 		wasztarget = ztarget;
 		previousgroundvelocity = MovementComponent->groundvelocity;
+
+		pushvelocity = FVector::ZeroVector;
 
 		JumpNextFrame = false;
 		ActivateNextFrame = false;
@@ -1430,11 +1434,7 @@ float AAuyron::GetSpeed()
 
 float AAuyron::GetActualSpeed()
 {
-	FVector temp = Velocity;
-	if (OnTheGround) {
-		//temp.Z += 100.0f;
-	}
-	return temp.Size();
+	return actualvelocity.Size();
 }
 
 float AAuyron::GetModelOpacity()
