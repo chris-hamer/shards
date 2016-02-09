@@ -233,12 +233,17 @@ struct FCameraModelFade
 	UPROPERTY(EditAnywhere) float ModelFadeDistance;
 };
 
-UCLASS()
-class AAuyron : public APawn
+UCLASS() class AAuyron : public APawn
 {
 	GENERATED_BODY()
 
 public:
+
+	UENUM() enum AimType {
+		HOLD			UMETA(DisplayName = "Hold"),
+		TOGGLE			UMETA(DisplayName = "Toggle")
+	};
+
 	// Sets default values for this pawn's properties
 	AAuyron();
 
@@ -314,8 +319,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool AboutToWarp();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetAimStyle(FString Style);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetAimStyle();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetEnableTeleportAnimation(bool ShouldEnable);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetEnableTeleportAnimation();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void HandlePause();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetMaterial(int32 index, UMaterialInterface* newmat);
 	
+	
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool HasTeleport();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool HasDash();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool HasWallJump();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool HasGlide();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool HasSlam();
+
 	FVector MovementInput;
 	FVector CameraInput;
 
@@ -344,6 +371,9 @@ public:
 
 	/* I really hope I don't need to write a tooltip for this. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float AttackRange;
+
+	/* Should be obvious as well. */
+	UPROPERTY(EditAnywhere, Category = "Abilities") TEnumAsByte<AimType> AimStyle;
 
 	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesTeleport TeleportSettings;
 	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesDash DashSettings;
@@ -415,6 +445,8 @@ private:
 
 	float DefaultGravity;
 
+	float lastdt;
+
 	bool GlideNextFrame;
 	bool IsGliding;
 	bool AlreadyUnjumped;
@@ -471,6 +503,7 @@ private:
 
 	float ActualDefaultArmLength;
 	float ActualDefaultCameraLag;
+	float ActualTeleportAnimationDuration;
 	float TargetDefaultArmLength;
 	
 	float defaultfov;

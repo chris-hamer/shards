@@ -10,7 +10,7 @@ class SHARDS_API AMovingPlatform : public AActor
 {
 	GENERATED_BODY()
 
-		UENUM() enum Type {
+	UENUM() enum Type {
 		LINEAR                UMETA(DisplayName = "Linear"),
 		WAVE                  UMETA(DisplayName = "Wave"),
 		ONEWAY				  UMETA(DisplayName = "OneWay"),
@@ -29,6 +29,7 @@ public:
 	
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
+
 	virtual float nderiv(float x, float ctime, float(*f)(float, float), float c = 0.01);
 
 	UFUNCTION(BlueprintCallable, Category = "Moving Platform Interface") void Deactivate();
