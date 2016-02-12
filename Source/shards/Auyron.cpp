@@ -617,6 +617,8 @@ void AAuyron::Tick(float DeltaTime)
 			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
 				warpanimtimer = -1.0f;
 			}
+		} else {
+			screenwarpmat->SetScalarParameterValue("Timer", 0.0f);
 		}
 			
 		// Start the warp animation timer if the player just warped.
@@ -914,7 +916,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Activate the "closest" NPC as long as it's in
-		// range nd within a certain angle tolerance.
+		// range and within a certain angle tolerance.
 		if (closestNPC != nullptr &&
 			FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
 			(closestNPC->GetActorLocation() - GetActorLocation()).Size() < closestNPC->MaxDistance) {
