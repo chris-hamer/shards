@@ -117,11 +117,22 @@ AAuyron::AAuyron()
 	SetActorEnableCollision(true);
 
 	// It you.
-	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VisualRepresentation"));
+	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PlayerModel"));
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->AttachTo(CapsuleComponent);
+
+	CustomDepthModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CustomDepthModel"));
+	CustomDepthModel->SetSkeletalMesh(PlayerMeshObj.Object);
+	CustomDepthModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	const ConstructorHelpers::FObjectFinder<UMaterial> wg(TEXT("/Game/Textures/Default"));
+	CustomDepthModel->SetMaterial(0, wg.Object);
+	CustomDepthModel->SetMaterial(1, wg.Object);
+	CustomDepthModel->SetMaterial(2, wg.Object);
+	CustomDepthModel->SetRenderInMainPass(false);
+	CustomDepthModel->SetRenderCustomDepth(true);
+	CustomDepthModel->AttachTo(PlayerModel);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -646,6 +657,8 @@ void AAuyron::Tick(float DeltaTime)
 			itshappening = false;
 			warpanimtimer = 0.0f;
 		}
+
+		bodymat->SetScalarParameterValue("fade", GetModelOpacity());
 
 		// Looks like we're talking to someone.
 		if (IsInDialogue) {

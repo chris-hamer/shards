@@ -349,6 +349,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
+	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* CustomDepthModel;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* Plane;
 	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
