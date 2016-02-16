@@ -181,6 +181,15 @@ AAuyron::AAuyron()
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	Plane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Plane"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> zh(TEXT("/Game/StarterContent/Shapes/Shape_Plane"));
+	Plane->SetStaticMesh(zh.Object);
+	Plane->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Plane->SetRelativeLocation(FVector(200.0f, 0.0f, 100.0f));
+	Plane->SetRelativeRotation(FRotator(0.0f, 90.0f, 90.0f));
+	Plane->SetRelativeScale3D(FVector(5.0f, 5.0f, 5.0f));
+	Plane->AttachTo(Camera);
+
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
@@ -195,6 +204,9 @@ AAuyron::AAuyron()
 	// NINTENDON'T DO 16 BIT.
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/screenwarpmat"));
 	ScreenWarpMatBase = sw.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> ff(TEXT("/Game/the_abyss"));
+	CoolMatBase = ff.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
 	HairMatBase = hair.Object;
@@ -228,6 +240,9 @@ void AAuyron::PostInitializeComponents()
 	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
 	PostProcess->bUnbound = true;
 	PostProcess->AddOrUpdateBlendable(screenwarpmat);
+
+	coolmat = UMaterialInstanceDynamic::Create(CoolMatBase, this);
+	Plane->SetMaterial(0, coolmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -343,7 +358,7 @@ void AAuyron::BeginPlay()
 	MovementComponent->timerlimit = PhysicsSettings.SlopeSlideTime;
 	MovementComponent->MaxOffGroundTime = JumpSettings.OffGroundJumpTime;
 
-	// Point gravuty downwards.
+	// Point gravity downwards.
 	PhysicsSettings.Gravity = -PhysicsSettings.Gravity;
 	DefaultGravity = PhysicsSettings.Gravity;
 
@@ -391,7 +406,12 @@ void AAuyron::Tick(float DeltaTime)
 
 	if (GetActorLocation().Z < -1500.0f) {
 		Respawn();
-	}
+	}//
+
+	lel += DeltaTime;
+	//coolmat->SetScalarParameterValue("woosh", 3 * FMath::Pow(FMath::Fmod(lel, 1.0f), 2) - 2 * FMath::Pow(FMath::Fmod(lel, 1.0f), 3));
+	coolmat->SetScalarParameterValue("woosh", FMath::Pow(FMath::Fmod(lel, 2.0f), 16));
+	//Plane->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f) * FMath::Lerp(10.0f,25.0f, FMath::Pow(FMath::Fmod(lel, 1.0f), 4)));
 
 	// Going somewhere?
 	if (movementlocked) {

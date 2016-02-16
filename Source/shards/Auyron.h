@@ -350,6 +350,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* Plane;
 	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
@@ -361,6 +362,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* ScreenWarpMatBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* CoolMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* HairMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BandanaMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatBase;
@@ -439,6 +441,7 @@ private:
 	FVector closecamera;
 
 	UMaterialInstanceDynamic* screenwarpmat;
+	UMaterialInstanceDynamic* coolmat;
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
 	UMaterialInstanceDynamic* bodymat;
@@ -467,6 +470,8 @@ private:
 	bool justteleported;
 
 	float warpanimtimer;
+
+	float lel;
 
 	bool AttackPressed;
 
