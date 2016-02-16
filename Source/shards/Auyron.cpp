@@ -589,7 +589,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 
 			// Stop dashing if the player was dashing for too long.
-			if (dashtimer > DashSettings.DashDuration || MovementComponent->toosteep) {
+			if (dashtimer > DashSettings.DashDuration) {
 				dashing = false;
 				DashParticles->DeactivateSystem();
 				dashtimer = 0.0f;
