@@ -123,16 +123,16 @@ AAuyron::AAuyron()
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->AttachTo(CapsuleComponent);
 
-	CustomDepthModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CustomDepthModel"));
-	CustomDepthModel->SetSkeletalMesh(PlayerMeshObj.Object);
-	CustomDepthModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	const ConstructorHelpers::FObjectFinder<UMaterial> wg(TEXT("/Game/Textures/Default"));
-	CustomDepthModel->SetMaterial(0, wg.Object);
-	CustomDepthModel->SetMaterial(1, wg.Object);
-	CustomDepthModel->SetMaterial(2, wg.Object);
-	CustomDepthModel->SetRenderInMainPass(false);
-	CustomDepthModel->SetRenderCustomDepth(true);
-	CustomDepthModel->AttachTo(PlayerModel);
+	//CustomDepthModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CustomDepthModel"));
+	//CustomDepthModel->SetSkeletalMesh(PlayerMeshObj.Object);
+	//CustomDepthModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	//const ConstructorHelpers::FObjectFinder<UMaterial> wg(TEXT("/Game/Textures/Default"));
+	//CustomDepthModel->SetMaterial(0, wg.Object);
+	//CustomDepthModel->SetMaterial(1, wg.Object);
+	//CustomDepthModel->SetMaterial(2, wg.Object);
+	//CustomDepthModel->SetRenderInMainPass(false);
+	//CustomDepthModel->SetRenderCustomDepth(true);
+	//CustomDepthModel->AttachTo(PlayerModel);
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -192,15 +192,6 @@ AAuyron::AAuyron()
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	Plane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Plane"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> zh(TEXT("/Game/StarterContent/Shapes/Shape_Plane"));
-	Plane->SetStaticMesh(zh.Object);
-	Plane->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Plane->SetRelativeLocation(FVector(200.0f, 0.0f, 100.0f));
-	Plane->SetRelativeRotation(FRotator(0.0f, 90.0f, 90.0f));
-	Plane->SetRelativeScale3D(FVector(5.0f, 5.0f, 5.0f));
-	Plane->AttachTo(Camera);
-
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
@@ -228,6 +219,9 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat"));
 	BodyMatBase = body.Object;
 
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bodyfade(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat_fade"));
+	BodyMatFadeBase = bodyfade.Object;
+
 }
 
 void AAuyron::Respawn() {
@@ -242,7 +236,7 @@ void AAuyron::PostInitializeComponents()
 
 	hairmat = UMaterialInstanceDynamic::Create(HairMatBase, this);
 	bandanamat = UMaterialInstanceDynamic::Create(BandanaMatBase, this);
-	bodymat = UMaterialInstanceDynamic::Create(BodyMatBase, this);
+	bodyfademat = UMaterialInstanceDynamic::Create(BodyMatFadeBase, this);
 
 	PlayerModel->SetMaterial(0, bodymat);
 	PlayerModel->SetMaterial(1, hairmat);
@@ -253,7 +247,6 @@ void AAuyron::PostInitializeComponents()
 	PostProcess->AddOrUpdateBlendable(screenwarpmat);
 
 	coolmat = UMaterialInstanceDynamic::Create(CoolMatBase, this);
-	Plane->SetMaterial(0, coolmat);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -379,6 +372,7 @@ void AAuyron::BeginPlay()
 	defaultfov = Camera->FieldOfView;
 
 	warpanimtimer = -1.0f;
+	GetWorld()->GetTimerManager().ClearTimer(WarpAnimationTimer);
 	screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), 0.0f);
 
 	previousposition = GetActorLocation();
@@ -419,9 +413,9 @@ void AAuyron::Tick(float DeltaTime)
 		Respawn();
 	}//
 
-	lel += DeltaTime;
+	//lel += DeltaTime;
 	//coolmat->SetScalarParameterValue("woosh", 3 * FMath::Pow(FMath::Fmod(lel, 1.0f), 2) - 2 * FMath::Pow(FMath::Fmod(lel, 1.0f), 3));
-	coolmat->SetScalarParameterValue("woosh", FMath::Pow(FMath::Fmod(lel, 2.0f), 16));
+	//coolmat->SetScalarParameterValue("woosh", FMath::Pow(FMath::Fmod(lel, 2.0f), 16));
 	//Plane->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f) * FMath::Lerp(10.0f,25.0f, FMath::Pow(FMath::Fmod(lel, 1.0f), 4)));
 
 	// Going somewhere?
@@ -441,7 +435,7 @@ void AAuyron::Tick(float DeltaTime)
 
 	OnTheGround = MovementComponent->onground;
 	if (!justteleported&&DeltaTime<0.1f&&lastdt<0.1f) {
-		Velocity = (GetActorLocation() - previousposition) / DeltaTime;
+		Velocity = (GetActorLocation() - previousposition) / lastdt;
 	}
 	
 	actualvelocity = (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector));
@@ -524,7 +518,7 @@ void AAuyron::Tick(float DeltaTime)
 						multi = DashSettings.DashWallJumpMultiplier;
 					}
 					Velocity = (StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()));
-					Velocity.Z = temp.Z;
+					Velocity.Z = JumpSettings.JumpPower;
 					GlideNextFrame = false;
 					JustWallJumped = true;
 
@@ -642,23 +636,20 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Handle the screen warp animation.
-		if (warpanimtimer >= 0.0f) {
-			warpanimtimer += DeltaTime;
-			screenwarpmat->SetScalarParameterValue("Timer", 1.0f - warpanimtimer / TeleportSettings.TeleportAnimationDuration);
-			if (warpanimtimer >= TeleportSettings.TeleportAnimationDuration) {
-				warpanimtimer = -1.0f;
-			}
-		} else {
-			screenwarpmat->SetScalarParameterValue("Timer", 0.0f);
-		}
-			
-		// Start the warp animation timer if the player just warped.
-		if (itshappening) {
-			itshappening = false;
-			warpanimtimer = 0.0f;
-		}
+		float warptime = GetWorld()->GetTimerManager().GetTimerElapsed(WarpAnimationTimer) / TeleportSettings.TeleportAnimationDuration;
+		screenwarpmat->SetScalarParameterValue("Timer", (warptime > 0 ? 1.0f-warptime : 0));
+		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(warptime));
 
-		bodymat->SetScalarParameterValue("fade", GetModelOpacity());
+		//bodyfademat->SetScalarParameterValue("fade", 1+0.0f*GetModelOpacity());
+
+		//if(GetModelOpacity()<1.0f&&!IsInDialogue) {
+			//PlayerModel->SetMaterial(0, bodyfademat);
+			//PlayerModel->bRenderCustomDepth = true;
+			//PlayerModel->UpdateMaterialParameters();
+		//} else {
+			//PlayerModel->SetMaterial(0, bodymat);
+			//PlayerModel->bRenderCustomDepth = true;
+		//}
 
 		// Looks like we're talking to someone.
 		if (IsInDialogue) {
@@ -792,8 +783,8 @@ void AAuyron::Tick(float DeltaTime)
 					justteleported = true;
 					ztarget = false;
 
-					// Tell the animation blueprint that we're about to teleport.
-					itshappening = true;
+					// Start the teleport animation timer.
+					GetWorld()->GetTimerManager().SetTimer(WarpAnimationTimer, TeleportSettings.TeleportAnimationDuration, false);
 
 					// If we were aiming, reset the camera's rotation.
 					if (wasztarget) {
@@ -1139,11 +1130,10 @@ void AAuyron::Tick(float DeltaTime)
 	}
 
 	{
-		//
 		FVector Acceleration = FVector::ZeroVector;
 
 		// Set up acceleration vector using the movement inputs.
-		if (!dashing) {
+		if (!dashing&&(Velocity | MovementInput.GetSafeNormal())<500.0f) {
 			Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
 		}
 
@@ -1155,10 +1145,6 @@ void AAuyron::Tick(float DeltaTime)
 			(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
 			Acceleration += (MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime;
 		}
-
-		// Decreases the effect of deceleration when the player is moving near max speed
-		// and increases it when they are going slow. This makes decelerating feel much smoother.
-		float slowfactor = FMath::Clamp(FMath::Lerp(1.0f, FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity, 0.5f)), 0.0f, 1.0f);
 
 		if (!OnTheGround) {
 			Acceleration += FVector(0.0f, 0.0f, PhysicsSettings.Gravity);
@@ -1178,6 +1164,10 @@ void AAuyron::Tick(float DeltaTime)
 				Velocity.Z += 100.0f;
 			}
 		}
+
+		// Decreases the effect of deceleration when the player is moving near max speed
+		// and increases it when they are going slow. This makes decelerating feel much smoother.
+		float slowfactor = FMath::Clamp(FMath::Lerp(1.0f, FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity, 0.5f)), 0.0f, 1.0f);
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.

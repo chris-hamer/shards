@@ -349,9 +349,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
-	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* CustomDepthModel;
+	//UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* CustomDepthModel;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
-	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* Plane;
 	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
@@ -367,6 +366,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* HairMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BandanaMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatFadeBase;
 
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
@@ -441,11 +441,14 @@ private:
 
 	FVector closecamera;
 
+	FTimerHandle WarpAnimationTimer;
+
 	UMaterialInstanceDynamic* screenwarpmat;
 	UMaterialInstanceDynamic* coolmat;
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
 	UMaterialInstanceDynamic* bodymat;
+	UMaterialInstanceDynamic* bodyfademat;
 
 	float DefaultGravity;
 
