@@ -13,6 +13,7 @@
 #include "Checkpoint.h"
 #include "DestructibleBox.h"
 #include "TeleClaw.h"
+#include "EquipmentPickup.h"
 #include "MusicRegion.h"
 #include "DialogueCut.h"
 #include "NPC.h"
@@ -192,6 +193,41 @@ AAuyron::AAuyron()
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	BootsR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsR"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> bootsmodel(TEXT("/Game/Models/Weapons/Boots"));
+	BootsR->SetStaticMesh(bootsmodel.Object);
+	BootsR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	BootsL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsL"));
+	BootsL->SetStaticMesh(bootsmodel.Object);
+	BootsL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	Belt = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Belt"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> beltmodel(TEXT("/Game/Models/Weapons/Belt"));
+	Belt->SetStaticMesh(beltmodel.Object);
+	Belt->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	Bracelet = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Bracelet"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> braceletmodel(TEXT("/Game/Models/Weapons/Bracelet"));
+	Bracelet->SetStaticMesh(braceletmodel.Object);
+	Bracelet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	Wings = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Wings"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> wingsmodel(TEXT("/Game/Models/Weapons/Wings"));
+	Wings->SetStaticMesh(wingsmodel.Object);
+	Wings->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// It gazes also into you.
+	TheAbyss = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TheAbyss"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> ab(TEXT("/Engine/BasicShapes/Sphere"));
+	TheAbyss->SetStaticMesh(ab.Object);
+	TheAbyss->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TheAbyss->SetWorldScale3D(FVector(1.0f, 7.0f, 1.0f));
+	TheAbyss->SetRelativeLocation(FVector(300.0f, 0.0f, 140.0f));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> ab_mat(TEXT("/Game/Textures/whatever"));
+	TheAbyss->SetMaterial(0,ab_mat.Object);
+	TheAbyss->AttachTo(PlayerModel);
+
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
@@ -209,6 +245,12 @@ AAuyron::AAuyron()
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> ff(TEXT("/Game/the_abyss"));
 	CoolMatBase = ff.Object;
+
+	const ConstructorHelpers::FObjectFinder<UTextureRenderTargetCube> be(TEXT("/Game/Textures/coolershit"));
+	beans = be.Object;
+
+	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> rr(TEXT("/Game/Textures/coolshit"));
+	rrr = rr.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
 	HairMatBase = hair.Object;
@@ -230,6 +272,49 @@ void AAuyron::Respawn() {
 	SetActorLocation(RespawnPoint, false,NULL,ETeleportType::TeleportPhysics);
 }
 
+void AAuyron::HereWeGo()
+{
+
+	TheAbyss->SetVisibility(false);
+	cameralocked = false;
+
+	// Move the player to the telepad's position and give them the perscribed velocity.
+	FVector temp = GetActorLocation();
+	SetActorLocation(warphere);
+	SpringArm->CameraLagSpeed = 0.0f;
+	SpringArm->CameraRotationLagSpeed = 0.0f;
+	SpringArm->SetWorldRotation((GetActorLocation() - temp).Rotation());
+	SpringArm->TargetArmLength = (temp - GetActorLocation()).Size();
+
+	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag/16.0f;
+	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag/16.0f;
+	SpringArm->TargetArmLength = DefaultArmLength;
+	Velocity = warpvel;
+	justteleported = true;
+	justswished = true;
+
+	// If we were aiming, reset the camera's rotation.
+	if (wasztarget) {
+		SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+	}
+
+	//SpringArm->CameraLagMaxDistance = asdfasdf;
+
+	// Reset OnTheGround and glide variables.
+	OnTheGround = false;
+	MovementComponent->onground = false;
+	WasOnTheGround = false;
+	if (IsGliding) {
+		AlreadyGlided = true;
+		IsGliding = false;
+	}
+	
+	PhysicsSettings.Gravity = DefaultGravity;
+
+	GetWorld()->GetTimerManager().ClearTimer(PreWarpTimer);
+	//GetWorld()->GetTimerManager().SetTimer(WarpAnimationTimer, this, &AAuyron::Warp, 3.0f);
+}
+
 void AAuyron::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -245,6 +330,8 @@ void AAuyron::PostInitializeComponents()
 	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
 	PostProcess->bUnbound = true;
 	PostProcess->AddOrUpdateBlendable(screenwarpmat);
+
+
 
 	coolmat = UMaterialInstanceDynamic::Create(CoolMatBase, this);
 }
@@ -305,6 +392,27 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 		{
 			OtherActor->Destroy();
 			GemCount++;
+		}
+
+		// We just picked up a gem.
+		if (OtherActor->IsA(AEquipmentPickup::StaticClass()))
+		{
+			if (((AEquipmentPickup*)OtherActor)->Name == "TeleClaw") {
+				TeleportSettings.HasTeleport = true;
+			}
+			if (((AEquipmentPickup*)OtherActor)->Name == "TeleClaw") {
+				TeleportSettings.HasTeleport = true;
+			}
+			if (((AEquipmentPickup*)OtherActor)->Name == "Dash") {
+				DashSettings.HasDash = true;
+			}
+			if (((AEquipmentPickup*)OtherActor)->Name == "Slam") {
+				SlamSettings.HasSlam = true;
+			}
+			if (((AEquipmentPickup*)OtherActor)->Name == "Glide") {
+				GlideSettings.HasGlide = true;
+			}
+			OtherActor->Destroy();
 		}
 
 		// We just entered a camera override region.
@@ -378,12 +486,27 @@ void AAuyron::BeginPlay()
 	previousposition = GetActorLocation();
 	closecamera = GetActorLocation();
 	RespawnPoint = GetActorLocation();
+	TheAbyss->SetVisibility(false);
+
+	CaptureCube = GetWorld()->SpawnActor<ASceneCaptureCube>();// (USceneCaptureComponentCube::StaticClass());
+	CaptureCube->GetCaptureComponentCube()->bCaptureEveryFrame = false;
+	CaptureCube->GetCaptureComponentCube()->TextureTarget = beans;
+
+	Capture2D = GetWorld()->SpawnActor<ASceneCapture2D>();// (USceneCaptureComponentCube::StaticClass());
+	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = false;
+	Capture2D->GetCaptureComponent2D()->TextureTarget = rrr;
 
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
-
+	
 	TeleClaw->AttachTo(PlayerModel, "RightHand", EAttachLocation::SnapToTargetIncludingScale);
+	BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R", EAttachLocation::SnapToTargetIncludingScale);
+	BootsL->AttachTo(PlayerModel, "WHATARETHOSE_L", EAttachLocation::SnapToTargetIncludingScale);
+	Bracelet->AttachTo(PlayerModel, "Bracelet", EAttachLocation::SnapToTargetIncludingScale);
+	Belt->AttachTo(PlayerModel, "Belt", EAttachLocation::SnapToTargetIncludingScale);
+	Wings->AttachTo(PlayerModel, "Wings", EAttachLocation::SnapToTargetIncludingScale);
+	//TeleClaw->AttachTo(PlayerModel, "RightHand", EAttachLocation::SnapToTargetIncludingScale);
 
 	((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
 
@@ -411,12 +534,12 @@ void AAuyron::Tick(float DeltaTime)
 
 	if (GetActorLocation().Z < -1500.0f) {
 		Respawn();
-	}//
+	}
 
-	//lel += DeltaTime;
-	//coolmat->SetScalarParameterValue("woosh", 3 * FMath::Pow(FMath::Fmod(lel, 1.0f), 2) - 2 * FMath::Pow(FMath::Fmod(lel, 1.0f), 3));
-	//coolmat->SetScalarParameterValue("woosh", FMath::Pow(FMath::Fmod(lel, 2.0f), 16));
-	//Plane->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f) * FMath::Lerp(10.0f,25.0f, FMath::Pow(FMath::Fmod(lel, 1.0f), 4)));
+	if (GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) >= 0.0f) {
+		movementlocked = true;
+		cameralocked = true;
+	}
 
 	// Going somewhere?
 	if (movementlocked) {
@@ -429,6 +552,10 @@ void AAuyron::Tick(float DeltaTime)
 		}
 	}
 
+	if (cameralocked) {
+		CameraInput = FVector::ZeroVector;
+	}
+
 	if (dashing&&!DashSettings.HasDashControl) {
 		MovementInput = FVector::ZeroVector;
 	}
@@ -437,11 +564,18 @@ void AAuyron::Tick(float DeltaTime)
 	if (!justteleported&&DeltaTime<0.1f&&lastdt<0.1f) {
 		Velocity = (GetActorLocation() - previousposition) / lastdt;
 	}
+
+	if (justteleported&&!justswished) {
+		SpringArm->CameraLagMaxDistance = 1.0f;
+	} else {
+		SpringArm->CameraLagMaxDistance = 0.0f;
+	}
 	
 	actualvelocity = (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector));
 	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
 
 	justteleported = false;
+	justswished = false;
 
 	// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
 	FVector Right = Camera->GetRightVector();
@@ -467,11 +601,12 @@ void AAuyron::Tick(float DeltaTime)
 		Velocity = FVector::ZeroVector;
 	}
 
-	if (TeleportSettings.HasTeleport) {
-		TeleClaw->SetVisibility(true);
-	} else {
-		TeleClaw->SetVisibility(false);
-	}
+	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
+	BootsR->SetVisibility(DashSettings.HasDash);
+	BootsL->SetVisibility(DashSettings.HasDash);
+	Bracelet->SetVisibility(SlamSettings.HasSlam);
+	Belt->SetVisibility(false);
+	Wings->SetVisibility(GlideSettings.HasGlide);
 
 	{
 		{
@@ -550,11 +685,15 @@ void AAuyron::Tick(float DeltaTime)
 		// Handle gliding.
 		if (IsGliding) {
 			GlideTimer += DeltaTime;
+			Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 			PhysicsSettings.Gravity = DefaultGravity / GlideSettings.GlideGravityMultiplier;
 		} else {
 			FloatParticles->DeactivateSystem();
 			GlideTimer = 0.0f;
-			PhysicsSettings.Gravity = DefaultGravity;
+			Wings->SetRelativeScale3D(FVector(0.25f, 0.25f, 0.25f));
+			if (GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) < 0.0f) {
+				PhysicsSettings.Gravity = DefaultGravity;
+			}
 		}
 
 		// Stop gliding.
@@ -636,9 +775,9 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Handle the screen warp animation.
-		float warptime = GetWorld()->GetTimerManager().GetTimerElapsed(WarpAnimationTimer) / TeleportSettings.TeleportAnimationDuration;
-		screenwarpmat->SetScalarParameterValue("Timer", (warptime > 0 ? 1.0f-warptime : 0));
-		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(warptime));
+		//float warptime = GetWorld()->GetTimerManager().GetTimerElapsed(WarpAnimationTimer) / TeleportSettings.TeleportAnimationDuration;
+		//screenwarpmat->SetScalarParameterValue("Timer", (warptime > 0 ? 1.0f - warptime : 0));
+		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(GetWorld()->GetTimerManager().GetTimerElapsed(WarpAnimationTimer)));//
 
 		//bodyfademat->SetScalarParameterValue("fade", 1+0.0f*GetModelOpacity());
 
@@ -767,37 +906,28 @@ void AAuyron::Tick(float DeltaTime)
 			// and impart the post teleport velocity on them.
 			if (swish) {//
 				if (closest != nullptr) {
-					// Move the player to the telepad's position and give them the perscribed velocity.
-					FVector temp = GetActorLocation();
-					SetActorLocation(closest->gohere);
-					SpringArm->CameraLagSpeed = 0.0f;
-					SpringArm->CameraRotationLagSpeed = 0.0f;
-					SpringArm->SetWorldRotation((GetActorLocation()- temp).Rotation());
-					SpringArm->TargetArmLength = (temp-GetActorLocation()).Size();
 
-					SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
-					SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag;
-					SpringArm->TargetArmLength = DefaultArmLength;
 
-					Velocity = closest->PostTeleportVelocity;
-					justteleported = true;
+					swish = false;
+
+					warphere = closest->gohere;
+					warpvel = closest->PostTeleportVelocity;
+
+					//CaptureCube->SetActorLocation(warphere - (closest->GetActorLocation() - warphere).GetSafeNormal()*2400.0f);
+
 					ztarget = false;
 
 					// Start the teleport animation timer.
-					GetWorld()->GetTimerManager().SetTimer(WarpAnimationTimer, TeleportSettings.TeleportAnimationDuration, false);
-
-					// If we were aiming, reset the camera's rotation.
-					if (wasztarget) {
-						SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
-					}
-
-					// Reset OnTheGround and glide variables.
-					OnTheGround = false;
-					MovementComponent->onground = false;
-					WasOnTheGround = false;
-					if (IsGliding) {
-						AlreadyGlided = true;
-						IsGliding = false;
+					//GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, 1.0f, true);
+					if (InCameraOverrideRegion) {
+						HereWeGo();
+					} else {
+						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, this, &AAuyron::HereWeGo, 1.0f);
+						TheAbyss->SetVisibility(true);
+						Velocity.Z = 0.0f;
+						PhysicsSettings.Gravity = 0.0f;
+						Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength);
+						Capture2D->SetActorRotation((warphere - GetActorLocation()).Rotation() + FRotator(-15.0f, 0.0f, 0.0f));
 					}
 				}
 			}

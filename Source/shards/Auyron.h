@@ -281,6 +281,7 @@ public:
 	void CameraZoomIn();
 	void CameraZoomOut();
 	void Respawn();
+	void HereWeGo();
 	
 	UFUNCTION()
 	void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -350,7 +351,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
 	//UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* CustomDepthModel;
+
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* BootsR;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* BootsL;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* Belt;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* Bracelet;
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* Wings;
+
+	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TheAbyss;
 	UPROPERTY(EditAnywhere, Category = "Components") UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, Category = "Components") UParticleSystemComponent* FloatParticles;
@@ -367,6 +376,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BandanaMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatFadeBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* rrr;
+	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTargetCube* beans;
 
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
@@ -441,7 +452,11 @@ private:
 
 	FVector closecamera;
 
+	ASceneCaptureCube* CaptureCube;
+	ASceneCapture2D* Capture2D;
+
 	FTimerHandle WarpAnimationTimer;
+	FTimerHandle PreWarpTimer;
 
 	UMaterialInstanceDynamic* screenwarpmat;
 	UMaterialInstanceDynamic* coolmat;
@@ -472,8 +487,12 @@ private:
 	AStick* thisguy;
 
 	bool justteleported;
+	bool justswished;
 
 	float warpanimtimer;
+
+	FVector warphere;
+	FVector warpvel;
 
 	float lel;
 
@@ -492,6 +511,7 @@ private:
 	bool ztarget;
 	bool wasztarget;
 	bool movementlocked;
+	bool cameralocked;
 	bool InCameraOverrideRegion;
 	bool itshappening;
 	bool dunk;
