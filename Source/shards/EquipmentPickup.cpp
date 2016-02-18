@@ -34,7 +34,7 @@ void AEquipmentPickup::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 	t += DeltaTime;
-	SetActorLocation(start + FMath::Sin(t*PI)*25.0f*FVector::UpVector);
+	SetActorRelativeLocation(start + FMath::Sin(t*PI)*25.0f*FVector::UpVector);
 	AddActorWorldRotation(FRotator(0.0f, DeltaTime*135.0f, 0.0f));
 }
 

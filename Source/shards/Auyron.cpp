@@ -154,36 +154,42 @@ AAuyron::AAuyron()
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Particles/DashParticles"));
 	DashParticles->SetTemplate(dp.Object);
+	DashParticles->bAutoActivate = false;
 	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	DashParticles->AttachTo(PlayerModel);
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
 	FloatParticles->SetTemplate(fp.Object);
+	FloatParticles->bAutoActivate = false;
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	FloatParticles->AttachTo(PlayerModel);
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Particles/SlamParticles"));
 	SlamParticles->SetTemplate(sp.Object);
+	SlamParticles->bAutoActivate = false;
 	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	SlamParticles->AttachTo(PlayerModel);
 
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
 	SlamTrail->SetTemplate(st.Object);
+	SlamTrail->bAutoActivate = false;
 	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	SlamTrail->AttachTo(PlayerModel);
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesL->SetTemplate(tpl.Object);
+	TrailParticlesL->bAutoActivate = false;
 	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesL->AttachTo(PlayerModel);
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesR->SetTemplate(tpr.Object);
+	TrailParticlesR->bAutoActivate = false;
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesR->AttachTo(PlayerModel);
 
@@ -227,6 +233,14 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> ab_mat(TEXT("/Game/Textures/whatever"));
 	TheAbyss->SetMaterial(0,ab_mat.Object);
 	TheAbyss->AttachTo(PlayerModel);
+
+	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
+	BootsR->SetVisibility(DashSettings.HasDash);
+	BootsL->SetVisibility(DashSettings.HasDash);
+	Bracelet->SetVisibility(SlamSettings.HasSlam);
+	Belt->SetVisibility(false);
+	Wings->SetVisibility(GlideSettings.HasGlide);
+	TheAbyss->SetVisibility(false);
 
 	// ASSUMING DIRECT CONTROL.
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
