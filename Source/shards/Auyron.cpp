@@ -414,8 +414,8 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			if (((AEquipmentPickup*)OtherActor)->Name == "TeleClaw") {
 				TeleportSettings.HasTeleport = true;
 			}
-			if (((AEquipmentPickup*)OtherActor)->Name == "TeleClaw") {
-				TeleportSettings.HasTeleport = true;
+			if (((AEquipmentPickup*)OtherActor)->Name == "WallJump") {
+				JumpSettings.HasWallJump = true;
 			}
 			if (((AEquipmentPickup*)OtherActor)->Name == "Dash") {
 				DashSettings.HasDash = true;
@@ -555,6 +555,11 @@ void AAuyron::Tick(float DeltaTime)
 		cameralocked = true;
 	}
 
+	if (blockedbyblueprint) {
+		movementlocked = true;
+		cameralocked = true;
+	}
+
 	// Going somewhere?
 	if (movementlocked) {
 		MovementInput = FVector::ZeroVector;
@@ -619,7 +624,7 @@ void AAuyron::Tick(float DeltaTime)
 	BootsR->SetVisibility(DashSettings.HasDash);
 	BootsL->SetVisibility(DashSettings.HasDash);
 	Bracelet->SetVisibility(SlamSettings.HasSlam);
-	Belt->SetVisibility(false);
+	Belt->SetVisibility(JumpSettings.HasWallJump);
 	Wings->SetVisibility(GlideSettings.HasGlide);
 
 	{
@@ -644,7 +649,7 @@ void AAuyron::Tick(float DeltaTime)
 		// Handle jumping.
 		if (JumpNextFrame && !IsInDialogue) {
 			bool wouldhavebeenotg = OnTheGround;
-			if (OnTheGround || StoredWallNormal.Size() > 0.95f) {
+			if (OnTheGround || (StoredWallNormal.Size() > 0.95f&&JumpSettings.HasWallJump)) {
 				// Jump while taking the floor's angle and vertical movement into account.
 				Velocity.Z = 0.0f;
 				Velocity += JumpSettings.JumpPower * FVector::UpVector;// *(MovementComponent->FloorNormal.IsNearlyZero() ? FVector::UpVector : MovementComponent->FloorNormal).GetSafeNormal();
@@ -725,7 +730,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Make the player start dashing in response to input.
-		if (DashNextFrame&&DashSettings.HasDash) {
+		if (DashNextFrame&&DashSettings.HasDash&&!movementlocked) {
 			DashNextFrame = false;
 			if (OnTheGround&&!MovementComponent->toosteep) {
 				DashParticles->ActivateSystem();
@@ -1727,6 +1732,20 @@ void AAuyron::HandlePause()
 	IsGliding = false;
 	ztarget = false;
 	HoldingJump = false;
+}
+
+void AAuyron::BlockInput()
+{
+	blockedbyblueprint = true;
+	movementlocked = true;
+	cameralocked = true;
+}
+
+void AAuyron::ResumeInput()
+{
+	blockedbyblueprint = false;
+	movementlocked = false;
+	cameralocked = false;
 }
 
 void AAuyron::SetMaterial(int32 index, UMaterialInterface * newmat)

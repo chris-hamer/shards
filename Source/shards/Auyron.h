@@ -70,6 +70,9 @@ struct FMovementJumping
 	/* Time after falling off a ledge that the player can still jump. */
 	UPROPERTY(EditAnywhere) float OffGroundJumpTime;
 
+	/* Whether or not the player has wall jump. */
+	UPROPERTY(EditAnywhere) bool HasWallJump;
+
 	/* The player's initial forward velocity when wall jumping, in multiples of their normal max velocity. */
 	UPROPERTY(EditAnywhere) float WallJumpMultiplier;
 };
@@ -330,6 +333,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void HandlePause();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void BlockInput();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void ResumeInput();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetMaterial(int32 index, UMaterialInterface* newmat);
 	
 	
@@ -527,6 +534,8 @@ private:
 	FVector previousvelocity;
 
 	FVector RespawnPoint;
+
+	bool blockedbyblueprint;
 
 	bool WasInCameraOverrideRegion;
 
