@@ -546,7 +546,7 @@ void AAuyron::Tick(float DeltaTime)
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
-	if (GetActorLocation().Z < -1500.0f) {
+	if (GetActorLocation().Z < -7950.0f) {
 		Respawn();
 	}
 
