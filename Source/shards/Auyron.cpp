@@ -294,7 +294,8 @@ void AAuyron::HereWeGo()
 
 	// Move the player to the telepad's position and give them the perscribed velocity.
 	FVector temp = GetActorLocation();
-	SetActorLocation(warphere);
+	SetActorLocation(closeststick->gohere);
+	GEngine->AddOnScreenDebugMessage(-1,3,FColor::Green,GetActorLocation().ToString() + "     " + closeststick->gohere.ToString());
 	SpringArm->CameraLagSpeed = 0.0f;
 	SpringArm->CameraRotationLagSpeed = 0.0f;
 	SpringArm->SetWorldRotation((GetActorLocation() - temp).Rotation());
@@ -303,7 +304,7 @@ void AAuyron::HereWeGo()
 	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag/16.0f;
 	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag/16.0f;
 	SpringArm->TargetArmLength = DefaultArmLength;
-	Velocity = warpvel;
+	Velocity = closeststick->PostTeleportVelocity;
 	justteleported = true;
 	justswished = true;
 
@@ -876,7 +877,7 @@ void AAuyron::Tick(float DeltaTime)
 				// Assume it's not being targeted, and set it to the default
 				// color and brightness.
 				ActorItr->PointLight->LightColor = FColor::White;
-				ActorItr->PointLight->Intensity = 1385.76f;
+				ActorItr->PointLight->Intensity = 1750.0f;
 				ActorItr->PointLight->UpdateColorAndBrightness();
 
 				// Get displacement vector from the player/camera to the TelePad.
@@ -929,6 +930,7 @@ void AAuyron::Tick(float DeltaTime)
 
 					swish = false;
 
+					closeststick = closest;
 					warphere = closest->gohere;
 					warpvel = closest->PostTeleportVelocity;
 
@@ -1312,6 +1314,10 @@ void AAuyron::Tick(float DeltaTime)
 			if (OnTheGround) {
 				Velocity.Z += 100.0f;
 			}
+		}
+
+		if (Velocity.Z > PhysicsSettings.TerminalVelocity*2.0f) {
+			//Velocity.Z = PhysicsSettings.TerminalVelocity*2.0f;
 		}
 
 		// Decreases the effect of deceleration when the player is moving near max speed

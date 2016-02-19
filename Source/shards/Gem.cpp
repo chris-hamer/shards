@@ -59,7 +59,7 @@ void AGem::BeginPlay()
 {
 	Super::BeginPlay();
 
-	baseHeight = GetActorLocation().Z;
+	//baseHeight = GetActorrelativeloca().Z;
 }
 
 // Called every frame
@@ -68,8 +68,8 @@ void AGem::Tick( float DeltaTime )
 	Super::Tick( DeltaTime );
 
 	FVector loc = GetActorLocation();
-	loc = FVector(loc.X, loc.Y, baseHeight + 20.0f*FMath::Sin(curTime));
-	SetActorLocation(loc);
+	loc = FVector(0.0f, 0.0f, 0.5f*FMath::Cos(curTime));
+	SetActorLocation(GetActorLocation()+loc);
 	AddActorWorldRotation(FRotator(0.0f, 1.0f, 0.0f));
 
 	curTime += DeltaTime;

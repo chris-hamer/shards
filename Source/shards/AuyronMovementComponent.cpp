@@ -67,11 +67,11 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	}
 
 	FCollisionResponse a;
-	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation()+20.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
 
 	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f*FVector::UpVector; // 50
 	float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
-	float RequiredDistance = (onground ? 50.0f : 5.0f); //50,1
+	float RequiredDistance = (onground ? 50.0f : 10.0f); //50,1
 
 	if (!onground) {
 		offGroundTime += DeltaTime;
@@ -90,7 +90,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 	FloorNormal = FVector::ZeroVector;
 
-	if (enforcementtimer < timerlimit && ShapeTraceResult.IsValidBlockingHit() && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground)) {
+	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && ShapeTraceResult.IsValidBlockingHit() && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground)) { // 
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
 			if (enforcementtimer == -1.0f) {
 				enforcementtimer = 0.0f;
@@ -108,7 +108,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 			groundvelocity *= (((AMovingPlatform*)ShapeTraceResult.GetActor())->Deactivated ? 0.0f : 1.0f);
 
 			// It's a ROTATING platform.
-			if (ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass()) {
+			if (ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass() && ((ARotatingPlatform*)ShapeTraceResult.GetActor())->AngularPeriod > 0.0f) {
 				// Add its rotational velocity, which we get my multiplying its magnitude (angular frequency
 				// times distance from center) by the unit vector in the angular direction (which we get by crossing
 				// the player's displacement from the center with the z axis), then make it negative if the platform

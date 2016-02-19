@@ -451,6 +451,8 @@ private:
 	bool OnTheGround;
 	bool HelpEnabled;
 
+	AStick* closeststick;
+
 	FVector StoredWallNormal;
 
 	UUserWidget* thehud;
