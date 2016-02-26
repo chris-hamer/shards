@@ -617,7 +617,7 @@ void AAuyron::Tick(float DeltaTime)
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	Velocity -= MovementComponent->groundvelocity + pushvelocity;
 
-	if (Velocity.Size() < PhysicsSettings.MinVelocity) {
+	if (Velocity.Size() < PhysicsSettings.MinVelocity && !dashing && !JumpNextFrame && MovementInput.IsNearlyZero()) {
 		Velocity = FVector::ZeroVector;
 	}
 
