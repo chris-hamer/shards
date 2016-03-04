@@ -377,14 +377,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* ScreenWarpMatBase;
-	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* CoolMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* HairMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BandanaMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatBase;
-	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatFadeBase;
-	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* rrr;
-	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTargetCube* beans;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* TeleportRiftMaterial;
+	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* TeleportRiftRenderTarget;
 
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
@@ -467,12 +464,9 @@ private:
 	FTimerHandle WarpAnimationTimer;
 	FTimerHandle PreWarpTimer;
 
-	UMaterialInstanceDynamic* screenwarpmat;
-	UMaterialInstanceDynamic* coolmat;
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
 	UMaterialInstanceDynamic* bodymat;
-	UMaterialInstanceDynamic* bodyfademat;
 
 	float DefaultGravity;
 

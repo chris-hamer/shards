@@ -114,6 +114,10 @@ AAuyron::AAuyron()
 	CapsuleComponent->SetEnableGravity(false);
 	CapsuleComponent->SetLinearDamping(1000000.0f);
 	CapsuleComponent->SetAngularDamping(1000000.0f);
+	CapsuleComponent->BodyInstance.bLockRotation = true;
+	CapsuleComponent->BodyInstance.bLockXRotation = true;
+	CapsuleComponent->BodyInstance.bLockYRotation = true;
+	CapsuleComponent->BodyInstance.bLockZRotation = true;
 	CapsuleComponent->AttachTo(RootComponent);
 	SetActorEnableCollision(true);
 
@@ -124,16 +128,8 @@ AAuyron::AAuyron()
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->AttachTo(CapsuleComponent);
 
-	//CustomDepthModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CustomDepthModel"));
-	//CustomDepthModel->SetSkeletalMesh(PlayerMeshObj.Object);
-	//CustomDepthModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	//const ConstructorHelpers::FObjectFinder<UMaterial> wg(TEXT("/Game/Textures/Default"));
-	//CustomDepthModel->SetMaterial(0, wg.Object);
-	//CustomDepthModel->SetMaterial(1, wg.Object);
-	//CustomDepthModel->SetMaterial(2, wg.Object);
-	//CustomDepthModel->SetRenderInMainPass(false);
-	//CustomDepthModel->SetRenderCustomDepth(true);
-	//CustomDepthModel->AttachTo(PlayerModel);
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimationBlueprint(TEXT("/Game/Animations/Characters/Auyron/Anim_Auyron"));
+	PlayerModel->SetAnimInstanceClass(AnimationBlueprint.Object->GetAnimBlueprintGeneratedClass());
 
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
@@ -199,6 +195,7 @@ AAuyron::AAuyron()
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	// WHAT ARE THOSE?
 	BootsR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsR"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> bootsmodel(TEXT("/Game/Models/Weapons/Boots"));
 	BootsR->SetStaticMesh(bootsmodel.Object);
@@ -208,6 +205,7 @@ AAuyron::AAuyron()
 	BootsL->SetStaticMesh(bootsmodel.Object);
 	BootsL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	// WWE CHAMPIONSHIP BELT
 	Belt = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Belt"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> beltmodel(TEXT("/Game/Models/Weapons/Belt"));
 	Belt->SetStaticMesh(beltmodel.Object);
@@ -230,8 +228,6 @@ AAuyron::AAuyron()
 	TheAbyss->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TheAbyss->SetWorldScale3D(FVector(1.0f, 7.0f, 1.0f));
 	TheAbyss->SetRelativeLocation(FVector(300.0f, 0.0f, 140.0f));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> ab_mat(TEXT("/Game/Textures/whatever"));
-	TheAbyss->SetMaterial(0,ab_mat.Object);
 	TheAbyss->AttachTo(PlayerModel);
 
 	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
@@ -254,17 +250,8 @@ AAuyron::AAuyron()
 	PostProcess->AttachTo(RootComponent);
 
 	// NINTENDON'T DO 16 BIT.
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> sw(TEXT("/Game/screenwarpmat"));
-	ScreenWarpMatBase = sw.Object;
-
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> ff(TEXT("/Game/the_abyss"));
-	CoolMatBase = ff.Object;
-
-	const ConstructorHelpers::FObjectFinder<UTextureRenderTargetCube> be(TEXT("/Game/Textures/coolershit"));
-	beans = be.Object;
-
-	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> rr(TEXT("/Game/Textures/coolshit"));
-	rrr = rr.Object;
+	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> riftmatfile(TEXT("/Game/Textures/Effects/RiftRTT"));
+	TeleportRiftRenderTarget = riftmatfile.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
 	HairMatBase = hair.Object;
@@ -274,10 +261,9 @@ AAuyron::AAuyron()
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat"));
 	BodyMatBase = body.Object;
-
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bodyfade(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat_fade"));
-	BodyMatFadeBase = bodyfade.Object;
-
+	
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
+	TeleportRiftMaterial = riftmat.Object;
 }
 
 void AAuyron::Respawn() {
@@ -295,7 +281,6 @@ void AAuyron::HereWeGo()
 	// Move the player to the telepad's position and give them the perscribed velocity.
 	FVector temp = GetActorLocation();
 	SetActorLocation(closeststick->gohere);
-	GEngine->AddOnScreenDebugMessage(-1,3,FColor::Green,GetActorLocation().ToString() + "     " + closeststick->gohere.ToString());
 	SpringArm->CameraLagSpeed = 0.0f;
 	SpringArm->CameraRotationLagSpeed = 0.0f;
 	SpringArm->SetWorldRotation((GetActorLocation() - temp).Rotation());
@@ -336,19 +321,12 @@ void AAuyron::PostInitializeComponents()
 
 	hairmat = UMaterialInstanceDynamic::Create(HairMatBase, this);
 	bandanamat = UMaterialInstanceDynamic::Create(BandanaMatBase, this);
-	bodyfademat = UMaterialInstanceDynamic::Create(BodyMatFadeBase, this);
 
 	PlayerModel->SetMaterial(0, bodymat);
 	PlayerModel->SetMaterial(1, hairmat);
 	PlayerModel->SetMaterial(2, bandanamat);
 
-	screenwarpmat = UMaterialInstanceDynamic::Create(ScreenWarpMatBase, this);
 	PostProcess->bUnbound = true;
-	PostProcess->AddOrUpdateBlendable(screenwarpmat);
-
-
-
-	coolmat = UMaterialInstanceDynamic::Create(CoolMatBase, this);
 }
 
 void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -496,20 +474,22 @@ void AAuyron::BeginPlay()
 
 	warpanimtimer = -1.0f;
 	GetWorld()->GetTimerManager().ClearTimer(WarpAnimationTimer);
-	screenwarpmat->SetScalarParameterValue(TEXT("Wooshiness"), 0.0f);
+
+	// >_>
+	CapsuleComponent->SetWorldRotation(FRotator(0.0f, 0.0f, 0.0f));
+	FRotator springarmrotation = SpringArm->GetComponentRotation();
+	springarmrotation.Roll = 0.0f;
+	SpringArm->SetWorldRotation(springarmrotation);
 
 	previousposition = GetActorLocation();
 	closecamera = GetActorLocation();
 	RespawnPoint = GetActorLocation();
 	TheAbyss->SetVisibility(false);
+	TheAbyss->SetMaterial(0, TeleportRiftMaterial);
 
-	CaptureCube = GetWorld()->SpawnActor<ASceneCaptureCube>();// (USceneCaptureComponentCube::StaticClass());
-	CaptureCube->GetCaptureComponentCube()->bCaptureEveryFrame = false;
-	CaptureCube->GetCaptureComponentCube()->TextureTarget = beans;
-
-	Capture2D = GetWorld()->SpawnActor<ASceneCapture2D>();// (USceneCaptureComponentCube::StaticClass());
+	Capture2D = GetWorld()->SpawnActor<ASceneCapture2D>();
 	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = false;
-	Capture2D->GetCaptureComponent2D()->TextureTarget = rrr;
+	Capture2D->GetCaptureComponent2D()->TextureTarget = TeleportRiftRenderTarget;
 
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
@@ -654,9 +634,11 @@ void AAuyron::Tick(float DeltaTime)
 				// Jump while taking the floor's angle and vertical movement into account.
 				Velocity.Z = 0.0f;
 				Velocity += JumpSettings.JumpPower * FVector::UpVector;// *(MovementComponent->FloorNormal.IsNearlyZero() ? FVector::UpVector : MovementComponent->FloorNormal).GetSafeNormal();
+				
 				WasOnTheGround = false;
 				OnTheGround = false;
 				MovementComponent->onground = false;
+				MovementComponent->PlayerVelocity = Velocity;
 				AlreadyUnjumped = false;
 				JustJumped = true;
 				if (StoredWallNormal.Size() > 0.2f&&!wouldhavebeenotg) {

@@ -12,7 +12,7 @@ ABrokenBox::ABrokenBox()
 	PrimaryActorTick.bCanEverTick = true;
 
 	DestructibleMesh = CreateDefaultSubobject<UDestructibleComponent>(TEXT("Destrictuble Mesh"));
-	const ConstructorHelpers::FObjectFinder<UDestructibleMesh> dm(TEXT("/Game/Models/Box_DM"));
+	const ConstructorHelpers::FObjectFinder<UDestructibleMesh> dm(TEXT("/Game/Models/Environment/Box/Box_DM"));
 	DestructibleMesh->SetDestructibleMesh(dm.Object);
 	DestructibleMesh->LargeChunkThreshold = 100000.0f;
 	DestructibleMesh->SetCollisionObjectType(ECollisionChannel::ECC_EngineTraceChannel3);
