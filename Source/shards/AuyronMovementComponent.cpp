@@ -27,6 +27,14 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	FVector Vert = InputVector.Z*FVector::UpVector;
 	FHitResult HitResult;
 
+
+	FHitResult ShapeTraceResult;
+	FCollisionShape shape = FCollisionShape::MakeCapsule(40.0f, 40.0f); //25,25
+
+	FCollisionResponse a;
+	FCollisionQueryParams Params;
+	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation() + 20.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+
 	SafeMoveUpdatedComponent(Horiz, UpdatedComponent->GetComponentRotation(), true, HitResult);
 	if (HitResult.IsValidBlockingHit()) {
 		Wall = FHitResult(HitResult);
@@ -42,11 +50,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		Floor = FHitResult(HitResult);
 		SlideAlongSurface(Vert, 1.0 - HitResult.Time, HitResult.Normal, HitResult);
 	}
-
-	FHitResult ShapeTraceResult;
-	FCollisionShape shape = FCollisionShape::MakeCapsule(40.0f, 40.0f); //25,25
-
-	FCollisionQueryParams Params;
 	Params.bFindInitialOverlaps = true;
 	if (ActorToIgnore != nullptr) {
 		Params.AddIgnoredActor(ActorToIgnore);
@@ -65,9 +68,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 	}
 
-	FCollisionResponse a;
-	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation()+20.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
-
 	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f*FVector::UpVector; // 50
 	float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	float RequiredDistance = (onground ? 50.0f : 10.0f); //50,1
@@ -80,7 +80,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		enforcementtimer += DeltaTime;
 		toosteep = true;
 	}
-	
+	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, ShapeTraceResult.ImpactPoint.ToString());
 	bool wasonground = onground;
 	onground = false;
 	groundvelocity = FVector::ZeroVector;
