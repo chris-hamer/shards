@@ -21,12 +21,10 @@ UAuyronMovementComponent::UAuyronMovementComponent()
 void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	FVector InputVector = ConsumeInputVector();
+	FVector InputVector = FVector::ZeroVector;// ConsumeInputVector();
 	FVector Horiz = FVector::VectorPlaneProject(InputVector, FVector::UpVector);
 	FVector Vert = InputVector.Z*FVector::UpVector;
 	FHitResult HitResult;
-
 
 	FHitResult ShapeTraceResult;
 	FCollisionShape shape = FCollisionShape::MakeCapsule(40.0f, 40.0f); //25,25
@@ -68,7 +66,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 	}
 
-	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f*FVector::UpVector; // 50
+	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f * FVector::UpVector; // 50
 	float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	float RequiredDistance = (onground ? 50.0f : 10.0f); //50,1
 	if (!onground) {
@@ -80,7 +78,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		enforcementtimer += DeltaTime;
 		toosteep = true;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, ShapeTraceResult.ImpactPoint.ToString());
+	//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, ShapeTraceResult.ImpactPoint.ToString());
 	bool wasonground = onground;
 	onground = false;
 	groundvelocity = FVector::ZeroVector;
