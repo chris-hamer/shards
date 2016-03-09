@@ -470,6 +470,7 @@ void AAuyron::BeginPlay()
 	// Point gravity downwards.
 	PhysicsSettings.Gravity = -PhysicsSettings.Gravity;
 	DefaultGravity = PhysicsSettings.Gravity;
+	PhysicsSettings.Gravity = GetWorld()->GetGravityZ();
 
 	// Initialize gem count.
 	GemCount = 0;
@@ -634,8 +635,11 @@ void AAuyron::Tick(float DeltaTime)
 			GetWorld()->SweepSingleByChannel(ShapeTraceResult, GetActorLocation() + 10.0f*FVector::UpVector, GetActorLocation() - 10.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape); //100
 
 			if (!OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.95f) {
-				RidingWall = true;
-				StoredWallNormal = FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector);
+				if (ShapeTraceResult.GetActor()->GetClass() != AMovingPlatform::StaticClass() &&
+					ShapeTraceResult.GetActor()->GetClass() != ARotatingPlatform::StaticClass()) {
+					RidingWall = true;
+					StoredWallNormal = FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector);
+				}
 			}
 		}
 
@@ -672,7 +676,8 @@ void AAuyron::Tick(float DeltaTime)
 					FVector temp = CapsuleComponent->GetPhysicsLinearVelocity();
 					temp.Z = 0.0f;
 					CapsuleComponent->SetPhysicsLinearVelocity(temp);
-					CapsuleComponent->AddImpulse((StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal())), NAME_None, true);
+					//CapsuleComponent->AddImpulse((StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal())), NAME_None, true);
+					CapsuleComponent->AddImpulse((StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi), NAME_None, true);
 					GlideNextFrame = false;
 					JustWallJumped = true;
 
@@ -712,7 +717,7 @@ void AAuyron::Tick(float DeltaTime)
 			GlideTimer += DeltaTime;
 			Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 			PhysicsSettings.Gravity = DefaultGravity / GlideSettings.GlideGravityMultiplier;
-			CapsuleComponent->AddImpulse(-FVector::UpVector * DefaultGravity / GlideSettings.GlideGravityMultiplier, NAME_None, true);
+			CapsuleComponent->AddForce(-FVector::UpVector * PhysicsSettings.Gravity * GlideSettings.GlideGravityMultiplier, NAME_None, true);
 		} else {
 			FloatParticles->DeactivateSystem();
 			GlideTimer = 0.0f;

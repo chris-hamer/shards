@@ -27,12 +27,19 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	FHitResult HitResult;
 
 	FHitResult ShapeTraceResult;
-	FCollisionShape shape = FCollisionShape::MakeCapsule(40.0f, 40.0f); //25,25
+	FCollisionShape shape = FCollisionShape::MakeCapsule(45.0f, 40.0f); //25,25
 
 	FCollisionResponse a;
 	FCollisionQueryParams Params;
-	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation() + 20.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
-
+	TArray<FHitResult> results;
+	GetWorld()->SweepMultiByChannel(results, UpdatedComponent->GetComponentLocation() + 20.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+	for (FHitResult r : results) {
+		if (r.Normal.Z > 0.6f) {
+			ShapeTraceResult = r;
+			break;
+		}
+	}
+	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, ShapeTraceResult.Location.ToString());
 	SafeMoveUpdatedComponent(Horiz, UpdatedComponent->GetComponentRotation(), true, HitResult);
 	if (HitResult.IsValidBlockingHit()) {
 		Wall = FHitResult(HitResult);
