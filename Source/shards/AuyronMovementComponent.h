@@ -52,6 +52,8 @@ public:
 
 	FVector PlayerVelocity;
 
+	FVector forceregiondirection;
+
 	float enforcementtimer;
 	float minnormalz;
 	float timerlimit;

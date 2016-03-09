@@ -26,12 +26,12 @@
 AAuyron::AAuyron()
 {	
 	// These should work.
-	PhysicsSettings.GroundAccelerationRate = 4000.0f;
-	PhysicsSettings.AirAccelerationRate = 500.0f;
-	PhysicsSettings.MaxVelocity = 500.0f;
+	PhysicsSettings.GroundAccelerationRate = 80.0f;
+	PhysicsSettings.AirAccelerationRate = 15.0f;
+	PhysicsSettings.MaxVelocity = 600.0f;
 	PhysicsSettings.MinVelocity = 10.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
-	PhysicsSettings.Gravity = 2250.0f;
+	PhysicsSettings.Gravity = 1960.0f;
 	PhysicsSettings.MaxSlope = 30.0f;
 	PhysicsSettings.SlopeSlideTime = 0.15f;
 	PhysicsSettings.PushForceFactor = 50.0f;
@@ -39,7 +39,7 @@ AAuyron::AAuyron()
 
 	AttackRange = 300.0f;
 
-	JumpSettings.JumpPower = 1000.0f;
+	JumpSettings.JumpPower = 880.0f;
 	JumpSettings.WallJumpMultiplier = 1.0f;
 	JumpSettings.OffGroundJumpTime = 0.04f;
 	JumpSettings.UnjumpRate = 0.33f;
@@ -58,8 +58,8 @@ AAuyron::AAuyron()
 	DashSettings.HasDash = false;
 	DashSettings.HasInfiniteDash = false;
 	DashSettings.HasDashControl = false;
-	DashSettings.HasDashJump = false;
 	DashSettings.HasDashWallJump = false;
+	DashSettings.HasDashJump = false;
 	DashSettings.DashSpeed = 1500.0f;
 	DashSettings.DashDuration = 0.25f;
 	DashSettings.DashWallJumpMultiplier = 3.0f;
@@ -67,8 +67,8 @@ AAuyron::AAuyron()
 	GlideSettings.HasGlide = false;
 	GlideSettings.GlideTurnRateMultiplier = 1.0f;
 	GlideSettings.GlideDuration = 2.0f;
-	GlideSettings.InitialGlideVelocity = 100.0f;
-	GlideSettings.GlideGravityMultiplier = 50.0f;
+	GlideSettings.InitialGlideVelocity = 200.0f;
+	GlideSettings.GlideGravityMultiplier = 0.01f;
 
 	SlamSettings.HasSlam = false;
 	SlamSettings.SlamVelocity = 1500.0f;
@@ -111,7 +111,7 @@ AAuyron::AAuyron()
 	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
 	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
 	CapsuleComponent->SetSimulatePhysics(true);
-	CapsuleComponent->SetEnableGravity(true);
+	CapsuleComponent->SetEnableGravity(false);
 	CapsuleComponent->SetLinearDamping(0.0f);
 	CapsuleComponent->BodyInstance.bLockRotation = true;
 	CapsuleComponent->BodyInstance.bLockXRotation = true;
@@ -120,8 +120,6 @@ AAuyron::AAuyron()
 	CapsuleComponent->BodyInstance.PositionSolverIterationCount = 16;
 	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
 	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
-	const ConstructorHelpers::FObjectFinder<UPhysicalMaterial> PlayerPhysMat(TEXT("/Game/Textures/Characters/Auyron/PlayerPhysMaterial"));
-	CapsuleComponent->SetPhysMaterialOverride(PlayerPhysMat.Object);
 	CapsuleComponent->AttachTo(RootComponent);
 	SetActorEnableCollision(true);
 
@@ -192,6 +190,11 @@ AAuyron::AAuyron()
 	TrailParticlesR->bAutoActivate = false;
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesR->AttachTo(PlayerModel);
+
+	// Deferring application of physical material because Unreal crashes
+	// for no reason if you try to apply it in the contrsuctor.
+	const ConstructorHelpers::FObjectFinder<UPhysicalMaterial> PlayerPhysMat(TEXT("/Game/Textures/Characters/Auyron/PlayerPhysMaterial"));
+	physmat = PlayerPhysMat.Object;
 
 	// Get the instance of the TeleClaw weapon.
 	TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
@@ -271,7 +274,8 @@ AAuyron::AAuyron()
 }
 
 void AAuyron::Respawn() {
-	Velocity = FVector::ZeroVector;
+
+	CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	justteleported = true;
 	SetActorLocation(RespawnPoint, false,NULL,ETeleportType::TeleportPhysics);
 }
@@ -284,25 +288,24 @@ void AAuyron::HereWeGo()
 
 	// Move the player to the telepad's position and give them the perscribed velocity.
 	FVector temp = GetActorLocation();
-	SetActorLocation(closeststick->gohere);
-	SpringArm->CameraLagSpeed = 0.0f;
-	SpringArm->CameraRotationLagSpeed = 0.0f;
-	SpringArm->SetWorldRotation((GetActorLocation() - temp).Rotation());
-	SpringArm->TargetArmLength = (temp - GetActorLocation()).Size();
+	//SpringArm->CameraLagSpeed = 0.0f;
+	//SpringArm->CameraRotationLagSpeed = 0.0f;
+	//SpringArm->SetWorldRotation((closeststick->gohere - temp).Rotation());
+	//SpringArm->TargetArmLength = (temp - closeststick->gohere).Size();
 
-	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag/16.0f;
-	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraLag/16.0f;
-	SpringArm->TargetArmLength = DefaultArmLength;
-	Velocity = closeststick->PostTeleportVelocity;
+	SpringArm->CameraLagSpeed = 1.0f/128.0f;
+	SpringArm->CameraRotationLagSpeed = 1.0f/ 128.0f;
+	//SpringArm->TargetArmLength = DefaultArmLength;
+	CapsuleComponent->AddImpulse(closeststick->PostTeleportVelocity,NAME_None,true);
 	justteleported = true;
 	justswished = true;
+	AlreadyUnjumped = true;
 
 	// If we were aiming, reset the camera's rotation.
-	if (wasztarget) {
-		SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
-	}
-
-	//SpringArm->CameraLagMaxDistance = asdfasdf;
+	//if (wasztarget) {
+		//SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+	//}
+		SetActorLocation(closeststick->gohere, false, nullptr, ETeleportType::TeleportPhysics);
 
 	// Reset OnTheGround and glide variables.
 	OnTheGround = false;
@@ -316,7 +319,13 @@ void AAuyron::HereWeGo()
 	PhysicsSettings.Gravity = DefaultGravity;
 
 	GetWorld()->GetTimerManager().ClearTimer(PreWarpTimer);
-	//GetWorld()->GetTimerManager().SetTimer(WarpAnimationTimer, this, &AAuyron::Warp, 3.0f);
+}
+
+void AAuyron::FlattenVelocity()
+{
+	FVector temp = CapsuleComponent->GetPhysicsLinearVelocity();
+	temp.Z = 0.0f;
+	CapsuleComponent->SetPhysicsLinearVelocity(temp);
 }
 
 void AAuyron::PostInitializeComponents()
@@ -329,6 +338,8 @@ void AAuyron::PostInitializeComponents()
 	PlayerModel->SetMaterial(0, bodymat);
 	PlayerModel->SetMaterial(1, hairmat);
 	PlayerModel->SetMaterial(2, bandanamat);
+
+	CapsuleComponent->SetPhysMaterialOverride(physmat);
 
 	PostProcess->bUnbound = true;
 }
@@ -372,7 +383,7 @@ void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherCom
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
 		// Get out mah way!
 		if (OtherComp->IsSimulatingPhysics()) {
-			float scalefactor = FVector::VectorPlaneProject(Velocity,FVector::UpVector).Size() / PhysicsSettings.MaxVelocity;
+			float scalefactor = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector).Size() / PhysicsSettings.MaxVelocity;
 			scalefactor = (scalefactor > 1.0f ? FMath::Pow(scalefactor, PhysicsSettings.HighVelocityForceExponent) : 1.0f);
 			OtherComp->AddImpulse((OtherComp->GetComponentLocation() - GetActorLocation()).GetSafeNormal()*scalefactor*PhysicsSettings.PushForceFactor, NAME_None, true);
 		}
@@ -470,14 +481,11 @@ void AAuyron::BeginPlay()
 	// Point gravity downwards.
 	PhysicsSettings.Gravity = -PhysicsSettings.Gravity;
 	DefaultGravity = PhysicsSettings.Gravity;
-	PhysicsSettings.Gravity = GetWorld()->GetGravityZ();
 
 	// Initialize gem count.
 	GemCount = 0;
 
 	defaultfov = Camera->FieldOfView;
-
-	warpanimtimer = -1.0f;
 	GetWorld()->GetTimerManager().ClearTimer(WarpAnimationTimer);
 
 	// >_>
@@ -507,7 +515,6 @@ void AAuyron::BeginPlay()
 	Bracelet->AttachTo(PlayerModel, "Bracelet", EAttachLocation::SnapToTargetIncludingScale);
 	Belt->AttachTo(PlayerModel, "Belt", EAttachLocation::SnapToTargetIncludingScale);
 	Wings->AttachTo(PlayerModel, "Wings", EAttachLocation::SnapToTargetIncludingScale);
-	//TeleClaw->AttachTo(PlayerModel, "RightHand", EAttachLocation::SnapToTargetIncludingScale);
 
 	((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
 
@@ -533,15 +540,18 @@ void AAuyron::Tick(float DeltaTime)
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
+	// Now how did you get down there?
 	if (GetActorLocation().Z < -7950.0f) {
 		Respawn();
 	}
 
+	// We're in the middle of the warp animation.
 	if (GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) >= 0.0f) {
 		movementlocked = true;
 		cameralocked = true;
 	}
 
+	// A blueprint is overriding player input.
 	if (blockedbyblueprint) {
 		movementlocked = true;
 		cameralocked = true;
@@ -558,32 +568,29 @@ void AAuyron::Tick(float DeltaTime)
 		}
 	}
 
+	// Nullify camera input if camera is locked.
 	if (cameralocked) {
 		CameraInput = FVector::ZeroVector;
 	}
 
+	// Nullify movement input if dashing with no dash control.
 	if (dashing&&!DashSettings.HasDashControl) {
 		MovementInput = FVector::ZeroVector;
 	}
 
+	// Update OnTheGround state.
 	OnTheGround = MovementComponent->onground;
-	if (!justteleported&&DeltaTime<0.1f&&lastdt<0.1f) {
-		Velocity = (GetActorLocation() - previousposition) / lastdt;
-	}
-	Velocity = CapsuleComponent->GetPhysicsVolume()->GetVelocity();
-	Velocity = CapsuleComponent->GetPhysicsLinearVelocity();
 
+	// Temporarily remove camera lag if player is teleported by some
+	// mechanism other than the TeleClaw.
 	if (justteleported&&!justswished) {
 		SpringArm->CameraLagMaxDistance = 1.0f;
 	} else {
 		SpringArm->CameraLagMaxDistance = 0.0f;
 	}
 	
-	actualvelocity = (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector));
+	// Allow for smooth camera zooming.
 	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
-
-	justteleported = false;
-	justswished = false;
 
 	// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
 	FVector Right = Camera->GetRightVector();
@@ -597,20 +604,21 @@ void AAuyron::Tick(float DeltaTime)
 	// standing on, immediately snap the player's velocity to match it. 
 	if (!MovementComponent->groundvelocity.IsNearlyZero() && !JumpNextFrame && FMath::Abs((FVector::VectorPlaneProject(MovementComponent->groundvelocity,FVector::UpVector) - FVector::VectorPlaneProject(previousgroundvelocity,FVector::UpVector)).Size()) > 200.0f) {
 		CapsuleComponent->SetPhysicsLinearVelocity(MovementComponent->groundvelocity);
-		Velocity = MovementComponent->groundvelocity;
 	}
 
 	// Inform the MovementComponent of our velocity.
 	MovementComponent->PlayerVelocity = CapsuleComponent->GetPhysicsLinearVelocity();
+	MovementComponent->forceregiondirection = AppliedForce;
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
-	Velocity -= MovementComponent->groundvelocity + pushvelocity;
 	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() - (MovementComponent->groundvelocity + pushvelocity));
-	if (Velocity.Size() < PhysicsSettings.MinVelocity && !dashing && !JumpNextFrame && MovementInput.IsNearlyZero()) {
-		Velocity = FVector::ZeroVector;
+	
+	// Snap velocity to zero if it's really small.
+	if (CapsuleComponent->GetPhysicsLinearVelocity().Size() < PhysicsSettings.MinVelocity && !dashing && !JumpNextFrame && MovementInput.IsNearlyZero()) {
 		CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	}
 
+	// Make the equipment we have visible on the player model.
 	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
 	BootsR->SetVisibility(DashSettings.HasDash);
 	BootsL->SetVisibility(DashSettings.HasDash);
@@ -618,7 +626,10 @@ void AAuyron::Tick(float DeltaTime)
 	Belt->SetVisibility(JumpSettings.HasWallJump);
 	Wings->SetVisibility(GlideSettings.HasGlide);
 
+	// Handle player abilities.
 	{
+
+		// Determine if the player is rubbing up against a wall and get the wall normal if they are.
 		{
 			FCollisionShape WallJumpCapsuleShape = FCollisionShape::MakeCapsule(55.0f, 90.0f);
 			FCollisionObjectQueryParams QueryParams;
@@ -627,7 +638,6 @@ void AAuyron::Tick(float DeltaTime)
 			QueryParams.AddObjectTypesToQuery(ECC_Destructible);
 			if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation() - FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)) {
 				RidingWall = false;
-				MovementComponent->WallNormal = FVector::ZeroVector;
 				StoredWallNormal = FVector::ZeroVector;
 			}
 
@@ -635,8 +645,9 @@ void AAuyron::Tick(float DeltaTime)
 			GetWorld()->SweepSingleByChannel(ShapeTraceResult, GetActorLocation() + 10.0f*FVector::UpVector, GetActorLocation() - 10.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape); //100
 
 			if (!OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.95f) {
-				if (ShapeTraceResult.GetActor()->GetClass() != AMovingPlatform::StaticClass() &&
-					ShapeTraceResult.GetActor()->GetClass() != ARotatingPlatform::StaticClass()) {
+				if (ShapeTraceResult.GetActor() == nullptr ||
+					(ShapeTraceResult.GetActor()->GetClass() != AMovingPlatform::StaticClass() &&
+					ShapeTraceResult.GetActor()->GetClass() != ARotatingPlatform::StaticClass())) {
 					RidingWall = true;
 					StoredWallNormal = FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector);
 				}
@@ -647,17 +658,17 @@ void AAuyron::Tick(float DeltaTime)
 		if (JumpNextFrame && !IsInDialogue) {
 			bool wouldhavebeenotg = OnTheGround;
 			if (OnTheGround || (StoredWallNormal.Size() > 0.95f&&JumpSettings.HasWallJump)) {
+
 				// Jump while taking the floor's angle and vertical movement into account.
-				//Velocity.Z = 0.0f;
-				//Velocity += JumpSettings.JumpPower * FVector::UpVector;// *(MovementComponent->FloorNormal.IsNearlyZero() ? FVector::UpVector : MovementComponent->FloorNormal).GetSafeNormal();
 				CapsuleComponent->AddImpulse(JumpSettings.JumpPower * FVector::UpVector, NAME_None, true);
 				
 				WasOnTheGround = false;
 				OnTheGround = false;
 				MovementComponent->onground = false;
-				MovementComponent->PlayerVelocity = Velocity;
+				MovementComponent->PlayerVelocity = CapsuleComponent->GetPhysicsLinearVelocity();
 				AlreadyUnjumped = false;
 				JustJumped = true;
+
 				if (StoredWallNormal.Size() > 0.2f&&!wouldhavebeenotg) {
 					// No cheating.
 					if (IsGliding || AlreadyGlided) {
@@ -670,20 +681,15 @@ void AAuyron::Tick(float DeltaTime)
 					if (DashSettings.HasDashWallJump&&holdingdash) {
 						multi = DashSettings.DashWallJumpMultiplier;
 					}
-					//Velocity = (StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()));
-					//Velocity.Z = JumpSettings.JumpPower;
 
-					FVector temp = CapsuleComponent->GetPhysicsLinearVelocity();
-					temp.Z = 0.0f;
-					CapsuleComponent->SetPhysicsLinearVelocity(temp);
-					//CapsuleComponent->AddImpulse((StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal())), NAME_None, true);
+					FlattenVelocity();
 					CapsuleComponent->AddImpulse((StoredWallNormal.GetSafeNormal()*PhysicsSettings.MaxVelocity*multi), NAME_None, true);
 					GlideNextFrame = false;
 					JustWallJumped = true;
 
 					// Make the player face away from the wall we just jumped off of.
 					FRotator newmodelrotation = PlayerModel->GetComponentRotation();
-					newmodelrotation.Yaw = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(Velocity, StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
+					newmodelrotation.Yaw = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
 					PlayerModel->SetWorldRotation(newmodelrotation);
 					TargetDirection = newmodelrotation;
 				}
@@ -692,18 +698,14 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply a downward force if the player lets go of jump while still moving upwards.
 		// This allows for variable jump heights.
-		if (!HoldingJump && Velocity.Z > 0 && !AlreadyUnjumped) {
-			Velocity += FVector::UpVector * PhysicsSettings.Gravity * JumpSettings.UnjumpRate * (Velocity.Z / JumpSettings.JumpPower);
+		if (!HoldingJump && CapsuleComponent->GetPhysicsLinearVelocity().Z > 0 && !AlreadyUnjumped) {
 			CapsuleComponent->AddImpulse(FVector::UpVector * PhysicsSettings.Gravity * JumpSettings.UnjumpRate * (CapsuleComponent->GetPhysicsLinearVelocity().Z / JumpSettings.JumpPower), NAME_None, true);
 			AlreadyUnjumped = true;
 		}
 
 		// Start gliding.
 		if (GlideNextFrame&&!AlreadyGlided&&!dunk&&GlideSettings.HasGlide) {
-			//Velocity.Z = GlideSettings.InitialGlideVelocity;
-			FVector temp = CapsuleComponent->GetPhysicsLinearVelocity();
-			temp.Z = 0.0f;
-			CapsuleComponent->SetPhysicsLinearVelocity(temp);
+			FlattenVelocity();
 			CapsuleComponent->AddImpulse(FVector::UpVector * GlideSettings.InitialGlideVelocity, NAME_None, true);
 
 			IsGliding = true;
@@ -716,8 +718,8 @@ void AAuyron::Tick(float DeltaTime)
 		if (IsGliding) {
 			GlideTimer += DeltaTime;
 			Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-			PhysicsSettings.Gravity = DefaultGravity / GlideSettings.GlideGravityMultiplier;
-			CapsuleComponent->AddForce(-FVector::UpVector * PhysicsSettings.Gravity * GlideSettings.GlideGravityMultiplier, NAME_None, true);
+			PhysicsSettings.Gravity = DefaultGravity * GlideSettings.GlideGravityMultiplier;
+			CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity, NAME_None, true);
 		} else {
 			FloatParticles->DeactivateSystem();
 			GlideTimer = 0.0f;
@@ -732,19 +734,16 @@ void AAuyron::Tick(float DeltaTime)
 			IsGliding = false;
 		}
 
+		// Reset glide and unjump variables if the player is on the ground.
 		if (OnTheGround) {
 			AlreadyGlided = false;
 			AlreadyUnjumped = false;
 		}
 
-		if (warptimer >= 0.0f) {
-			warptimer += DeltaTime;
-		}
-
 		// Make the player start dashing in response to input.
-		if (DashNextFrame&&DashSettings.HasDash&&!movementlocked) {
+		if (DashNextFrame && DashSettings.HasDash && !movementlocked) {
 			DashNextFrame = false;
-			if (OnTheGround&&!MovementComponent->toosteep) {
+			if (OnTheGround && !MovementComponent->toosteep) {
 				DashParticles->ActivateSystem();
 				dashing = true;
 			}
@@ -754,11 +753,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (dashing) {
 
 			// Set the player's horizontal velocity while preserving their vertical velocity.
-			float z = Velocity.Z;
-			Velocity = TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed;
-			Velocity.Z = z;
-			float tempasdf = CapsuleComponent->GetPhysicsLinearVelocity().Z;
-			CapsuleComponent->SetPhysicsLinearVelocity(TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed+tempasdf*FVector::UpVector, NAME_None);
+			CapsuleComponent->SetPhysicsLinearVelocity(TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed+ CapsuleComponent->GetPhysicsLinearVelocity().Z*FVector::UpVector, NAME_None);
 
 			// Tick up the dash timer.
 			if (!DashSettings.HasInfiniteDash) {
@@ -774,7 +769,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// This ain't Megaman X, kiddo.
-		if (dashing&&!DashSettings.HasDashJump&&(!OnTheGround||JumpNextFrame)) {
+		if (dashing&&!DashSettings.HasDashJump&&(!OnTheGround||JustJumped)) {
 			DashParticles->DeactivateSystem();
 			dashing = false;
 			dashtimer = 0.0f;
@@ -797,32 +792,11 @@ void AAuyron::Tick(float DeltaTime)
 			IsGliding = false;
 			SlamNextFrame = false;
 			if (!OnTheGround && AppliedForce.Z <= 0.0f && !dunk && !ztarget) {
-				Velocity.Z = -SlamSettings.SlamVelocity;
 				CapsuleComponent->AddImpulse(-SlamSettings.SlamVelocity*FVector::UpVector, NAME_None, true);
 				dunk = true;
 				SlamTrail->ActivateSystem();
 			}
 		}
-
-		if (TeleportSettings.TeleportAnimationDuration <= 0.0f) {
-			warpanimtimer = -1.0f;
-		}
-
-		// Handle the screen warp animation.
-		//float warptime = GetWorld()->GetTimerManager().GetTimerElapsed(WarpAnimationTimer) / TeleportSettings.TeleportAnimationDuration;
-		//screenwarpmat->SetScalarParameterValue("Timer", (warptime > 0 ? 1.0f - warptime : 0));
-		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(GetWorld()->GetTimerManager().GetTimerElapsed(WarpAnimationTimer)));//
-
-		//bodyfademat->SetScalarParameterValue("fade", 1+0.0f*GetModelOpacity());
-
-		//if(GetModelOpacity()<1.0f&&!IsInDialogue) {
-			//PlayerModel->SetMaterial(0, bodyfademat);
-			//PlayerModel->bRenderCustomDepth = true;
-			//PlayerModel->UpdateMaterialParameters();
-		//} else {
-			//PlayerModel->SetMaterial(0, bodymat);
-			//PlayerModel->bRenderCustomDepth = true;
-		//}
 
 		// Looks like we're talking to someone.
 		if (IsInDialogue) {
@@ -830,7 +804,6 @@ void AAuyron::Tick(float DeltaTime)
 			// Don't be rude.
 			movementlocked = true;
 			MovementInput = FVector::ZeroVector;
-			Velocity = FVector::ZeroVector;
 			CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 			FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
 			TargetDirection = (-displacement).Rotation();
@@ -901,8 +874,7 @@ void AAuyron::Tick(float DeltaTime)
 				// Get the dot product between the displacement and the source.
 				float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
 
-				// Set trace parameters. I have no idea what these do but the raycast doesn't work
-				// if I don't put these here.
+				// Set trace parameters.
 				FHitResult f;
 				FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Visibility);
 				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
@@ -939,31 +911,24 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Teleport the player to the TelePad if they're trying to teleport
 			// and impart the post teleport velocity on them.
-			if (swish) {//
+			if (swish) {
 				if (closest != nullptr) {
 
-
 					swish = false;
+					IsGliding = false;
+					ztarget = false;
 
 					closeststick = closest;
 					warphere = closest->gohere;
 					warpvel = closest->PostTeleportVelocity;
 
-					//CaptureCube->SetActorLocation(warphere - (closest->GetActorLocation() - warphere).GetSafeNormal()*2400.0f);
-
-					ztarget = false;
-
 					// Start the teleport animation timer.
-					//GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, 1.0f, true);
 					if (InCameraOverrideRegion) {
 						HereWeGo();
 					} else {
 						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, this, &AAuyron::HereWeGo, 1.0f);
 						TheAbyss->SetVisibility(true);
-						Velocity.Z = 0.0f;
-						FVector temp2 = CapsuleComponent->GetPhysicsLinearVelocity();
-						temp2.Z = 0.0f;
-						CapsuleComponent->SetPhysicsLinearVelocity(temp2);
+						FlattenVelocity();
 						PhysicsSettings.Gravity = 0.0f;
 						Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength);
 						Capture2D->SetActorRotation((warphere - GetActorLocation()).Rotation() + FRotator(-15.0f, 0.0f, 0.0f));
@@ -1133,11 +1098,9 @@ void AAuyron::Tick(float DeltaTime)
 				// Code to prevent violations of personal space.
 				FVector target = displacement.GetSafeNormal()*150.0f;
 				SetActorLocation(target + CurrentNPC->GetActorLocation());
-				Velocity = FVector::ZeroVector;
 
-				FVector temp4 = CapsuleComponent->GetPhysicsLinearVelocity();
-				temp4.Z = 0.0f;
-				CapsuleComponent->SetPhysicsLinearVelocity(temp4);
+				CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+
 				// Snap the camera to the spring arm component's root (so we don't have to deal with
 				// its arm length) and place it where the camera used to be. This effectively "nullifies"
 				// the spring arm for the purposes of lerping the camera to its new DialogueCut-specified
@@ -1155,7 +1118,6 @@ void AAuyron::Tick(float DeltaTime)
 				}
 			}
 		}
-
 	}
 
 	{
@@ -1181,7 +1143,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
-				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(Velocity,FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
+				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
 			}
 
 			// Set the rotation of the camera.
@@ -1260,9 +1222,6 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * CameraLagSettings.AimingLagMultiplier;
 			SpringArm->SetRelativeRotation(NewRotation);
 
-			//Camera->bConstrainAspectRatio = true;
-			//Camera->AspectRatio = 2.5f;
-
 			// Offset the spring arm (and therefore the camera) a bit so the player model
 			// isn't blocking the screen when we're trying to aim.
 			FVector base = FVector(0.0f, 100.0f, 100.0f);
@@ -1301,12 +1260,20 @@ void AAuyron::Tick(float DeltaTime)
 
 	}
 
+	// Physiiiiicccss.
 	{
-		FVector Acceleration = FVector::ZeroVector;
+		// Get horizontal velocity projection.
+		FVector Velocity2D = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector);
 
-		// Set up acceleration vector using the movement inputs.
-		if (!dashing&&(Velocity | MovementInput.GetSafeNormal())<500.0f) {
-			Acceleration = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
+		// Adjust movement input to reflect camera direction.
+		FVector AdjustedMovementInput = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f);
+
+		// Get acceleration magnitude depending if the player is in the air or not.
+		float CurrentAccelRate = (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate) * 10000.0f;
+		
+		// Apply acceleration based on movement inputs.
+		if (!dashing) {
+			CapsuleComponent->AddForce(AdjustedMovementInput * CurrentAccelRate, NAME_None, false);
 		}
 
 		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
@@ -1315,44 +1282,32 @@ void AAuyron::Tick(float DeltaTime)
 		if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
 			!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
 			(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
-			Acceleration += (MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime;
+			CapsuleComponent->AddImpulse((MovementComponent->groundvelocity - previousgroundvelocity), NAME_None, true);
 		}
 
+		// Apply gravity if in the air, and stop vertical movement if on the ground.
 		if (!OnTheGround) {
-			Acceleration += FVector(0.0f, 0.0f, PhysicsSettings.Gravity);
-		} else if (WasOnTheGround) {
-			Velocity.Z = 0.0f;
+			CapsuleComponent->AddForce(PhysicsSettings.Gravity*FVector::UpVector, NAME_None, true);
+		} else {
+			FlattenVelocity();
 		}
 
 		// Apply drag.
 		if (!OnTheGround && FMath::Abs(Velocity.Z) > JumpSettings.JumpPower) {
-			Acceleration -= FVector::UpVector * -PhysicsSettings.Gravity * FMath::Pow(Velocity.Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(Velocity.Z);
+			//Acceleration -= FVector::UpVector * -PhysicsSettings.Gravity * FMath::Pow(Velocity.Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(Velocity.Z);
 		}
 
-		Acceleration += AppliedForce;
+		// Handle force regions.
 		CapsuleComponent->AddForce(AppliedForce, NAME_None, true);
 		if (AppliedForce.Z > 0.0f) {
 			AlreadyUnjumped = true;
-			if (OnTheGround) {
-				FVector aasdd = CapsuleComponent->GetPhysicsLinearVelocity();
-				aasdd.Z += 100.0f;
-				CapsuleComponent->SetPhysicsLinearVelocity(aasdd);
-				Velocity.Z += 100.0f;
-			}
+			OnTheGround = false;
 		}
-
-		if (Velocity.Z > PhysicsSettings.TerminalVelocity*2.0f) {
-			//Velocity.Z = PhysicsSettings.TerminalVelocity*2.0f;
-		}
-
-		// Decreases the effect of deceleration when the player is moving near max speed
-		// and increases it when they are going slow. This makes decelerating feel much smoother.
-		float slowfactor = FMath::Clamp(FMath::Lerp(1.0f, FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity, 0.5f)), 0.0f, 1.0f);
 
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
 		if (!dashing) {
-			Acceleration -= FVector::VectorPlaneProject(Velocity, FVector::UpVector) * (OnTheGround ? PhysicsSettings.GroundAccelerationRate / PhysicsSettings.MaxVelocity : PhysicsSettings.AirAccelerationRate / PhysicsSettings.MaxVelocity) * slowfactor;
+			CapsuleComponent->AddForce(-Velocity2D.GetSafeNormal()*CurrentAccelRate*(Velocity2D.Size() / PhysicsSettings.MaxVelocity), NAME_None, false);
 		}
 
 		// This is a 2D platformer now.
@@ -1361,74 +1316,25 @@ void AAuyron::Tick(float DeltaTime)
 			switch (LockedMovementAxis) {
 				case ATwoDimensionalMovementRegion::XAXIS:
 					newpos.X = LockedAxisValue;
-					Velocity.X = 0.0f;
+					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(0.0f, 1.0f, 1.0f));
 					MovementInput.Y = 0.0f;
 					break;
 				case ATwoDimensionalMovementRegion::YAXIS:
 					newpos.Y = LockedAxisValue;
-					Velocity.Y = 0.0f;
+					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 0.0f, 1.0f));
 					MovementInput.Y = 0.0f;
 					break;
 				case ATwoDimensionalMovementRegion::ZAXIS:
 					newpos.Z = LockedAxisValue;
-					Velocity.Z = 0.0f;
+					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 1.0f, 0.0f));
 					break;
 			}
 			SetActorLocation(newpos);
 		}
 
-		// Physiiiiicccss.
-		Velocity += Acceleration * DeltaTime;
-
-		// Game is running on a potato.
-		if (DeltaTime > 0.1f) {
-			float temp = Velocity.Z;
-			if (!dashing) {
-				Velocity = FVector::VectorPlaneProject(Velocity, FVector::UpVector).GetClampedToMaxSize(PhysicsSettings.MaxVelocity);
-			}
-			if ((Velocity.GetSafeNormal() | previousvelocity.GetSafeNormal()) < 0.0f) {
-				Velocity -= (Velocity | previousvelocity.GetSafeNormal()) * previousvelocity.GetSafeNormal();// FVector::ZeroVector;
-			}
-			Velocity.Z = FMath::Clamp(temp, -PhysicsSettings.TerminalVelocity, 10000.0f);
-			if (Velocity.Z > 0.0f && Velocity.Z + PhysicsSettings.Gravity*DeltaTime < 0.0f) {
-				Velocity.Z = PhysicsSettings.Gravity*DeltaTime;
-			}
-		}
-
 		// Put Velocity back in the reference frame of the stationary world.
-		Velocity += MovementComponent->groundvelocity + pushvelocity;
-		//OnTheGround = true;
-		//CapsuleComponent->AddImpulse(MovementInput*1000.0f, NAME_None, true);
-
-		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
-		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
-		// quickly and immediately change directions.
-		if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
-			!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
-			(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
-			Acceleration += (MovementComponent->groundvelocity - previousgroundvelocity) / DeltaTime;
-			CapsuleComponent->AddImpulse((MovementComponent->groundvelocity - previousgroundvelocity), NAME_None, true);
-		}
-		if (OnTheGround||PhysicsSettings.Gravity==0.0f) {
-			CapsuleComponent->SetEnableGravity(false);
-			//CapsuleComponent->SetPhysicsLinearVelocity(temp);
-		} else {
-			CapsuleComponent->SetEnableGravity(true);
-		}
-		Velocity = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector);
-		slowfactor = (Velocity.Size() / PhysicsSettings.MaxVelocity);// FMath::Clamp(FMath::Lerp(1.0f, FMath::Square(Velocity.Size() / PhysicsSettings.MaxVelocity), FMath::Pow(Velocity.Size() / PhysicsSettings.MaxVelocity, 0.5f)), 0.0f, 1.0f);
-		float push = slowfactor*(Velocity.GetSafeNormal() | (Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal());
-		FVector finalmovementinput = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f);// -Velocity.GetSafeNormal();
-		float accel = (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate);
 		CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() + (MovementComponent->groundvelocity + pushvelocity));
-		if (!dashing) {
-			CapsuleComponent->AddForce(finalmovementinput * accel, NAME_None, true);
-			CapsuleComponent->AddForce(-Velocity.GetSafeNormal()*accel*slowfactor, NAME_None, true);
-		}
-		//MovementComponent->AddInputVector(Veltocity*DeltaTime);
-		//if (Velocity.Size() > 500.0f) {
-			//CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity().GetClampedToMaxSize(500.0f));
-		//}
+
 	}
 
 	{
@@ -1436,7 +1342,7 @@ void AAuyron::Tick(float DeltaTime)
 		WasInCameraOverrideRegion = InCameraOverrideRegion;
 		previousposition = GetActorLocation();
 		wasztarget = ztarget;
-		previousvelocity = Velocity;
+		previousvelocity = CapsuleComponent->GetPhysicsLinearVelocity();
 		previousgroundvelocity = MovementComponent->groundvelocity;
 
 		pushvelocity = FVector::ZeroVector;
@@ -1448,8 +1354,7 @@ void AAuyron::Tick(float DeltaTime)
 		GlideNextFrame = false;
 		swish = false;
 
-		lastdt = DeltaTime;
-
+		justswished = false;
 		justteleported = false;
 		JustJumped = false;
 	}
@@ -1712,13 +1617,13 @@ void AAuyron::CameraZoomOut() {
 // Getter functions used by the animation blueprints.
 float AAuyron::GetSpeed()
 {
-	return Velocity.Size();
-	return (FVector::VectorPlaneProject(Velocity - MovementComponent->groundvelocity, FVector::UpVector)).Size();
+	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
 
 float AAuyron::GetActualSpeed()
 {
-	return actualvelocity.Size();
+	//return (CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity).Size();
+	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity, FVector::UpVector)).Size();
 }
 
 float AAuyron::GetModelOpacity()

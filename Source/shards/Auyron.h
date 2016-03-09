@@ -139,11 +139,11 @@ struct FAbilitiesDash
 	/* Whether or not the player can control their direction while dashing. */
 	UPROPERTY(EditAnywhere) bool HasDashControl;
 
-	/* Whether or not the player can keep dashing after jumping. */
-	UPROPERTY(EditAnywhere) bool HasDashJump;
-
 	/* Whether or not the player can use dash wall jump. */
 	UPROPERTY(EditAnywhere) bool HasDashWallJump;
+
+	/* Whether or not the player can keep dashing after jumping. */
+	UPROPERTY(EditAnywhere) bool HasDashJump;
 
 	/* The player's maximum horizontal velocity. */
 	UPROPERTY(EditAnywhere) float DashSpeed;
@@ -285,6 +285,8 @@ public:
 	void CameraZoomOut();
 	void Respawn();
 	void HereWeGo();
+
+	void FlattenVelocity();
 	
 	UFUNCTION()
 	void Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -357,7 +359,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Components") USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere, Category = "Components") UCameraComponent* Camera;
 	UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* PlayerModel;
-	//UPROPERTY(EditAnywhere, Category = "Components") USkeletalMeshComponent* CustomDepthModel;
 
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* TeleClaw;
 	UPROPERTY(EditAnywhere, Category = "Components") UStaticMeshComponent* BootsR;
@@ -457,6 +458,8 @@ private:
 	FVector pushvelocity;
 
 	FVector closecamera;
+
+	UPhysicalMaterial* physmat;
 
 	ASceneCaptureCube* CaptureCube;
 	ASceneCapture2D* Capture2D;
