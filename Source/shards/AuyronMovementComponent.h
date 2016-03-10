@@ -53,6 +53,7 @@ public:
 	FVector PlayerVelocity;
 
 	FVector forceregiondirection;
+	bool justjumped;
 
 	float enforcementtimer;
 	float minnormalz;

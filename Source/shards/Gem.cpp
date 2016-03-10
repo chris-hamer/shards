@@ -70,7 +70,7 @@ void AGem::Tick( float DeltaTime )
 	FVector loc = GetActorLocation();
 	loc = FVector(0.0f, 0.0f, 0.5f*FMath::Cos(curTime));
 	SetActorLocation(GetActorLocation()+loc);
-	AddActorWorldRotation(FRotator(0.0f, 1.0f, 0.0f));
+	AddActorWorldRotation(FRotator(0.0f, 60.0f*DeltaTime, 0.0f));
 
 	curTime += DeltaTime;
 }

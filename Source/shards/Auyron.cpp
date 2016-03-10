@@ -668,6 +668,7 @@ void AAuyron::Tick(float DeltaTime)
 				MovementComponent->PlayerVelocity = CapsuleComponent->GetPhysicsLinearVelocity();
 				AlreadyUnjumped = false;
 				JustJumped = true;
+				MovementComponent->justjumped = true;
 
 				if (StoredWallNormal.Size() > 0.2f&&!wouldhavebeenotg) {
 					// No cheating.

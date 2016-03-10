@@ -59,7 +59,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 	FloorNormal = FVector::ZeroVector;
 
-	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground)) { // 
+	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground) && !justjumped) { // 
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
 			if (enforcementtimer == -1.0f) {
 				enforcementtimer = 0.0f;
@@ -69,7 +69,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 		onground = true;
 		offGroundTime = 0.0f;
-
 		// It's a moving platform.
 		if (ShapeTraceResult.GetActor() != nullptr && ShapeTraceResult.GetActor()->GetClass() != nullptr && (ShapeTraceResult.GetActor()->GetClass() == AMovingPlatform::StaticClass() || ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass())) {
 			// Record the platform's velocity and acceleration so the character controller can deal with it.
@@ -92,6 +91,8 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 			}
 		}
 	}
+
+	justjumped = false;
 
 	bool TraceBlocked;
 	FVector newlocation = UpdatedComponent->GetComponentLocation();
