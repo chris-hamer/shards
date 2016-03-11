@@ -542,6 +542,7 @@ private:
 	float ActualDefaultCameraLag;
 	float ActualTeleportAnimationDuration;
 	float TargetDefaultArmLength;
+	float BackupDefaultArmLength;
 	
 	float defaultfov;
 	TEnumAsByte<ATwoDimensionalMovementRegion::AxisEnum> LockedMovementAxis;

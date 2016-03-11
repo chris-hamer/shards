@@ -230,11 +230,12 @@ AAuyron::AAuyron()
 
 	// It gazes also into you.
 	TheAbyss = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TheAbyss"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> ab(TEXT("/Engine/BasicShapes/Sphere"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> ab(TEXT("/Game/Models/Weapons/cutidea1"));
 	TheAbyss->SetStaticMesh(ab.Object);
 	TheAbyss->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	TheAbyss->SetWorldScale3D(FVector(1.0f, 7.0f, 1.0f));
-	TheAbyss->SetRelativeLocation(FVector(300.0f, 0.0f, 140.0f));
+	TheAbyss->SetWorldScale3D(FVector(0.2f, 1.6f, 1.0f));
+	TheAbyss->SetRelativeLocation(FVector(185.0f, 0.0f, 120.0f));
+	TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, 0.0f));
 	TheAbyss->AttachTo(PlayerModel);
 
 	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
@@ -292,6 +293,7 @@ void AAuyron::HereWeGo()
 	//SpringArm->CameraRotationLagSpeed = 0.0f;
 	//SpringArm->SetWorldRotation((closeststick->gohere - temp).Rotation());
 	//SpringArm->TargetArmLength = (temp - closeststick->gohere).Size();
+	TargetDefaultArmLength = BackupDefaultArmLength;
 
 	SpringArm->CameraLagSpeed = 1.0f/128.0f;
 	SpringArm->CameraRotationLagSpeed = 1.0f/ 128.0f;
@@ -537,6 +539,14 @@ void AAuyron::Tick(float DeltaTime)
 
 	Super::Tick(DeltaTime);
 
+	// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
+	FVector Right = Camera->GetRightVector();
+	Right.Z = 0.0f;
+	Right = Right.GetSafeNormal();
+	FVector Forward = Camera->GetForwardVector();
+	Forward.Z = 0.0f;
+	Forward = Forward.GetSafeNormal();
+
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
@@ -591,14 +601,6 @@ void AAuyron::Tick(float DeltaTime)
 	
 	// Allow for smooth camera zooming.
 	DefaultArmLength = FMath::Lerp(DefaultArmLength, TargetDefaultArmLength, CameraZoomRate);
-
-	// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
-	FVector Right = Camera->GetRightVector();
-	Right.Z = 0.0f;
-	Right = Right.GetSafeNormal();
-	FVector Forward = Camera->GetForwardVector();
-	Forward.Z = 0.0f;
-	Forward = Forward.GetSafeNormal();
 
 	// If there is a sharp change in the velocity of the platform that the player is
 	// standing on, immediately snap the player's velocity to match it. 
@@ -922,13 +924,32 @@ void AAuyron::Tick(float DeltaTime)
 					closeststick = closest;
 					warphere = closest->gohere;
 					warpvel = closest->PostTeleportVelocity;
+					BackupDefaultArmLength = TargetDefaultArmLength;
 
 					// Start the teleport animation timer.
 					if (InCameraOverrideRegion) {
 						HereWeGo();
 					} else {
 						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, this, &AAuyron::HereWeGo, 1.0f);
+						TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
 						TheAbyss->SetVisibility(true);
+
+						FRotator NewRotation = SpringArm->GetComponentRotation();
+						NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
+						if (wasztarget) {
+							NewRotation.Pitch = -30.0f;
+						}
+
+						TargetDefaultArmLength = 600.0f;
+						//SpringArm->TargetArmLength = TargetDefaultArmLength;
+						SpringArm->SetRelativeRotation(NewRotation);
+
+						// Offset the spring arm (and therefore the camera) a bit so the player model
+						// isn't blocking the screen when we're trying to aim.
+						FVector base = FVector(0.0f, 100.0f, 100.0f);
+						base = (base.X*Forward + base.Y*Right + base.Z*FVector::UpVector);
+						SpringArm->SetRelativeLocation(base);
+
 						FlattenVelocity();
 						PhysicsSettings.Gravity = 0.0f;
 						Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength);
@@ -1124,8 +1145,7 @@ void AAuyron::Tick(float DeltaTime)
 	{
 
 		// Handle camera movement when the camera is controllable.
-		if ((!InCameraOverrideRegion || ztarget) && !IsInDialogue) {
-
+		if ((!InCameraOverrideRegion || ztarget) && !IsInDialogue&& GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 			timesinceoverrideenter = 0.0f;
 			SpringArm->bDoCollisionTest = true;
 
@@ -1201,13 +1221,14 @@ void AAuyron::Tick(float DeltaTime)
 
 			// If the player just started aiming...
 			if (!wasztarget) {
+				BackupDefaultArmLength = TargetDefaultArmLength;
 
 				// ...orient the new rotation to be level with the xy axis...
 				NewRotation.Pitch = 0.0f;
 
 				// ...and face the camera in direction that the player is facing...
 				if (MovementInput.IsNearlyZero()) {
-					NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
+					NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;//
 				} else {
 					// ...unless the player is holding a direction,
 					// in which case face that direction.
@@ -1219,8 +1240,9 @@ void AAuyron::Tick(float DeltaTime)
 			// Face the player and camera to the new rotation.
 			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
 			SpringArm->TargetArmLength = 300.0f;
-			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * CameraLagSettings.AimingLagMultiplier;
-			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * CameraLagSettings.AimingLagMultiplier;
+			DefaultArmLength = 300.0f;
+			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * (wasztarget ? CameraLagSettings.AimingLagMultiplier : 1.0f);
+			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag * (wasztarget ? CameraLagSettings.AimingLagMultiplier : 1.0f);
 			SpringArm->SetRelativeRotation(NewRotation);
 
 			// Offset the spring arm (and therefore the camera) a bit so the player model
@@ -1232,7 +1254,7 @@ void AAuyron::Tick(float DeltaTime)
 			// Lock the player's movement inputs.
 			movementlocked = true;
 
-		} else {
+		} else if(!IsInDialogue) {
 
 			// Set and range and angle to the "short range" values.
 			TeleportRange = TeleportSettings.TeleportRangeWhenNotAiming;
@@ -1248,7 +1270,8 @@ void AAuyron::Tick(float DeltaTime)
 				//Camera->bConstrainAspectRatio = false;
 
 				// If we just stopped aiming, reset the camera's rotation as well.
-				if (wasztarget) {
+				if (wasztarget&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
+					TargetDefaultArmLength = BackupDefaultArmLength;
 					SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
 				}
 			}
@@ -1533,7 +1556,7 @@ void AAuyron::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AAuyron::CameraFaceForward()
 {
-	if (!dashing&&!MovementAxisLocked&&TeleportSettings.HasTeleport) {
+	if (!dashing&&!MovementAxisLocked&&TeleportSettings.HasTeleport&&!IsInDialogue&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 		if (AimStyle == TOGGLE) {
 			ztarget = !ztarget;
 		} else {
@@ -1557,7 +1580,7 @@ void AAuyron::CameraModeToggle()
 // swish
 void AAuyron::Warp()
 {
-	if (TeleportSettings.HasTeleport) {
+	if (TeleportSettings.HasTeleport&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 		swish = true;
 	}
 }
@@ -1598,7 +1621,8 @@ void AAuyron::Attack() {
 }
 
 void AAuyron::CameraZoomIn() {
-	if (TargetDefaultArmLength > MinimumArmLength) {
+	bool justno = !ztarget && !IsInDialogue && !cameralocked && !InCameraOverrideRegion && GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f;
+	if (TargetDefaultArmLength > MinimumArmLength && justno) {
 		if (TargetDefaultArmLength < ActualDefaultArmLength) {
 			CameraLagSettings.CameraLag *= CameraLagZoomScale;
 		}
@@ -1607,7 +1631,8 @@ void AAuyron::CameraZoomIn() {
 }
 
 void AAuyron::CameraZoomOut() {
-	if (TargetDefaultArmLength < MaximumArmLength) {
+	bool justno = !ztarget && !IsInDialogue && !cameralocked && !InCameraOverrideRegion && GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f;
+	if (TargetDefaultArmLength < MaximumArmLength && justno) {
 		TargetDefaultArmLength += CameraZoomStep;
 		if (TargetDefaultArmLength < ActualDefaultArmLength) {
 			CameraLagSettings.CameraLag /= CameraLagZoomScale;
