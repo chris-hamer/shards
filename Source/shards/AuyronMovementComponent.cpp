@@ -37,6 +37,9 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 				break;
 			}
 		}
+		if (!ShapeTraceResult.IsValidBlockingHit()) {
+			GetWorld()->LineTraceSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, ECC_Visibility);
+		}
 	}
 
 	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f * FVector::UpVector; // 50

@@ -132,7 +132,7 @@ AAuyron::AAuyron()
 
 	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimationBlueprint(TEXT("/Game/Animations/Characters/Auyron/Anim_Auyron"));
 	PlayerModel->SetAnimInstanceClass(AnimationBlueprint.Object->GetAnimBlueprintGeneratedClass());
-
+	
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 0.0f), FRotator(-30.0f, 0.0f, 0.0f));
@@ -834,7 +834,10 @@ void AAuyron::Tick(float DeltaTime)
 				CurrentCut = CurrentCut->Next;
 				FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
 				TargetDirection = (-displacement).Rotation();
-				CurrentNPC->SetActorRotation(displacement.Rotation());
+				FRotator rot = displacement.Rotation();
+				rot.Pitch = 0.0f;
+				rot.Roll = 0.0f;
+				CurrentNPC->SetActorRotation(rot);
 				TArray<TCHAR> escape = TArray<TCHAR>();
 				escape.Add('\n');
 				CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
@@ -1114,7 +1117,10 @@ void AAuyron::Tick(float DeltaTime)
 
 				// Look at me when I'm talking to you!
 				FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
-				CurrentNPC->SetActorRotation(displacement.Rotation());
+				FRotator rot = displacement.Rotation();
+				rot.Pitch = 0.0f;
+				rot.Roll = 0.0f;
+				CurrentNPC->SetActorRotation(rot);
 				TargetDirection = (-displacement).Rotation();
 
 				// Code to prevent violations of personal space.
@@ -1310,7 +1316,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Apply gravity if in the air, and stop vertical movement if on the ground.
-		if (!OnTheGround) {
+		if (!OnTheGround&&!IsInDialogue) {
 			CapsuleComponent->AddForce(PhysicsSettings.Gravity*FVector::UpVector, NAME_None, true);
 		} else {
 			FlattenVelocity();
