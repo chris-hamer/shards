@@ -51,7 +51,7 @@ AAuyron::AAuyron()
 	TeleportSettings.TeleportAngleToleranceWhenAiming = 5.0f;
 	TeleportSettings.TeleportRangeWhenNotAiming = 900.0f;
 	TeleportSettings.TeleportAngleToleranceWhenNotAiming = 70.0f;
-	TeleportSettings.TeleportAnimationDuration = 2.0f;
+	TeleportSettings.TeleportAnimationDuration = 1.0f;
 	TeleportSettings.TeleportAnimationPowerFactor = 4.0f;
 	TeleportSettings.TeleportLightColor = FColor(0x336FE6FF);
 
@@ -932,7 +932,6 @@ void AAuyron::Tick(float DeltaTime)
 			if (swish) {
 				if (closest != nullptr) {
 
-					swish = false;
 					IsGliding = false;
 					ztarget = false;
 
@@ -954,6 +953,9 @@ void AAuyron::Tick(float DeltaTime)
 						if (wasztarget) {
 							NewRotation.Pitch = -30.0f;
 						}
+
+						SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag*4.0f;
+						SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*4.0f;
 
 						//TargetDefaultArmLength = 600.0f;
 						//SpringArm->TargetArmLength = TargetDefaultArmLength;
