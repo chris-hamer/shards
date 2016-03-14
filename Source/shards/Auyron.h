@@ -381,6 +381,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* HairMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BandanaMatBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* BodyMatBase;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* TestTeleEffectBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* TeleportRiftMaterial;
 	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* TeleportRiftRenderTarget;
 
@@ -470,6 +471,7 @@ private:
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
 	UMaterialInstanceDynamic* bodymat;
+	UMaterialInstanceDynamic* teletestmat;
 
 	float DefaultGravity;
 

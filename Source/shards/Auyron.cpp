@@ -51,7 +51,7 @@ AAuyron::AAuyron()
 	TeleportSettings.TeleportAngleToleranceWhenAiming = 5.0f;
 	TeleportSettings.TeleportRangeWhenNotAiming = 900.0f;
 	TeleportSettings.TeleportAngleToleranceWhenNotAiming = 70.0f;
-	TeleportSettings.TeleportAnimationDuration = 0.4f;
+	TeleportSettings.TeleportAnimationDuration = 2.0f;
 	TeleportSettings.TeleportAnimationPowerFactor = 4.0f;
 	TeleportSettings.TeleportLightColor = FColor(0x336FE6FF);
 
@@ -269,9 +269,12 @@ AAuyron::AAuyron()
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat"));
 	BodyMatBase = body.Object;
-	
+
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
 	TeleportRiftMaterial = riftmat.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/thisthingagain"));
+	TestTeleEffectBase = riftmat2.Object;
 }
 
 void AAuyron::Respawn() {
@@ -294,9 +297,14 @@ void AAuyron::HereWeGo()
 	//SpringArm->SetWorldRotation((closeststick->gohere - temp).Rotation());
 	//SpringArm->TargetArmLength = (temp - closeststick->gohere).Size();
 	TargetDefaultArmLength = BackupDefaultArmLength;
+	DefaultArmLength = TargetDefaultArmLength;
+	SpringArm->TargetArmLength = TargetDefaultArmLength;
 
-	SpringArm->CameraLagSpeed = 1.0f/128.0f;
-	SpringArm->CameraRotationLagSpeed = 1.0f/ 128.0f;
+	SpringArm->bEnableCameraLag = false;
+	SpringArm->bEnableCameraRotationLag = false;
+
+	SpringArm->CameraLagSpeed = 0.0f; 1.0f / 128.0f;
+	SpringArm->CameraRotationLagSpeed = 0.0f; 1.0f / 128.0f;
 	//SpringArm->TargetArmLength = DefaultArmLength;
 	CapsuleComponent->AddImpulse(closeststick->PostTeleportVelocity,NAME_None,true);
 	justteleported = true;
@@ -336,6 +344,9 @@ void AAuyron::PostInitializeComponents()
 
 	hairmat = UMaterialInstanceDynamic::Create(HairMatBase, this);
 	bandanamat = UMaterialInstanceDynamic::Create(BandanaMatBase, this);
+	teletestmat = UMaterialInstanceDynamic::Create(TestTeleEffectBase, this);
+
+	PostProcess->AddOrUpdateBlendable(teletestmat);
 
 	PlayerModel->SetMaterial(0, bodymat);
 	PlayerModel->SetMaterial(1, hairmat);
@@ -560,7 +571,8 @@ void AAuyron::Tick(float DeltaTime)
 		movementlocked = true;
 		cameralocked = true;
 	}
-
+	teletestmat->SetScalarParameterValue("t", GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer)/TeleportSettings.TeleportAnimationDuration);
+	
 	// A blueprint is overriding player input.
 	if (blockedbyblueprint) {
 		movementlocked = true;
@@ -933,9 +945,9 @@ void AAuyron::Tick(float DeltaTime)
 					if (InCameraOverrideRegion) {
 						HereWeGo();
 					} else {
-						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, this, &AAuyron::HereWeGo, 1.0f);
+						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, this, &AAuyron::HereWeGo, TeleportSettings.TeleportAnimationDuration);
 						TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
-						TheAbyss->SetVisibility(true);
+						//TheAbyss->SetVisibility(true);
 
 						FRotator NewRotation = SpringArm->GetComponentRotation();
 						NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
@@ -943,20 +955,26 @@ void AAuyron::Tick(float DeltaTime)
 							NewRotation.Pitch = -30.0f;
 						}
 
-						TargetDefaultArmLength = 600.0f;
+						//TargetDefaultArmLength = 600.0f;
 						//SpringArm->TargetArmLength = TargetDefaultArmLength;
 						SpringArm->SetRelativeRotation(NewRotation);
 
 						// Offset the spring arm (and therefore the camera) a bit so the player model
 						// isn't blocking the screen when we're trying to aim.
-						FVector base = FVector(0.0f, 100.0f, 100.0f);
-						base = (base.X*Forward + base.Y*Right + base.Z*FVector::UpVector);
-						SpringArm->SetRelativeLocation(base);
+						//FVector base = FVector(0.0f, 100.0f, 100.0f);
+						//base = (base.X*Forward + base.Y*Right + base.Z*FVector::UpVector);
+						//SpringArm->SetRelativeLocation(base);
 
 						FlattenVelocity();
 						PhysicsSettings.Gravity = 0.0f;
-						Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength);
-						Capture2D->SetActorRotation((warphere - GetActorLocation()).Rotation() + FRotator(-15.0f, 0.0f, 0.0f));
+						//Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength*4.0f);
+						Capture2D->SetActorLocation(warphere);
+						FRotator asdfasdf = FRotator::ZeroRotator;
+						asdfasdf.Yaw = (warphere - GetActorLocation()).Rotation().Yaw;
+						//Capture2D->SetActorRotation(asdfasdf + FRotator(-30.0f, 0.0f, 0.0f));
+						Capture2D->SetActorRotation(SpringArm->GetComponentRotation());
+						//Capture2D->SetActorRotation((closeststick->GetActorLocation()-warphere).Rotation() + FRotator(-30.0f, 0.0f, 0.0f));
+						Capture2D->AddActorLocalOffset(-BackupDefaultArmLength*FVector::ForwardVector);
 					}
 				}
 			}
