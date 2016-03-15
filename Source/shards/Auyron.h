@@ -460,6 +460,8 @@ private:
 
 	FVector closecamera;
 
+	FTransform lastcamerabeforedialogue;
+
 	UPhysicalMaterial* physmat;
 
 	ASceneCaptureCube* CaptureCube;

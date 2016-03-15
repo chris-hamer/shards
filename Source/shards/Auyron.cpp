@@ -9,7 +9,8 @@
 #include "MovingPlatform.h"
 #include "RotatingPlatform.h"
 #include "EngineUtils.h" 
-#include "Stick.h"  
+#include "Stick.h"
+#include "KillZone.h"
 #include "Checkpoint.h"
 #include "DestructibleBox.h"
 #include "TeleClaw.h"
@@ -307,12 +308,9 @@ void AAuyron::HereWeGo()
 	DefaultArmLength = TargetDefaultArmLength;
 	SpringArm->TargetArmLength = TargetDefaultArmLength;
 
-	SpringArm->bEnableCameraLag = false;
-	SpringArm->bEnableCameraRotationLag = false;
-
 	SpringArm->CameraLagSpeed = 0.0f; 1.0f / 128.0f;
 	SpringArm->CameraRotationLagSpeed = 0.0f; 1.0f / 128.0f;
-	//SpringArm->TargetArmLength = DefaultArmLength;
+	SpringArm->SetRelativeLocation(FVector::ZeroVector);// = DefaultArmLength;
 	CapsuleComponent->AddImpulse(closeststick->PostTeleportVelocity,NAME_None,true);
 	justteleported = true;
 	justswished = true;
@@ -332,7 +330,7 @@ void AAuyron::HereWeGo()
 		AlreadyGlided = true;
 		IsGliding = false;
 	}
-	
+
 	PhysicsSettings.Gravity = DefaultGravity;
 
 	GetWorld()->GetTimerManager().ClearTimer(PreWarpTimer);
@@ -476,6 +474,11 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 
 		if (OtherActor->IsA(AWarpCrystal::StaticClass())) {
 			SetActorLocation(((AWarpCrystal*)OtherActor)->WarpExit->GetComponentLocation());
+			justteleported = true;
+		}
+
+		if (OtherActor->IsA(AKillZone::StaticClass())) {
+			Respawn();
 			justteleported = true;
 		}
 	}
@@ -867,6 +870,13 @@ void AAuyron::Tick(float DeltaTime)
 			} else {
 				IsInDialogue = false;
 				movementlocked = false;
+				SpringArm->CameraLagSpeed = 0.0f;
+				SpringArm->CameraRotationLagSpeed = 0.0f;
+				SpringArm->SetWorldTransform(lastcamerabeforedialogue);
+				SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+				SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
+				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
+
 			}
 			JumpNextFrame = false;
 		}
@@ -1136,6 +1146,8 @@ void AAuyron::Tick(float DeltaTime)
 				closestNPC->Activate();
 				IsInDialogue = true;
 
+				lastcamerabeforedialogue = SpringArm->GetComponentTransform();
+
 				// Store information about that NPC and their root DialogueCut.
 				CurrentCut = closestNPC->CurrentCut;
 				CurrentNPC = closestNPC;
@@ -1296,11 +1308,20 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Return the spring arm (and camera) to its original location.
 			if (!InCameraOverrideRegion&&!IsInDialogue) {
+				if (!justswished) {
+					SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
+					SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
+				}
+
+				if (GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) >= 0.0f) {
+					SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag*2.5f;
+					SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*2.5f;
+					DefaultArmLength = TargetDefaultArmLength;
+					SpringArm->TargetArmLength = DefaultArmLength;
+				}
+
 				SpringArm->TargetArmLength = DefaultArmLength;
-				SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
-				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 				SpringArm->SetRelativeLocation(FVector::ZeroVector);
-					
 				//Camera->bConstrainAspectRatio = false;
 
 				// If we just stopped aiming, reset the camera's rotation as well.
