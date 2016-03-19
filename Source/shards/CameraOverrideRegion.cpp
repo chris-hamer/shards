@@ -19,13 +19,15 @@ ACameraOverrideRegion::ACameraOverrideRegion()
 
 	TargetCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Target Camera"));
 	TargetCamera->AttachTo(Root);
+
+	Axis = CreateDefaultSubobject<UArrowComponent>(TEXT("Axis"));
+	Axis->AttachTo(Root);
 }
 
 // Called when the game starts or when spawned
 void ACameraOverrideRegion::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame

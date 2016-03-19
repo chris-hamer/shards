@@ -11,6 +11,13 @@ class SHARDS_API ACameraOverrideRegion : public AActor
 	GENERATED_BODY()
 	
 public:	
+
+	UENUM() enum ELockType {
+		POINT			UMETA(DisplayName = "Point"),
+		AXIS			UMETA(DisplayName = "Axis"),
+		PLANE			UMETA(DisplayName = "Plane")
+	};
+
 	// Sets default values for this actor's properties
 	ACameraOverrideRegion();
 
@@ -23,12 +30,9 @@ public:
 	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) UBoxComponent* Region;
 	UPROPERTY(EditAnywhere) UCameraComponent* TargetCamera;
+	UPROPERTY(EditAnywhere) UArrowComponent* Axis;
 
+	UPROPERTY(EditAnywhere, Category = "Camera") TEnumAsByte<ELockType> LockType;
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LookAtPlayer;
-	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerXAxis;
-	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerYAxis;
-	UPROPERTY(EditAnywhere, Category = "Camera") bool LockToPlayerZAxis;
-	UPROPERTY(EditAnywhere, Category = "Camera") FVector TargetOffset;
-	UPROPERTY(EditAnywhere, Category = "Camera") FRotator TargetRotation;
-	
+
 };

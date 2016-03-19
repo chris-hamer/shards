@@ -13,6 +13,7 @@
 #include "Stick.h"
 #include "DialogueCut.h"
 #include "NPC.h"
+#include "CameraOverrideRegion.h"
 #include "TwoDimensionalMovementRegion.h"
 #include "Checkpoint.h"
 #include "Auyron.generated.h"
@@ -285,6 +286,7 @@ public:
 	void CameraZoomOut();
 	void Respawn();
 	void HereWeGo();
+	void FadeInMusic();
 
 	void FlattenVelocity();
 	
@@ -389,7 +391,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementTurning TurnSettings;
 
-	/* I really hope I don't need to write a tooltip for this. */
+	/* I really hope I don't need to write a tooltip for what this is. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") float AttackRange;
 
 	/* Should be obvious as well. */
@@ -454,6 +456,8 @@ private:
 
 	FVector StoredWallNormal;
 
+	ACameraOverrideRegion* currentoverrideregion;
+
 	UUserWidget* thehud;
 
 	FVector pushvelocity;
@@ -462,6 +466,8 @@ private:
 
 	FTransform lastcamerabeforedialogue;
 
+	AAmbientSound* currentmusic;
+
 	UPhysicalMaterial* physmat;
 
 	ASceneCaptureCube* CaptureCube;
@@ -469,6 +475,7 @@ private:
 
 	FTimerHandle WarpAnimationTimer;
 	FTimerHandle PreWarpTimer;
+	FTimerHandle MusicChangeTimer;
 
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
@@ -527,10 +534,6 @@ private:
 	bool dunk;
 	bool cameramode;
 	FVector previousgroundvelocity;
-	bool CameraOverrideLookAtPlayer;
-	bool CameraLockToPlayerXAxis;
-	bool CameraLockToPlayerYAxis;
-	bool CameraLockToPlayerZAxis;
 	bool MovementAxisLocked;
 	float LockedAxisValue;
 	FVector previousposition;

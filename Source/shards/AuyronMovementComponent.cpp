@@ -28,6 +28,20 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	FCollisionQueryParams Params;
 	Params.bFindInitialOverlaps = true;
+
+	// Telepads don't count.
+	for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		Params.AddIgnoredActor(ActorItr.operator->());
+	}
+
+	// Neither do destructibles.
+	for (TActorIterator<ADestructibleBox> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		// When they're broken, that is.
+		if (ActorItr->fadetimer >= 0.0f) {
+			Params.AddIgnoredActor(ActorItr.operator->());
+		}
+	}
+
 	TArray<FHitResult> results;
 	if (forceregiondirection.Z == 0.0f) {
 		GetWorld()->SweepMultiByChannel(results, UpdatedComponent->GetComponentLocation() - 45.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
