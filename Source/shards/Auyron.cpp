@@ -283,6 +283,9 @@ AAuyron::AAuyron()
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/thisthingagain"));
 	TestTeleEffectBase = riftmat2.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/wezeldanow"));
+	CelShaderMaterial = celshade.Object;
 }
 
 void AAuyron::Respawn() {
@@ -304,6 +307,7 @@ void AAuyron::HereWeGo()
 	//SpringArm->CameraRotationLagSpeed = 0.0f;
 	//SpringArm->SetWorldRotation((closeststick->gohere - temp).Rotation());
 	//SpringArm->TargetArmLength = (temp - closeststick->gohere).Size();
+	CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	CapsuleComponent->AddImpulse(closeststick->PostTeleportVelocity,NAME_None,true);
 	justteleported = true;
 	justswished = true;
@@ -348,8 +352,10 @@ void AAuyron::PostInitializeComponents()
 	hairmat = UMaterialInstanceDynamic::Create(HairMatBase, this);
 	bandanamat = UMaterialInstanceDynamic::Create(BandanaMatBase, this);
 	teletestmat = UMaterialInstanceDynamic::Create(TestTeleEffectBase, this);
+	celshadermat = UMaterialInstanceDynamic::Create(CelShaderMaterial, this);
 
-	PostProcess->AddOrUpdateBlendable(teletestmat);
+	Camera->AddOrUpdateBlendable(teletestmat);
+	Camera->AddOrUpdateBlendable(celshadermat);
 
 	PlayerModel->SetMaterial(0, bodymat);
 	PlayerModel->SetMaterial(1, hairmat);
@@ -512,10 +518,25 @@ void AAuyron::BeginPlay()
 	TheAbyss->SetMaterial(0, TeleportRiftMaterial);
 
 	Capture2D = GetWorld()->SpawnActor<ASceneCapture2D>();
-	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = false;
+	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = true;
 	Capture2D->GetCaptureComponent2D()->TextureTarget = TeleportRiftRenderTarget;
 	Capture2D->GetCaptureComponent2D()->HideActorComponents(this);
 	Capture2D->GetCaptureComponent2D()->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.AddBlendable(celshadermat,1.0f);
+
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.bOverride_BloomIntensity = true;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.bOverride_BloomThreshold = true;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.bOverride_BloomSizeScale = true;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomIntensity = 4.0f;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomThreshold = -1.0f;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomSizeScale = 8.0f;
+
+	Camera->PostProcessSettings.bOverride_BloomIntensity = true;
+	Camera->PostProcessSettings.bOverride_BloomThreshold = true;
+	Camera->PostProcessSettings.bOverride_BloomSizeScale = true;
+	Camera->PostProcessSettings.BloomIntensity = 4.0f;
+	Camera->PostProcessSettings.BloomThreshold = -1.0f;
+	Camera->PostProcessSettings.BloomSizeScale = 8.0f;
 
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
@@ -541,6 +562,10 @@ void AAuyron::BeginPlay()
 	SlamTrail->DeactivateSystem();
 }
 
+void AAuyron::whywhy() {
+	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = false;
+}
+
 // Called every frame UNLIKE UNITY MIRITE?
 void AAuyron::Tick(float DeltaTime)
 {
@@ -556,6 +581,10 @@ void AAuyron::Tick(float DeltaTime)
 	FVector Forward = Camera->GetForwardVector();
 	Forward.Z = 0.0f;
 	Forward = Forward.GetSafeNormal();
+
+	//if (lel) {
+		Capture2D->GetCaptureComponent2D()->Deactivate();
+	//}
 
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
@@ -901,7 +930,7 @@ void AAuyron::Tick(float DeltaTime)
 				// Assume it's not being targeted, and set it to the default
 				// color and brightness.
 				ActorItr->PointLight->LightColor = FColor::White;
-				ActorItr->PointLight->Intensity = 1750.0f;
+				ActorItr->PointLight->Intensity = 0.0f; 1750.0f;
 				ActorItr->PointLight->UpdateColorAndBrightness();
 				ActorItr->asfd = false;
 				//closest->mat->SetScalarParameterValue("On", 0.0f);
@@ -1004,6 +1033,9 @@ void AAuyron::Tick(float DeltaTime)
 						Capture2D->AddActorLocalOffset(FVector::ZeroVector);
 						Capture2D->AddActorLocalOffset(FVector::ZeroVector);
 						Capture2D->GetCaptureComponent2D()->UpdateContent();
+						Capture2D->GetCaptureComponent2D()->Activate();
+						//GetWorld()->GetTimerManager().SetTimer(WHY, this, &AAuyron::whywhy, 0.25f);
+						lel = true;
 
 						TargetDefaultArmLength = BackupDefaultArmLength;
 						DefaultArmLength = TargetDefaultArmLength;

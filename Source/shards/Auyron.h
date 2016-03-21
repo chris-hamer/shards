@@ -230,11 +230,33 @@ struct FCameraModelFade
 
 	GENERATED_USTRUCT_BODY()
 
-	/* Whether or not the model should fade out if the camera gets close. */
-	UPROPERTY(EditAnywhere) bool ModelFadeEnabled;
+		/* Whether or not the model should fade out if the camera gets close. */
+		UPROPERTY(EditAnywhere) bool ModelFadeEnabled;
 
 	/* The minumum distance the camera can be from the player model before the player model begines to fade out. */
 	UPROPERTY(EditAnywhere) float ModelFadeDistance;
+};
+
+USTRUCT()
+struct FCelShader
+{
+
+	GENERATED_USTRUCT_BODY()
+
+	/* Sets the darkest color that the cel shader will render (as a fraction of the original image's color). */
+	UPROPERTY(EditAnywhere) float LightMin;
+
+	/* Sets the brightest color that the cel shader will render (as a fraction of the original image's color). */
+	UPROPERTY(EditAnywhere) float LightMax;
+
+	/* Number that the reconstruced light map will be multiplied by before being mapped to the gradient. */
+	UPROPERTY(EditAnywhere) float MultiplicativeLightBias;
+
+	/* Number added to reconstruced light map before being mapped to the gradient. */
+	UPROPERTY(EditAnywhere) float AdditiveLightBias;
+
+	/* Color used for white in the cel shader. */
+	UPROPERTY(EditAnywhere) FColor Tint;
 };
 
 UCLASS() class AAuyron : public APawn
@@ -287,6 +309,7 @@ public:
 	void Respawn();
 	void HereWeGo();
 	void FadeInMusic();
+	void whywhy();
 
 	void FlattenVelocity();
 	
@@ -386,6 +409,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* TestTeleEffectBase;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* TeleportRiftMaterial;
 	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* TeleportRiftRenderTarget;
+	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* CelShaderMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
@@ -429,6 +453,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraLag CameraLagSettings;
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraAutoTurn CameraAutoTurnSettings;
 	UPROPERTY(EditAnywhere, Category = "Camera") FCameraModelFade CameraModelFadeSettings;
+	UPROPERTY(EditAnywhere, Category = "Camera") FCelShader CelShaderSettings;
 
 	bool ActivateNextFrame;
 	int GemCount;
@@ -476,11 +501,13 @@ private:
 	FTimerHandle WarpAnimationTimer;
 	FTimerHandle PreWarpTimer;
 	FTimerHandle MusicChangeTimer;
+	FTimerHandle WHY;
 
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
 	UMaterialInstanceDynamic* bodymat;
 	UMaterialInstanceDynamic* teletestmat;
+	UMaterialInstanceDynamic* celshadermat;
 
 	float DefaultGravity;
 
@@ -511,7 +538,7 @@ private:
 	FVector warphere;
 	FVector warpvel;
 
-	float lel;
+	bool lel;
 
 	bool AttackPressed;
 
