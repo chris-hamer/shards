@@ -527,16 +527,16 @@ void AAuyron::BeginPlay()
 	Capture2D->GetCaptureComponent2D()->PostProcessSettings.bOverride_BloomIntensity = true;
 	Capture2D->GetCaptureComponent2D()->PostProcessSettings.bOverride_BloomThreshold = true;
 	Capture2D->GetCaptureComponent2D()->PostProcessSettings.bOverride_BloomSizeScale = true;
-	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomIntensity = 4.0f;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomIntensity = 2.0f;
 	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomThreshold = -1.0f;
-	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomSizeScale = 8.0f;
+	Capture2D->GetCaptureComponent2D()->PostProcessSettings.BloomSizeScale = 2.0f;
 
 	Camera->PostProcessSettings.bOverride_BloomIntensity = true;
 	Camera->PostProcessSettings.bOverride_BloomThreshold = true;
 	Camera->PostProcessSettings.bOverride_BloomSizeScale = true;
-	Camera->PostProcessSettings.BloomIntensity = 4.0f;
+	Camera->PostProcessSettings.BloomIntensity = 2.0f;
 	Camera->PostProcessSettings.BloomThreshold = -1.0f;
-	Camera->PostProcessSettings.BloomSizeScale = 8.0f;
+	Camera->PostProcessSettings.BloomSizeScale = 2.0f;
 
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
@@ -679,13 +679,29 @@ void AAuyron::Tick(float DeltaTime)
 			QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
 			QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 			QueryParams.AddObjectTypesToQuery(ECC_Destructible);
+
 			if (!GetWorld()->OverlapAnyTestByObjectType(GetActorLocation() - FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)) {
 				RidingWall = false;
 				StoredWallNormal = FVector::ZeroVector;
 			}
 
+			FCollisionQueryParams Params;
+
+			// Telepads don't count.
+			for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				Params.AddIgnoredActor(ActorItr.operator->());
+			}
+
+			// Neither do destructibles.
+			for (TActorIterator<ADestructibleBox> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				// When they're broken, that is.
+				if (ActorItr->fadetimer >= 0.0f) {
+					Params.AddIgnoredActor(ActorItr.operator->());
+				}
+			}
+
 			FHitResult ShapeTraceResult;
-			GetWorld()->SweepSingleByChannel(ShapeTraceResult, GetActorLocation() + 10.0f*FVector::UpVector, GetActorLocation() - 10.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape); //100
+			GetWorld()->SweepSingleByChannel(ShapeTraceResult, GetActorLocation() + 10.0f*FVector::UpVector, GetActorLocation() - 10.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
 
 			if (!OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.95f) {
 				if (ShapeTraceResult.GetActor() == nullptr ||
