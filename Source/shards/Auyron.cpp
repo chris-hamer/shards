@@ -534,9 +534,9 @@ void AAuyron::BeginPlay()
 	Camera->PostProcessSettings.bOverride_BloomIntensity = true;
 	Camera->PostProcessSettings.bOverride_BloomThreshold = true;
 	Camera->PostProcessSettings.bOverride_BloomSizeScale = true;
-	Camera->PostProcessSettings.BloomIntensity = 2.0f;
+	Camera->PostProcessSettings.BloomIntensity = 1.0f;
 	Camera->PostProcessSettings.BloomThreshold = -1.0f;
-	Camera->PostProcessSettings.BloomSizeScale = 2.0f;
+	Camera->PostProcessSettings.BloomSizeScale = 1.0f;
 
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
@@ -590,7 +590,7 @@ void AAuyron::Tick(float DeltaTime)
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
 	// Now how did you get down there?
-	if (GetActorLocation().Z < -7950.0f) {
+	if (GetActorLocation().Z < -20000.0f) {
 		Respawn();
 	}
 
@@ -654,7 +654,7 @@ void AAuyron::Tick(float DeltaTime)
 	MovementComponent->forceregiondirection = AppliedForce;
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
-	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() - (MovementComponent->groundvelocity + pushvelocity));
+	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity); // - (MovementComponent->groundvelocity + pushvelocity)
 	
 	// Snap velocity to zero if it's really small.
 	if (CapsuleComponent->GetPhysicsLinearVelocity().Size() < PhysicsSettings.MinVelocity && !dashing && !JumpNextFrame && MovementInput.IsNearlyZero()) {
@@ -719,7 +719,7 @@ void AAuyron::Tick(float DeltaTime)
 			if (OnTheGround || (StoredWallNormal.Size() > 0.95f&&JumpSettings.HasWallJump)) {
 
 				// Jump while taking the floor's angle and vertical movement into account.
-				CapsuleComponent->AddImpulse(JumpSettings.JumpPower * FVector::UpVector, NAME_None, true);
+				CapsuleComponent->AddImpulse((JumpSettings.JumpPower) * FVector::UpVector, NAME_None, true);
 				
 				WasOnTheGround = false;
 				OnTheGround = false;
@@ -1443,7 +1443,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply drag.
 		if (!OnTheGround && FMath::Abs(CapsuleComponent->GetPhysicsLinearVelocity().Z) > JumpSettings.JumpPower) {
-			float mult = (CapsuleComponent->GetPhysicsLinearVelocity().Z > 0.0f ? 16.0f : 1.0f);
+			float mult = ((CapsuleComponent->GetPhysicsLinearVelocity().Z > 0.0f && AppliedForce.Z > 0.0f) ? 16.0f : 1.0f);
 			CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity * FMath::Pow(CapsuleComponent->GetPhysicsLinearVelocity().Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(CapsuleComponent->GetPhysicsLinearVelocity().Z)*200.0f*mult);
 		}
 
@@ -1483,7 +1483,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Put Velocity back in the reference frame of the stationary world.
-		CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() + (MovementComponent->groundvelocity + pushvelocity));
+		CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() + MovementComponent->groundvelocity); // + (MovementComponent->groundvelocity + pushvelocity)
 
 	}
 

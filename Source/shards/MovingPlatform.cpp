@@ -58,7 +58,10 @@ float linear(float x, float ctime) {
 
 // Defines blinking behavior where the platform switches back and forth between its start and end positions.
 float blink(float x, float ctime) {
-	return 0.5f*(FMath::Sign(wave(x, ctime) - 0.5f) + 1);
+	if (x/ctime - FMath::FloorToInt(x/ctime) < 0.5f) {
+		return 0.0f;
+	}
+	return 1.0f;
 }
 
 float onewaylinear(float x, float ctime) {
@@ -87,8 +90,10 @@ void AMovingPlatform::Tick( float DeltaTime )
 				break;
 			case BLINK:
 				f = &blink;
+				break;
 			case ONEWAY:
-				f = &onewaylinear;
+				f = &blink;
+				break;
 			}
 
 			// Increment the timer and find the platform's new position.
@@ -108,7 +113,7 @@ void AMovingPlatform::Tick( float DeltaTime )
 			FVector end = EndPosition->GetComponentLocation();
 
 			// Move the platform to its new location.
-			Model->SetWorldLocation(NewPosition,false,(FHitResult*)nullptr,ETeleportType::TeleportPhysics);
+			Model->SetWorldLocation(NewPosition,false,(FHitResult*)nullptr);
 			StartPosition->SetWorldLocation(start);
 			EndPosition->SetWorldLocation(end);
 		}

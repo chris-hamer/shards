@@ -36,3 +36,10 @@ void ADialogueCut::Tick( float DeltaTime )
 	}
 }
 
+void ADialogueCut::SetText(FString text) {
+	DialogueText = text;
+}
+
+void ADialogueCut::SetNext(ADialogueCut* nextcut) {
+	Next = nextcut;
+}

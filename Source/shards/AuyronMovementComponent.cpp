@@ -44,7 +44,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	TArray<FHitResult> results;
 	if (forceregiondirection.Z == 0.0f) {
-		GetWorld()->SweepMultiByChannel(results, UpdatedComponent->GetComponentLocation() - 45.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+		GetWorld()->SweepMultiByChannel(results, UpdatedComponent->GetComponentLocation() - 0.0f*45.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
 		for (FHitResult r : results) {
 			if (r.Normal.Z > 0.6f) {
 				ShapeTraceResult = r;
@@ -107,6 +107,10 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 									platformspindir;
 			}
 		}
+	}
+
+	if (groundvelocity.Z > 0.0f) {
+		//groundvelocity.Z = 0.0f;
 	}
 
 	justjumped = false;

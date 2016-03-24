@@ -15,13 +15,20 @@ public:
 
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* GemModel;
 	UPROPERTY(EditAnywhere) USphereComponent* SphereComponent;
-	UPROPERTY(EditAnywhere) UPointLightComponent* PointLightComponent;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
+
+	virtual void PostInitializeComponents() override;
+
+	FColor GemColor;
+	UMaterialInterface* BaseGemMaterial;
+	UMaterialInstanceDynamic* gemmat;
+
+	TArray<UStaticMesh*> meshes;
 
 private:
 	float curTime;
