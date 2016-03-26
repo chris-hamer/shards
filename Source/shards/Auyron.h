@@ -69,7 +69,7 @@ struct FMovementJumping
 	UPROPERTY(EditAnywhere) float UnjumpRate;
 
 	/* Time after falling off a ledge that the player can still jump. */
-	UPROPERTY(EditAnywhere) float OffGroundJumpTime;
+	UPROPERTY(EditAnywhere) float CoyoteJumpTime;
 
 	/* Whether or not the player has wall jump. */
 	UPROPERTY(EditAnywhere) bool HasWallJump;
@@ -411,6 +411,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* TeleportRiftRenderTarget;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* CelShaderMaterial;
 
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* JumpSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* DashSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* CollectSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* WarpSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* DunkSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* DunkHitSound;
+
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementTurning TurnSettings;
@@ -508,6 +515,8 @@ private:
 	UMaterialInstanceDynamic* bodymat;
 	UMaterialInstanceDynamic* teletestmat;
 	UMaterialInstanceDynamic* celshadermat;
+
+	UMaterialInterface* bluewings;
 
 	float DefaultGravity;
 

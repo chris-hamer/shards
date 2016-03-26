@@ -15,6 +15,7 @@ public:
 
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* GemModel;
 	UPROPERTY(EditAnywhere) USphereComponent* SphereComponent;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* CollectionParticles;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -24,15 +25,20 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
-	FColor GemColor;
+	void GetCollected();
+	void Ded();
+
 	UMaterialInterface* BaseGemMaterial;
 	UMaterialInstanceDynamic* gemmat;
 
 	TArray<UStaticMesh*> meshes;
 
+	FLinearColor GemColor;
+	
+	FTimerHandle PostCollectionTimer;
+
 private:
 	float curTime;
 	float baseHeight;
 	int32 gemKind;
-	int32 gemColor;
 };

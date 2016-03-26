@@ -29,7 +29,7 @@ AAuyron::AAuyron()
 	// These should work.
 	PhysicsSettings.GroundAccelerationRate = 80.0f;
 	PhysicsSettings.AirAccelerationRate = 15.0f;
-	PhysicsSettings.MaxVelocity = 600.0f;
+	PhysicsSettings.MaxVelocity = 650.0f;
 	PhysicsSettings.MinVelocity = 10.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
 	PhysicsSettings.Gravity = 1960.0f;
@@ -42,7 +42,7 @@ AAuyron::AAuyron()
 
 	JumpSettings.JumpPower = 880.0f;
 	JumpSettings.WallJumpMultiplier = 1.0f;
-	JumpSettings.OffGroundJumpTime = 0.04f;
+	JumpSettings.CoyoteJumpTime = 0.1f;
 	JumpSettings.UnjumpRate = 0.33f;
 
 	TurnSettings.TurnRate = 720.0f;
@@ -50,7 +50,7 @@ AAuyron::AAuyron()
 
 	TeleportSettings.TeleportRangeWhenAiming = 4000.0f;
 	TeleportSettings.TeleportAngleToleranceWhenAiming = 5.0f;
-	TeleportSettings.TeleportRangeWhenNotAiming = 900.0f;
+	TeleportSettings.TeleportRangeWhenNotAiming = 0.0f;
 	TeleportSettings.TeleportAngleToleranceWhenNotAiming = 70.0f;
 	TeleportSettings.TeleportAnimationDuration = 0.5f;
 	TeleportSettings.TeleportAnimationPowerFactor = 4.0f;
@@ -62,12 +62,12 @@ AAuyron::AAuyron()
 	DashSettings.HasDashWallJump = false;
 	DashSettings.HasDashJump = false;
 	DashSettings.DashSpeed = 1500.0f;
-	DashSettings.DashDuration = 0.25f;
+	DashSettings.DashDuration = 0.5f;
 	DashSettings.DashWallJumpMultiplier = 3.0f;
 
 	GlideSettings.HasGlide = false;
 	GlideSettings.GlideTurnRateMultiplier = 1.0f;
-	GlideSettings.GlideDuration = 2.0f;
+	GlideSettings.GlideDuration = 0.5f;
 	GlideSettings.InitialGlideVelocity = 200.0f;
 	GlideSettings.GlideGravityMultiplier = 0.01f;
 
@@ -129,7 +129,7 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
-	//PlayerModel->bRenderCustomDepth = true;
+	PlayerModel->bRenderCustomDepth = true;
 	PlayerModel->AttachTo(CapsuleComponent);
 
 	//static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimationBlueprint(TEXT("/Game/Animations/Characters/Auyron/Anim_Auyron"));
@@ -203,38 +203,38 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> tc(TEXT("/Game/Models/Weapons/TeleClaw"));
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//TeleClaw->bRenderCustomDepth = true;
+	TeleClaw->bRenderCustomDepth = true;
 
 	// WHAT ARE THOSE?
 	BootsR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsR"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> bootsmodel(TEXT("/Game/Models/Weapons/Boots"));
 	BootsR->SetStaticMesh(bootsmodel.Object);
 	BootsR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//BootsR->bRenderCustomDepth = true;
+	BootsR->bRenderCustomDepth = true;
 
 	BootsL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsL"));
 	BootsL->SetStaticMesh(bootsmodel.Object);
 	BootsL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//BootsL->bRenderCustomDepth = true;
+	BootsL->bRenderCustomDepth = true;
 
 	// WWE CHAMPIONSHIP BELT
 	Belt = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Belt"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> beltmodel(TEXT("/Game/Models/Weapons/Belt"));
 	Belt->SetStaticMesh(beltmodel.Object);
 	Belt->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//Belt->bRenderCustomDepth = true;
+	Belt->bRenderCustomDepth = true;
 
 	Bracelet = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Bracelet"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> braceletmodel(TEXT("/Game/Models/Weapons/Bracelet"));
 	Bracelet->SetStaticMesh(braceletmodel.Object);
 	Bracelet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//Bracelet->bRenderCustomDepth = true;
+	Bracelet->bRenderCustomDepth = true;
 
 	Wings = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Wings"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> wingsmodel(TEXT("/Game/Models/Weapons/Wings"));
 	Wings->SetStaticMesh(wingsmodel.Object);
 	Wings->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//Wings->bRenderCustomDepth = true;
+	Wings->bRenderCustomDepth = true;
 
 	// It gazes also into you.
 	TheAbyss = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TheAbyss"));
@@ -278,6 +278,10 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat"));
 	BodyMatBase = body.Object;
 
+	// Might need this later.
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bw(TEXT("/Game/Textures/Weapons/wing_blue"));
+	bluewings = bw.Object;
+
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
 	TeleportRiftMaterial = riftmat.Object;
 
@@ -286,6 +290,25 @@ AAuyron::AAuyron()
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/wezeldanow"));
 	CelShaderMaterial = celshade.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundWave> jsound(TEXT("/Game/Sound/SoundEffects/jump"));
+	JumpSound = jsound.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundWave> dsound(TEXT("/Game/Sound/SoundEffects/dash"));
+	DashSound= dsound.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundWave> csound(TEXT("/Game/Sound/SoundEffects/gempickup"));
+	CollectSound = csound.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundWave> wsound(TEXT("/Game/Sound/SoundEffects/warpsound"));
+	WarpSound = wsound.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundWave> dksound(TEXT("/Game/Sound/SoundEffects/dunk"));
+	DunkSound = dksound.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundWave> dhksound(TEXT("/Game/Sound/SoundEffects/dunkhit"));
+	DunkHitSound = dhksound.Object;
+
 }
 
 void AAuyron::Respawn() {
@@ -412,11 +435,11 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 		// We just picked up a gem.
 		if (OtherActor->IsA(AGem::StaticClass()))
 		{
-			OtherActor->Destroy();
+			((AGem*)OtherActor)->GetCollected();
 			GemCount++;
+			UGameplayStatics::PlaySound2D(this, CollectSound);
 		}
 
-		// We just picked up a gem.
 		if (OtherActor->IsA(AEquipmentPickup::StaticClass()))
 		{
 			if (((AEquipmentPickup*)OtherActor)->Name == "TeleClaw") {
@@ -433,6 +456,11 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			}
 			if (((AEquipmentPickup*)OtherActor)->Name == "Glide") {
 				GlideSettings.HasGlide = true;
+			}
+			if (((AEquipmentPickup*)OtherActor)->Name == "Glide2") {
+				GlideSettings.HasGlide = true;
+				GlideSettings.GlideDuration *= 4.0f;
+				Wings->SetMaterial(0, bluewings);
 			}
 			OtherActor->Destroy();
 		}
@@ -493,7 +521,7 @@ void AAuyron::BeginPlay()
 	// Set the max slope and max off ground time for the movement component.
 	MovementComponent->minnormalz = FMath::Cos(FMath::DegreesToRadians(PhysicsSettings.MaxSlope));
 	MovementComponent->timerlimit = PhysicsSettings.SlopeSlideTime;
-	MovementComponent->MaxOffGroundTime = JumpSettings.OffGroundJumpTime;
+	MovementComponent->MaxOffGroundTime = JumpSettings.CoyoteJumpTime;
 
 	// Point gravity downwards.
 	PhysicsSettings.Gravity = -PhysicsSettings.Gravity;
@@ -657,8 +685,9 @@ void AAuyron::Tick(float DeltaTime)
 	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity); // - (MovementComponent->groundvelocity + pushvelocity)
 	
 	// Snap velocity to zero if it's really small.
-	if (CapsuleComponent->GetPhysicsLinearVelocity().Size() < PhysicsSettings.MinVelocity && !dashing && !JumpNextFrame && MovementInput.IsNearlyZero()) {
-		CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+	if (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector).Size() < PhysicsSettings.MinVelocity && !dashing && !JumpNextFrame && MovementInput.IsNearlyZero()) {
+		float tempz = CapsuleComponent->GetPhysicsLinearVelocity().Z;
+		CapsuleComponent->SetPhysicsLinearVelocity(tempz*FVector::UpVector);
 	}
 
 	// Make the equipment we have visible on the player model.
@@ -716,7 +745,7 @@ void AAuyron::Tick(float DeltaTime)
 		// Handle jumping.
 		if (JumpNextFrame && !IsInDialogue) {
 			bool wouldhavebeenotg = OnTheGround;
-			if (OnTheGround || (StoredWallNormal.Size() > 0.95f&&JumpSettings.HasWallJump)) {
+			if (OnTheGround || (StoredWallNormal.Size() > 0.95f&&JumpSettings.HasWallJump) || MovementComponent->offGroundTime < JumpSettings.CoyoteJumpTime) {
 
 				// Jump while taking the floor's angle and vertical movement into account.
 				CapsuleComponent->AddImpulse((JumpSettings.JumpPower) * FVector::UpVector, NAME_None, true);
@@ -729,7 +758,9 @@ void AAuyron::Tick(float DeltaTime)
 				JustJumped = true;
 				MovementComponent->justjumped = true;
 
-				if (StoredWallNormal.Size() > 0.2f && !wouldhavebeenotg) {
+				UGameplayStatics::PlaySound2D(this, JumpSound);
+
+				if (StoredWallNormal.Size() > 0.3f && !wouldhavebeenotg) {
 					// No cheating.
 					if (IsGliding || AlreadyGlided) {
 						AlreadyGlided = true;
@@ -750,11 +781,11 @@ void AAuyron::Tick(float DeltaTime)
 					// Make the player face away from the wall we just jumped off of.
 					FRotator newmodelrotation = PlayerModel->GetComponentRotation();
 					FVector tangentalvelocity = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal());
-					if (tangentalvelocity.Size() < PhysicsSettings.MaxVelocity/4.0f) {
+					if (tangentalvelocity.Size() < PhysicsSettings.MaxVelocity/2.0f) {
 						tangentalvelocity = FVector::ZeroVector;
 					}
 
-					newmodelrotation.Yaw = (0.75f*StoredWallNormal.GetSafeNormal() + 0.25f*tangentalvelocity.GetSafeNormal()).GetSafeNormal().Rotation().Yaw;// = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
+					newmodelrotation.Yaw = ((tangentalvelocity.IsNearlyZero() ? 1.0f : 0.75f)*StoredWallNormal.GetSafeNormal() + 0.25f*tangentalvelocity.GetSafeNormal()).GetSafeNormal().Rotation().Yaw;// = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
 					PlayerModel->SetWorldRotation(newmodelrotation);
 					TargetDirection = newmodelrotation;
 				}
@@ -766,6 +797,15 @@ void AAuyron::Tick(float DeltaTime)
 		if (!HoldingJump && CapsuleComponent->GetPhysicsLinearVelocity().Z > 0 && !AlreadyUnjumped && !IsGliding) {
 			CapsuleComponent->AddImpulse(FVector::UpVector * PhysicsSettings.Gravity * JumpSettings.UnjumpRate * (CapsuleComponent->GetPhysicsLinearVelocity().Z / JumpSettings.JumpPower), NAME_None, true);
 			AlreadyUnjumped = true;
+		}
+
+		// >_>
+		FHitResult ShapeTraceResult;
+		GetWorld()->LineTraceSingleByChannel(ShapeTraceResult, GetActorLocation(), GetActorLocation() - 1000.0f*FVector::UpVector, ECC_Visibility);
+		FVector PlayerCapsuleBottom = GetActorLocation() - 90.0f * FVector::UpVector;
+		float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
+		if (ShapeTraceResult.IsValidBlockingHit()&&DistanceFromImpact < 25.0f) {
+			GlideNextFrame = false;
 		}
 
 		// Start gliding.
@@ -817,6 +857,7 @@ void AAuyron::Tick(float DeltaTime)
 			if (OnTheGround && !MovementComponent->toosteep) {
 				DashParticles->ActivateSystem();
 				dashing = true;
+				UGameplayStatics::PlaySound2D(this, DashSound);
 			}
 		}
 
@@ -854,6 +895,7 @@ void AAuyron::Tick(float DeltaTime)
 				if (OnTheGround) {
 					SlamParticles->ActivateSystem();
 					SlamParticles->ActivateSystem();
+					UGameplayStatics::PlaySound2D(this, DunkHitSound);
 				}
 			}
 		}
@@ -866,6 +908,7 @@ void AAuyron::Tick(float DeltaTime)
 				CapsuleComponent->AddImpulse(-SlamSettings.SlamVelocity*FVector::UpVector, NAME_None, true);
 				dunk = true;
 				SlamTrail->ActivateSystem();
+				UGameplayStatics::PlaySound2D(this, DunkSound);
 			}
 		}
 
@@ -1007,6 +1050,8 @@ void AAuyron::Tick(float DeltaTime)
 					warphere = closest->gohere;
 					warpvel = closest->PostTeleportVelocity;
 					BackupDefaultArmLength = TargetDefaultArmLength;
+
+					UGameplayStatics::PlaySound2D(this, WarpSound);
 
 					// Start the teleport animation timer.
 					if (InCameraOverrideRegion) {
@@ -1319,6 +1364,9 @@ void AAuyron::Tick(float DeltaTime)
 				FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
 				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + FVector::VectorPlaneProject(camerarelativedisplacement,currentoverrideregion->Axis->GetForwardVector().GetSafeNormal()));
 			}
+		} else if (!InCameraOverrideRegion) {
+			Camera->RelativeRotation.Roll = 0.0f;
+			SpringArm->RelativeRotation.Roll = 0.0f;
 		}
 
 		// Handle aiming.
@@ -1339,14 +1387,18 @@ void AAuyron::Tick(float DeltaTime)
 				BackupDefaultArmLength = TargetDefaultArmLength;
 
 				// ...orient the new rotation to be level with the xy axis...
-				NewRotation.Pitch = 0.0f;
+				//NewRotation.Pitch = 0.0f;
 
 				// ...and face the camera in direction that the player is facing...
-				if (MovementInput.IsNearlyZero()) {
-					NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;//
-				} else {
+				//if (MovementInput.IsNearlyZero()) {
+					//NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;//
+				//} else {
 					// ...unless the player is holding a direction,
 					// in which case face that direction.
+					//NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
+						//(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+				//}
+				if (!MovementInput.IsNearlyZero()) {
 					NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
 						(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
 				}
@@ -1443,7 +1495,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Apply drag.
 		if (!OnTheGround && FMath::Abs(CapsuleComponent->GetPhysicsLinearVelocity().Z) > JumpSettings.JumpPower) {
-			float mult = ((CapsuleComponent->GetPhysicsLinearVelocity().Z > 0.0f && AppliedForce.Z > 0.0f) ? 16.0f : 1.0f);
+			float mult = ((CapsuleComponent->GetPhysicsLinearVelocity().Z > 0.0f && (AppliedForce.Z > 0.0f || IsGliding)) ? 16.0f : 1.0f);
 			CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity * FMath::Pow(CapsuleComponent->GetPhysicsLinearVelocity().Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(CapsuleComponent->GetPhysicsLinearVelocity().Z)*200.0f*mult);
 		}
 
@@ -1654,10 +1706,10 @@ void AAuyron::Jump()
 	//   2. We haven't been off the ground for very long.
 	//   3. We are pushing into a wall (wall jump).
 	//FVector wnproject = FVector::VectorPlaneProject(MovementComponent->wallnormal, FVector::UpVector);
-	//if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.OffGroundJumpTime || RidingWall || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
+	//if (OnTheGround || MovementComponent->offGroundTime < JumpSettings.CoyoteJumpTime || RidingWall || (!MovementComponent->wallnormal.IsNearlyZero() && wnproject.Size()>0.9f)) {
 	//if (OnTheGround) {
 		JumpNextFrame = true;
-		if (!OnTheGround) {
+		if (!OnTheGround && MovementComponent->offGroundTime > JumpSettings.CoyoteJumpTime) {
 			GlideNextFrame = true;
 		}
 	//} else {
@@ -1676,7 +1728,11 @@ void AAuyron::Unjump()
 
 void AAuyron::Use()
 {
-	ActivateNextFrame = true;
+	if (!IsInDialogue) {
+		ActivateNextFrame = true;
+	} else {
+		JumpNextFrame = true;
+	}
 }
 
 // HEY LINK TALK TO ME USING Z TARGETING

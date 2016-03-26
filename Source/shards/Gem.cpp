@@ -20,9 +20,8 @@ AGem::AGem()
 	SphereComponent->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 	SetActorEnableCollision(true);
 
-	gemKind = FMath::RandRange(0, 5);
-	gemColor = FMath::RandRange(1, 6);//
 	GemModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	GemColor = FLinearColor::MakeRandomColor();
 
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj1(TEXT("/Game/Models/Gems/Gem1"));
 	meshes.Add(MeshObj1.Object);
@@ -47,12 +46,18 @@ AGem::AGem()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> mat(TEXT("/Game/Textures/Gems/BaseGemMaterial"));
 	BaseGemMaterial = mat.Object;
 
+	CollectionParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("CollectionParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/ColletionParticles.ColletionParticles"));
+	CollectionParticles->SetTemplate(particles.Object);
+	CollectionParticles->AttachTo(GemModel);
+	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
 }
 
 void AGem::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	gemmat = UMaterialInstanceDynamic::Create(BaseGemMaterial, this);
+	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
 	GemModel->SetMaterial(0, gemmat);
 }
 
@@ -62,14 +67,20 @@ void AGem::BeginPlay()
 	Super::BeginPlay();
 
 	float meh = FMath::FRandRange(0.7f, 1.0f);
-	FLinearColor asdf = FLinearColor::MakeRandomColor();
+	GemColor = FLinearColor::MakeRandomColor();
+	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
 
-	gemmat->SetVectorParameterValue("Bright Color", asdf);
-	gemmat->SetVectorParameterValue("Dark Color", asdf/16.0f);
+	gemmat->SetVectorParameterValue("Bright Color", GemColor);
+	gemmat->SetVectorParameterValue("Dark Color", GemColor / 32.0f);
+
+	CollectionParticles->SetColorParameter("ParticleColor", GemColor);
 
 	GemModel->SetStaticMesh(meshes[FMath::RandRange(0, 5)]);
 	curTime = FMath::FRandRange(0.0f, 2.0f*3.14f);
 
+	CollectionParticles->bAutoActivate = false;
+	CollectionParticles->DeactivateSystem();
+	CollectionParticles->UpdateInstances();
 	//baseHeight = GetActorrelativeloca().Z;//
 }
 
@@ -78,6 +89,9 @@ void AGem::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
+	CollectionParticles->SetColorParameter("ParticleColor", GemColor);
+	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
+	//CollectionParticles->UpdateInstances();
 	FVector loc = GetActorLocation();
 	loc = FVector(0.0f, 0.0f, 10.0f*DeltaTime*FMath::Cos(curTime*PI));
 	SetActorLocation(GetActorLocation()+loc);
@@ -86,3 +100,12 @@ void AGem::Tick( float DeltaTime )
 	curTime += DeltaTime;
 }
 
+void AGem::GetCollected() {
+	CollectionParticles->ActivateSystem();
+	GemModel->SetVisibility(false);
+	GetWorldTimerManager().SetTimer(PostCollectionTimer, this, &AGem::Ded, 0.5f);
+}
+
+void AGem::Ded() {
+	this->Destroy();
+}
