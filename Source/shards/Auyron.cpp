@@ -26,7 +26,7 @@
 // Sets default values
 AAuyron::AAuyron()
 {	
-	// These should work.
+	// These should work.//
 	PhysicsSettings.GroundAccelerationRate = 80.0f;
 	PhysicsSettings.AirAccelerationRate = 15.0f;
 	PhysicsSettings.MaxVelocity = 650.0f;
@@ -39,6 +39,11 @@ AAuyron::AAuyron()
 	PhysicsSettings.HighVelocityForceExponent = 2.5f;
 
 	AttackRange = 300.0f;
+
+	XAxisStyle = STANDARD;
+	XAxisAimingStyle = STANDARD;
+	YAxisStyle = STANDARD;
+	YAxisAimingStyle = STANDARD;
 
 	JumpSettings.JumpPower = 880.0f;
 	JumpSettings.WallJumpMultiplier = 1.0f;
@@ -69,7 +74,9 @@ AAuyron::AAuyron()
 	GlideSettings.GlideTurnRateMultiplier = 1.0f;
 	GlideSettings.GlideDuration = 0.5f;
 	GlideSettings.InitialGlideVelocity = 200.0f;
-	GlideSettings.GlideGravityMultiplier = 0.01f;
+	GlideSettings.GlideSoundsPerSecond = 8.0f;
+	GlideSettings.GlideSoundPitchMin = 0.996f;
+	GlideSettings.GlideSoundPitchMax = 1.004f;
 
 	SlamSettings.HasSlam = false;
 	SlamSettings.SlamVelocity = 1500.0f;
@@ -91,6 +98,8 @@ AAuyron::AAuyron()
 
 	CameraAutoTurnSettings.CameraAutoTurnFactor = 60.0f;
 	CameraAutoTurnSettings.CameraResetTime = 1.0f;
+	CameraAutoTurnSettings.CameraDefaultPitch = -30.0f;
+	CameraAutoTurnSettings.CameraDefaultPitchRate = 0.1f;
 
 	CameraModelFadeSettings.ModelFadeEnabled = false;
 	CameraModelFadeSettings.ModelFadeDistance = 250.0f;
@@ -291,23 +300,26 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/wezeldanow"));
 	CelShaderMaterial = celshade.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundWave> jsound(TEXT("/Game/Sound/SoundEffects/jump"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> jsound(TEXT("/Game/Sound/SoundEffects/jump"));
 	JumpSound = jsound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundWave> dsound(TEXT("/Game/Sound/SoundEffects/dash"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> dsound(TEXT("/Game/Sound/SoundEffects/dash"));
 	DashSound= dsound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundWave> csound(TEXT("/Game/Sound/SoundEffects/gempickup"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> csound(TEXT("/Game/Sound/SoundEffects/gempickup"));
 	CollectSound = csound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundWave> wsound(TEXT("/Game/Sound/SoundEffects/warpsound"));
-	WarpSound = wsound.Object;
+	const ConstructorHelpers::FObjectFinder<USoundCue> wrpsound(TEXT("/Game/Sound/SoundEffects/warpsound"));
+	WarpSound = wrpsound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundWave> dksound(TEXT("/Game/Sound/SoundEffects/dunk"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> dksound(TEXT("/Game/Sound/SoundEffects/dunk"));
 	DunkSound = dksound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundWave> dhksound(TEXT("/Game/Sound/SoundEffects/dunkhit"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> dhksound(TEXT("/Game/Sound/SoundEffects/dunkhit"));
 	DunkHitSound = dhksound.Object;
+
+	const ConstructorHelpers::FObjectFinder<USoundCue> wsound(TEXT("/Game/Sound/SoundEffects/wing"));
+	WingSound = wsound.Object;
 
 }
 
@@ -611,8 +623,15 @@ void AAuyron::Tick(float DeltaTime)
 	Forward = Forward.GetSafeNormal();
 
 	//if (lel) {
-		Capture2D->GetCaptureComponent2D()->Deactivate();
+		Capture2D->GetCaptureComponent2D()->Deactivate();//
 	//}
+
+	if (FMath::Abs(MovementInput.X) > 0.9f) {
+		MovementInput.X = FMath::Sign(MovementInput.X);
+	}
+	if (FMath::Abs(MovementInput.Y) > 0.9f) {
+		MovementInput.Y = FMath::Sign(MovementInput.Y);
+	}
 
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
@@ -800,11 +819,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// >_>
-		FHitResult ShapeTraceResult;
-		GetWorld()->LineTraceSingleByChannel(ShapeTraceResult, GetActorLocation(), GetActorLocation() - 1000.0f*FVector::UpVector, ECC_Visibility);
-		FVector PlayerCapsuleBottom = GetActorLocation() - 90.0f * FVector::UpVector;
-		float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
-		if (ShapeTraceResult.IsValidBlockingHit()&&DistanceFromImpact < 25.0f) {
+		if (MovementComponent->DistanceFromImpact < 25.0f && MovementComponent->overground) {
 			GlideNextFrame = false;
 		}
 
@@ -824,6 +839,11 @@ void AAuyron::Tick(float DeltaTime)
 		if (IsGliding&&!WasOnTheGround) {
 			GlideTimer += DeltaTime;
 			//FlattenVelocity();
+			if (FMath::Abs(GlideTimer*GlideSettings.GlideSoundsPerSecond - FMath::FloorToInt(GlideTimer*GlideSettings.GlideSoundsPerSecond)) < DeltaTime*GlideSettings.GlideSoundsPerSecond) {
+				WingSound->PitchMultiplier = FMath::FRandRange(GlideSettings.GlideSoundPitchMin, GlideSettings.GlideSoundPitchMax);
+				UGameplayStatics::PlaySound2D(this, WingSound);
+				//WingSound->PitchMultiplier = 1.0f;
+			}
 			Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 			PhysicsSettings.Gravity = DefaultGravity * GlideSettings.GlideGravityMultiplier;
 			if (AppliedForce.Z <= 0.0f) {
@@ -1324,6 +1344,7 @@ void AAuyron::Tick(float DeltaTime)
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
 				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
+				NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch,CameraAutoTurnSettings.CameraDefaultPitch,CameraAutoTurnSettings.CameraDefaultPitchRate);
 			}
 
 			// Set the rotation of the camera.
@@ -1401,6 +1422,9 @@ void AAuyron::Tick(float DeltaTime)
 				if (!MovementInput.IsNearlyZero()) {
 					NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
 						(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+				}
+				if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !movementlocked) {
+					NewRotation.Pitch = 0.0f;
 				}
 			}
 
@@ -1509,7 +1533,8 @@ void AAuyron::Tick(float DeltaTime)
 		// Apply a deceleration that scales with the player's velocity
 		// in such a way that it limits it to MaxVelocity.
 		if (!dashing) {
-			CapsuleComponent->AddForce(-Velocity2D.GetSafeNormal()*CurrentAccelRate*(Velocity2D.Size() / PhysicsSettings.MaxVelocity), NAME_None, false);
+			float mult = FMath::Lerp(FMath::Sqrt(Velocity2D.Size() / PhysicsSettings.MaxVelocity), Velocity2D.Size() / PhysicsSettings.MaxVelocity, Velocity2D.Size() / PhysicsSettings.MaxVelocity);
+			CapsuleComponent->AddForce(-Velocity2D.GetSafeNormal()*CurrentAccelRate*mult, NAME_None, false);
 		}
 
 		// This is a 2D platformer now.
@@ -1640,7 +1665,6 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->BindAxis("MoveY", this, &AAuyron::MoveForward);
 	InputComponent->BindAxis("CameraPitch", this, &AAuyron::PitchCamera);
 	InputComponent->BindAxis("CameraYaw", this, &AAuyron::YawCamera);
-	InputComponent->BindAxis("ControllerCameraYaw", this, &AAuyron::ControllerYawCamera);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
 	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
@@ -1673,20 +1697,18 @@ void AAuyron::MoveForward(float AxisValue)
 
 void AAuyron::PitchCamera(float AxisValue)
 {
+	if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
+		AxisValue *= -1;
+	}
 	CameraInput.Y = AxisValue;
 }
 
 void AAuyron::YawCamera(float AxisValue)
 {
-	CameraInput.X = AxisValue;
-}
-
-void AAuyron::ControllerYawCamera(float AxisValue)
-{
-	if (ztarget) {
+	if ((ztarget && XAxisAimingStyle == INVERTED) || (!ztarget && XAxisStyle == INVERTED)) {
 		AxisValue *= -1;
 	}
-	CameraInput.X += AxisValue;
+	CameraInput.X = AxisValue;
 }
 
 void AAuyron::Pause()
@@ -1888,6 +1910,46 @@ void AAuyron::SetAimStyle(FString Style)
 FString AAuyron::GetAimStyle()
 {
 	return (AimStyle == TOGGLE ? "Toggle" : "Hold");
+}
+
+void AAuyron::SetXAxisStyle(FString Style)
+{
+	XAxisStyle = (Style == "Inverted" ? INVERTED : STANDARD);
+}
+
+FString AAuyron::GetXAxisStyle()
+{
+	return (XAxisStyle == INVERTED ? "Inverted" : "Standard");
+}
+
+void AAuyron::SetXAxisAimingStyle(FString Style)
+{
+	XAxisAimingStyle = (Style == "Inverted" ? INVERTED : STANDARD);
+}
+
+FString AAuyron::GetXAxisAimingStyle()
+{
+	return (XAxisAimingStyle == INVERTED ? "Inverted" : "Standard");
+}
+
+void AAuyron::SetYAxisStyle(FString Style)
+{
+	YAxisStyle = (Style == "Inverted" ? INVERTED : STANDARD);
+}
+
+FString AAuyron::GetYAxisStyle()
+{
+	return (YAxisStyle == INVERTED ? "Inverted" : "Standard");
+}
+
+void AAuyron::SetYAxisAimingStyle(FString Style)
+{
+	YAxisAimingStyle = (Style == "Inverted" ? INVERTED : STANDARD);
+}
+
+FString AAuyron::GetYAxisAimingStyle()
+{
+	return (YAxisAimingStyle == INVERTED ? "Inverted" : "Standard");
 }
 
 void AAuyron::SetEnableTeleportAnimation(bool ShouldEnable)

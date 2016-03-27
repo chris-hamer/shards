@@ -57,8 +57,9 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	}
 
 	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f * FVector::UpVector; // 50
-	float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	float RequiredDistance = (onground ? 50.0f : 10.0f); //50,1
+	DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
+	overground = ShapeTraceResult.IsValidBlockingHit();
 	if (!onground) {
 		offGroundTime += DeltaTime;
 	}

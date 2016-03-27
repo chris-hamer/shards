@@ -176,6 +176,15 @@ struct FAbilitiesGlide
 
 	/* Fraction of the default turn rate that should apply when gliding. */
 	UPROPERTY(EditAnywhere) float GlideTurnRateMultiplier;
+
+	/* Number of glide sounds that should play per second when gliding. */
+	UPROPERTY(EditAnywhere) float GlideSoundsPerSecond;
+
+	/* Lowest pitch multiplier for glide sounds. */
+	UPROPERTY(EditAnywhere) float GlideSoundPitchMin;
+
+	/* Highest pitch multiplier for glide sounds. */
+	UPROPERTY(EditAnywhere) float GlideSoundPitchMax;
 };
 
 
@@ -222,6 +231,12 @@ struct FCameraAutoTurn
 
 	/* How long the camera should wait after the last mouse input before reverting to automatic control. */
 	UPROPERTY(EditAnywhere) float CameraResetTime;
+
+	/* What pitch the camera should move to if under automatic control. */
+	UPROPERTY(EditAnywhere) float CameraDefaultPitch;
+
+	/* The rate at which the pitch should go to its default value. */
+	UPROPERTY(EditAnywhere) float CameraDefaultPitchRate;
 };
 
 USTRUCT()
@@ -230,8 +245,8 @@ struct FCameraModelFade
 
 	GENERATED_USTRUCT_BODY()
 
-		/* Whether or not the model should fade out if the camera gets close. */
-		UPROPERTY(EditAnywhere) bool ModelFadeEnabled;
+	/* Whether or not the model should fade out if the camera gets close. */
+	UPROPERTY(EditAnywhere) bool ModelFadeEnabled;
 
 	/* The minumum distance the camera can be from the player model before the player model begines to fade out. */
 	UPROPERTY(EditAnywhere) float ModelFadeDistance;
@@ -269,6 +284,11 @@ public:
 		HOLD			UMETA(DisplayName = "Hold"),
 		TOGGLE			UMETA(DisplayName = "Toggle")
 	};
+	
+	UENUM() enum AxisType {
+		STANDARD		UMETA(DisplayName = "Standard"),
+		INVERTED		UMETA(DisplayName = "Inverted")
+	};
 
 	// Sets default values for this pawn's properties
 	AAuyron();
@@ -289,7 +309,6 @@ public:
 	void MoveRight(float AxisValue);
 	void PitchCamera(float AxisValue);
 	void YawCamera(float AxisValue);
-	void ControllerYawCamera(float AxisValue);
 	void Pause();
 	void Unpause();
 	void Jump();
@@ -354,6 +373,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	FString GetAimStyle();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetXAxisStyle(FString Style);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetXAxisStyle();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetXAxisAimingStyle(FString Style);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetXAxisAimingStyle();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetYAxisStyle(FString Style);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetYAxisStyle();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetYAxisAimingStyle(FString Style);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetYAxisAimingStyle();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetEnableTeleportAnimation(bool ShouldEnable);
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetEnableTeleportAnimation();
@@ -411,12 +446,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Materials") UTextureRenderTarget2D* TeleportRiftRenderTarget;
 	UPROPERTY(EditAnywhere, Category = "Materials") UMaterialInterface* CelShaderMaterial;
 
-	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* JumpSound;
-	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* DashSound;
-	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* CollectSound;
-	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* WarpSound;
-	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* DunkSound;
-	UPROPERTY(EditAnywhere, Category = "Sounds") USoundWave* DunkHitSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* JumpSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* DashSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* CollectSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* WarpSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* DunkSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* DunkHitSound;
+	UPROPERTY(EditAnywhere, Category = "Sounds") USoundCue* WingSound;
 
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementPhysics PhysicsSettings;
 	UPROPERTY(EditAnywhere, Category = "Movement") FMovementJumping JumpSettings;
@@ -427,6 +463,10 @@ public:
 
 	/* Should be obvious as well. */
 	UPROPERTY(EditAnywhere, Category = "Abilities") TEnumAsByte<AimType> AimStyle;
+	UPROPERTY(EditAnywhere, Category = "Abilities") TEnumAsByte<AxisType> XAxisStyle;
+	UPROPERTY(EditAnywhere, Category = "Abilities") TEnumAsByte<AxisType> XAxisAimingStyle;
+	UPROPERTY(EditAnywhere, Category = "Abilities") TEnumAsByte<AxisType> YAxisStyle;
+	UPROPERTY(EditAnywhere, Category = "Abilities") TEnumAsByte<AxisType> YAxisAimingStyle;
 
 	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesTeleport TeleportSettings;
 	UPROPERTY(EditAnywhere, Category = "Abilities") FAbilitiesDash DashSettings;
@@ -470,6 +510,7 @@ private:
 	float HowLong;
 	float dashtimer;
 	float TimeSinceLastMouseInput;
+	//float AutoCameraCurrentPitch;
 	float TeleportRange;
 	float TeleportAngleTolerance;
 	bool JumpNextFrame;
