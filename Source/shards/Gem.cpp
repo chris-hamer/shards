@@ -103,6 +103,7 @@ void AGem::Tick( float DeltaTime )
 void AGem::GetCollected() {
 	CollectionParticles->ActivateSystem();
 	GemModel->SetVisibility(false);
+	SetActorEnableCollision(false);
 	GetWorldTimerManager().SetTimer(PostCollectionTimer, this, &AGem::Ded, 0.5f);
 }
 
