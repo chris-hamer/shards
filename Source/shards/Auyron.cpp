@@ -422,7 +422,7 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 		}
 		
 		if (OtherActor->IsA(AMusicRegion::StaticClass())) {
-			((AMusicRegion*)OtherActor)->Music->FadeOut(2.0f,0.0f);
+			((AMusicRegion*)OtherActor)->MusicActor->FadeOut(2.0f,0.0f);
 		}
 	}
 }
@@ -502,7 +502,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			if (currentmusic != nullptr) {
 				currentmusic->FadeOut(2.0f, 0.0f);
 			}
-			currentmusic = ((AMusicRegion*)OtherActor)->Music;
+			currentmusic = ((AMusicRegion*)OtherActor)->MusicActor;
 			GetWorldTimerManager().SetTimer(MusicChangeTimer, this, &AAuyron::FadeInMusic, 2.0f);
 		}
 
@@ -2035,4 +2035,8 @@ bool AAuyron::GetIsInDialogue()
 FString AAuyron::GetDialogueText()
 {
 	return CurrentLine;
+}
+
+USkeletalMeshComponent* AAuyron::GetMesh() {
+	return PlayerModel;
 }

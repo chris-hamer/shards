@@ -400,6 +400,8 @@ public:
 	void ResumeInput();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetMaterial(int32 index, UMaterialInterface* newmat);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	USkeletalMeshComponent* GetMesh();
 	
 	
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
