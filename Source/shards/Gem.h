@@ -2,6 +2,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Auyron.h"
 #include "Gem.generated.h"
 
 UCLASS()
@@ -25,8 +26,10 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
-	void GetCollected();
+	void GetCollected(AAuyron* itsame);
 	void Ded();
+
+	AActor* Player;
 
 	UMaterialInterface* BaseGemMaterial;
 	UMaterialInstanceDynamic* gemmat;

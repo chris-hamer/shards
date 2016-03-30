@@ -4,6 +4,7 @@
 // tired of eatin sloppy, slimey eggs.
 
 #include "shards.h"
+#include "Auyron.h"
 #include "Gem.h"
 
 // Sets default values
@@ -97,14 +98,26 @@ void AGem::Tick( float DeltaTime )
 	SetActorLocation(GetActorLocation()+loc);
 	AddActorWorldRotation(FRotator(0.0f, 60.0f*DeltaTime, 0.0f));
 
+	if (Player != nullptr) {
+		CollectionParticles->SetVectorParameter("PlayerPosition", Player->GetActorLocation());
+		CollectionParticles->SetVectorParameter("PlayerSize1", Player->GetActorLocation() + FVector(-45.0f,-45.0f,-45.0f));
+		CollectionParticles->SetVectorParameter("PlayerSize2", Player->GetActorLocation() + FVector(45.0f, 45.0f, 45.0f));
+		CollectionParticles->SetFloatParameter("Strength", (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer))/5.0f);
+	}
+
+	if (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer) != -1.0f) {
+		gemmat->SetScalarParameterValue("Break", 20.0f*GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer));
+	}
+
 	curTime += DeltaTime;
 }
 
-void AGem::GetCollected() {
+void AGem::GetCollected(AAuyron* itsame) {
+	Player = itsame;
 	CollectionParticles->ActivateSystem();
 	GemModel->SetVisibility(false);
 	SetActorEnableCollision(false);
-	GetWorldTimerManager().SetTimer(PostCollectionTimer, this, &AGem::Ded, 0.5f);
+	GetWorldTimerManager().SetTimer(PostCollectionTimer, this, &AGem::Ded, 5.0f);
 }
 
 void AGem::Ded() {

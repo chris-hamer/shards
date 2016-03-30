@@ -407,13 +407,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool HasTeleport();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetHasTeleport(bool has);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool HasDash();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetHasDash(bool has);
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool HasWallJump();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetHasWallJump(bool has);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool HasGlide();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetHasGlide(bool has);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool HasSlam();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetHasSlam(bool has);
 
 	FVector MovementInput;
 	FVector CameraInput;

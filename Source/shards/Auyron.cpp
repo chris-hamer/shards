@@ -447,7 +447,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 		// We just picked up a gem.
 		if (OtherActor->IsA(AGem::StaticClass()))
 		{
-			((AGem*)OtherActor)->GetCollected();
+			((AGem*)OtherActor)->GetCollected(this);
 			GemCount++;
 			UGameplayStatics::PlaySound2D(this, CollectSound);
 		}
@@ -646,6 +646,8 @@ void AAuyron::Tick(float DeltaTime)
 		movementlocked = true;
 		cameralocked = true;
 	}
+
+	JustWallJumped = false;
 
 	teletestmat->SetScalarParameterValue("t", GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer)/TeleportSettings.TeleportAnimationDuration);
 	
@@ -1994,9 +1996,19 @@ bool AAuyron::HasTeleport()
 	return TeleportSettings.HasTeleport;
 }
 
+void AAuyron::SetHasTeleport(bool has)
+{
+	TeleportSettings.HasTeleport = has;
+}
+
 bool AAuyron::HasDash()
 {
 	return DashSettings.HasDash;
+}
+
+void AAuyron::SetHasDash(bool has)
+{
+	DashSettings.HasDash = has;
 }
 
 bool AAuyron::HasWallJump()
@@ -2004,14 +2016,29 @@ bool AAuyron::HasWallJump()
 	return true;
 }
 
+void AAuyron::SetHasWallJump(bool has)
+{
+	JumpSettings.HasWallJump = has;
+}
+
 bool AAuyron::HasGlide()
 {
 	return GlideSettings.HasGlide;
 }
 
+void AAuyron::SetHasGlide(bool has)
+{
+	GlideSettings.HasGlide = has;
+}
+
 bool AAuyron::HasSlam()
 {
 	return SlamSettings.HasSlam;
+}
+
+void AAuyron::SetHasSlam(bool has)
+{
+	SlamSettings.HasSlam = has;
 }
 
 UParticleSystemComponent* AAuyron::GetTrailParticlesL() {
