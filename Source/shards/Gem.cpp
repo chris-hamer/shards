@@ -52,6 +52,7 @@ AGem::AGem()
 	CollectionParticles->SetTemplate(particles.Object);
 	CollectionParticles->AttachTo(GemModel);
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
+	CollectionParticles->bAutoActivate = false;
 }
 
 void AGem::PostInitializeComponents()

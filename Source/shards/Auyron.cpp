@@ -622,9 +622,13 @@ void AAuyron::Tick(float DeltaTime)
 	Forward.Z = 0.0f;
 	Forward = Forward.GetSafeNormal();
 
-	//if (lel) {
-		Capture2D->GetCaptureComponent2D()->Deactivate();//
-	//}
+	Capture2D->GetCaptureComponent2D()->Deactivate();
+
+	if (MovementInput.IsNearlyZero()) {
+		TimeSinceLastMovementInputReleased = 0.0f;
+	} else {
+		TimeSinceLastMovementInputReleased += DeltaTime;
+	}
 
 	if (FMath::Abs(MovementInput.X) > 0.9f) {
 		MovementInput.X = FMath::Sign(MovementInput.X);
@@ -1345,8 +1349,10 @@ void AAuyron::Tick(float DeltaTime)
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
-				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X),1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector)/ PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
-				NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch,CameraAutoTurnSettings.CameraDefaultPitch,CameraAutoTurnSettings.CameraDefaultPitchRate);
+				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X), 1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector) / PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
+				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
+					NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, CameraAutoTurnSettings.CameraDefaultPitch, CameraAutoTurnSettings.CameraDefaultPitchRate);
+				}
 			}
 
 			// Set the rotation of the camera.

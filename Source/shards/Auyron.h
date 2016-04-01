@@ -522,6 +522,7 @@ private:
 	float HowLong;
 	float dashtimer;
 	float TimeSinceLastMouseInput;
+	float TimeSinceLastMovementInputReleased;
 	//float AutoCameraCurrentPitch;
 	float TeleportRange;
 	float TeleportAngleTolerance;
