@@ -1058,7 +1058,7 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Set the target TelePad's color and brightness so that it stands out.
 			closest->PointLight->LightColor = TeleportSettings.TeleportLightColor;
-			closest->PointLight->Intensity = 16.0*1385.76f;
+			closest->PointLight->Intensity = 32.0f;
 			closest->PointLight->UpdateColorAndBrightness();
 
 			closest->asfd = true;
@@ -1428,6 +1428,7 @@ void AAuyron::Tick(float DeltaTime)
 						//(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
 				//}
 				if (!MovementInput.IsNearlyZero()) {
+					NewRotation.Pitch = 0.0f;
 					NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
 						(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
 				}

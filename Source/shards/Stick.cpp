@@ -27,7 +27,9 @@ AStick::AStick()
 	PointLight->CastShadows = false;
 	PointLight->SetRelativeLocation(FVector(0.0f, 0.0f, 6.8f));
 	PointLight->Intensity = 0.0f; 1385.76f;
-	PointLight->AttenuationRadius = 1006.83f;
+	PointLight->AttenuationRadius = 256.0f;
+	PointLight->bUseInverseSquaredFalloff = false;
+	PointLight->LightFalloffExponent = 0.0001f;
 	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
