@@ -16,14 +16,20 @@ AMusicRegion::AMusicRegion()
 	Region = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	Region->AttachTo(Root);
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
+
+	const ConstructorHelpers::FObjectFinder<USoundCue> defaultmusic(TEXT("/Game/Sound/Music/Vibrant_Life"));
+	DefaultMusic = defaultmusic.Object;
 }
 
 // Called when the game starts or when spawned
 void AMusicRegion::BeginPlay()
 {
 	Super::BeginPlay();
+	MusicActor = GetWorld()->SpawnActor<AAmbientSound>(AAmbientSound::StaticClass(), GetTransform());
+	MusicActor->GetAudioComponent()->SetSound(DefaultMusic);
+	MusicActor->Stop();
 	if (PlayOnLevelLoad) {
-		Music->Play();
+		MusicActor->Play();
 	}
 }
 

@@ -19,6 +19,12 @@ public:
 	
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
+	
+	UFUNCTION(BlueprintCallable, Category = "Dialogue Cut Interface")
+	void SetText(FString text);
+	
+	UFUNCTION(BlueprintCallable, Category = "Dialogue Cut Interface")
+	void SetNext(ADialogueCut* nextcut);
 
 	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) UCameraComponent* Camera;

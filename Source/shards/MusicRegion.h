@@ -22,7 +22,8 @@ public:
 	
 	UPROPERTY(EditAnywhere) USceneComponent* Root;
 	UPROPERTY(EditAnywhere) UBoxComponent* Region;
-	UPROPERTY(EditAnywhere) AAmbientSound* Music;
+	UPROPERTY(EditAnywhere) AAmbientSound* MusicActor;
+	UPROPERTY(EditAnywhere) USoundCue* DefaultMusic;
 	UPROPERTY(EditAnywhere) bool PlayOnLevelLoad;
 	
 	

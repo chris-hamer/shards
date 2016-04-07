@@ -2,6 +2,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Auyron.h"
 #include "Gem.generated.h"
 
 UCLASS()
@@ -15,7 +16,7 @@ public:
 
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* GemModel;
 	UPROPERTY(EditAnywhere) USphereComponent* SphereComponent;
-	UPROPERTY(EditAnywhere) UPointLightComponent* PointLightComponent;
+	UPROPERTY(EditAnywhere) UParticleSystemComponent* CollectionParticles;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -23,9 +24,24 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
+	virtual void PostInitializeComponents() override;
+
+	void GetCollected(AAuyron* itsame);
+	void Ded();
+
+	AActor* Player;
+
+	UMaterialInterface* BaseGemMaterial;
+	UMaterialInstanceDynamic* gemmat;
+
+	TArray<UStaticMesh*> meshes;
+
+	FLinearColor GemColor;
+	
+	FTimerHandle PostCollectionTimer;
+
 private:
 	float curTime;
 	float baseHeight;
 	int32 gemKind;
-	int32 gemColor;
 };

@@ -18,40 +18,16 @@ UAuyronMovementComponent::UAuyronMovementComponent()
 	timerlimit = 0.15f;
 }
 
-//void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	FVector InputVector = ConsumeInputVector();
-	FVector Horiz = FVector::VectorPlaneProject(InputVector, FVector::UpVector);
-	FVector Vert = InputVector.Z*FVector::UpVector;
 	FHitResult HitResult;
-
-	SafeMoveUpdatedComponent(Horiz, UpdatedComponent->GetComponentRotation(), true, HitResult);
-	if (HitResult.IsValidBlockingHit()) {
-		Wall = FHitResult(HitResult);
-		if (Wall.GetActor() == nullptr || !Wall.GetActor()->IsA(AMovingPlatform::StaticClass())) {
-			WallNormal = Wall.Normal;
-		}
-		SlideAlongSurface(Horiz, 1.0 - HitResult.Time, HitResult.Normal, HitResult);
-	}
-	AActor* ActorToIgnore = HitResult.GetActor();
-
-	SafeMoveUpdatedComponent(Vert, UpdatedComponent->GetComponentRotation(), true, HitResult);
-	if (HitResult.IsValidBlockingHit()) {
-		Floor = FHitResult(HitResult);
-		SlideAlongSurface(Vert, 1.0 - HitResult.Time, HitResult.Normal, HitResult);
-	}
-
 	FHitResult ShapeTraceResult;
-	FCollisionShape shape = FCollisionShape::MakeCapsule(40.0f, 40.0f); //25,25
+	FCollisionShape shape = FCollisionShape::MakeBox(FVector(32.5f,32.5f,10.0f));
 
 	FCollisionQueryParams Params;
 	Params.bFindInitialOverlaps = true;
-	if (ActorToIgnore != nullptr) {
-		Params.AddIgnoredActor(ActorToIgnore);
-	}
 
 	// Telepads don't count.
 	for (TActorIterator<AStick> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
@@ -66,13 +42,24 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 	}
 
-	FCollisionResponse a;
-	GetWorld()->SweepSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation()+20.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+	TArray<FHitResult> results;
+	if (forceregiondirection.Z == 0.0f) {
+		GetWorld()->SweepMultiByChannel(results, UpdatedComponent->GetComponentLocation() - 0.0f*45.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100
+		for (FHitResult r : results) {
+			if (r.Normal.Z > 0.6f) {
+				ShapeTraceResult = r;
+				break;
+			}
+		}
+		if (!ShapeTraceResult.IsValidBlockingHit()) {
+			GetWorld()->LineTraceSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, ECC_Visibility);
+		}
+	}
 
-	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f*FVector::UpVector; // 50
-	float DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
+	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f * FVector::UpVector; // 50
 	float RequiredDistance = (onground ? 50.0f : 10.0f); //50,1
-
+	DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
+	overground = ShapeTraceResult.IsValidBlockingHit();
 	if (!onground) {
 		offGroundTime += DeltaTime;
 	}
@@ -82,7 +69,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		enforcementtimer += DeltaTime;
 		toosteep = true;
 	}
-	
+
 	bool wasonground = onground;
 	onground = false;
 	groundvelocity = FVector::ZeroVector;
@@ -90,7 +77,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 	FloorNormal = FVector::ZeroVector;
 
-	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && ShapeTraceResult.IsValidBlockingHit() && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground)) { // 
+	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground) && !justjumped) { // 
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
 			if (enforcementtimer == -1.0f) {
 				enforcementtimer = 0.0f;
@@ -100,7 +87,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 		onground = true;
 		offGroundTime = 0.0f;
-
 		// It's a moving platform.
 		if (ShapeTraceResult.GetActor() != nullptr && ShapeTraceResult.GetActor()->GetClass() != nullptr && (ShapeTraceResult.GetActor()->GetClass() == AMovingPlatform::StaticClass() || ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass())) {
 			// Record the platform's velocity and acceleration so the character controller can deal with it.
@@ -124,12 +110,16 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 	}
 
+	if (groundvelocity.Z > 0.0f) {
+		//groundvelocity.Z = 0.0f;
+	}
+
+	justjumped = false;
+
 	bool TraceBlocked;
 	FVector newlocation = UpdatedComponent->GetComponentLocation();
 
 	FHitResult TraceHitResult;
-	GetWorld()->LineTraceSingleByChannel(TraceHitResult, UpdatedComponent->GetComponentLocation(), ShapeTraceResult.ImpactPoint + (ShapeTraceResult.ImpactPoint - UpdatedComponent->GetComponentLocation()).GetSafeNormal(), ECC_Visibility);
-	TraceBlocked = GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint, ShapeTraceResult.ImpactPoint - RequiredDistance*FVector::UpVector, ECC_Visibility);
 	TraceBlocked = GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility);
 	if (TraceHitResult.Normal.Z > minnormalz) {
 		enforcementtimer = -1.0f;

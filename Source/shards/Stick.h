@@ -15,16 +15,23 @@ public:
 	AStick();
 
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override;//
 	
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
+	virtual void PostInitializeComponents() override;
+
+	UFUNCTION() void SetLit(bool lit);
+
 	UPROPERTY(EditAnywhere) USceneComponent* Here;
 	UPROPERTY(EditAnywhere)	UStaticMeshComponent* StickModel;
+	UPROPERTY(EditAnywhere) UMaterialInterface* Material;
 	UPROPERTY(EditAnywhere) UPointLightComponent* PointLight;
 	UPROPERTY(EditAnywhere) FVector PostTeleportVelocity;
 
 	FVector gohere;
-	
+	UMaterialInstanceDynamic* dmat;
+
+	bool asfd;
 };

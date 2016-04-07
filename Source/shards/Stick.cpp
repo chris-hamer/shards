@@ -26,20 +26,32 @@ AStick::AStick()
 	PointLight->AttachTo(RootComponent);
 	PointLight->CastShadows = false;
 	PointLight->SetRelativeLocation(FVector(0.0f, 0.0f, 6.8f));
-	PointLight->Intensity = 1385.76f;
-	PointLight->AttenuationRadius = 1006.83f;
+	PointLight->Intensity = 0.0f; 1385.76f;
+	PointLight->AttenuationRadius = 256.0f;
+	PointLight->bUseInverseSquaredFalloff = false;
+	PointLight->LightFalloffExponent = 0.0001f;
 	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
 	Here->AttachTo(StickModel);
 	Here->SetRelativeLocation(FVector::ZeroVector);
 	PostTeleportVelocity = FVector(0.0f, 0.0f, 0.0f);
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> daismat(TEXT("/Game/Textures/Environment/mDais"));
+	Material = daismat.Object;
+}
+
+void AStick::PostInitializeComponents() {
+	Super::PostInitializeComponents();
+	dmat = UMaterialInstanceDynamic::Create(Material, this);
+	StickModel->SetMaterial(0, dmat);
 }
 
 // Called when the game starts or when spawned
 void AStick::BeginPlay()
 {
 	Super::BeginPlay();
+	StickModel->SetMaterial(0, dmat);
 }
 
 // Called every frame
@@ -47,6 +59,11 @@ void AStick::Tick( float DeltaTime )
 {
 	Super::Tick(DeltaTime);
 	gohere = Here->GetComponentLocation();
-	
+	if (dmat != nullptr) {
+		dmat->SetScalarParameterValue("thing", asfd);
+	}
 }
 
+void AStick::SetLit(bool lit) {
+	asfd = lit;
+}
