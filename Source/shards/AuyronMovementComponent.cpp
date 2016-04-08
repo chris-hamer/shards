@@ -70,7 +70,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		toosteep = true;
 	}
 
-	bool wasonground = onground;
+	wasonground = onground;
 	onground = false;
 	groundvelocity = FVector::ZeroVector;
 	platformangularfrequency = 0.0f;

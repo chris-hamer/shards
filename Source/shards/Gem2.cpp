@@ -48,14 +48,6 @@ void AGem2::PostInitializeComponents()
 void AGem2::BeginPlay()
 {
 	Super::BeginPlay();
-
-	float meh = FMath::RandRange(0.7f, 1.0f);
-	FLinearColor asdf = FLinearColor::MakeRandomColor();
-
-	gemmat->SetVectorParameterValue("Bright Color", asdf);
-	gemmat->SetVectorParameterValue("Dark Color", asdf/2.0f);
-
-	baseHeight = GetActorLocation().Z;
 }
 
 // Called every frame
