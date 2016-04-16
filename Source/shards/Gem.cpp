@@ -48,7 +48,7 @@ AGem::AGem()
 	BaseGemMaterial = mat.Object;
 
 	CollectionParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("CollectionParticles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/ColletionParticles.ColletionParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/ColletionParticles.CollectionParticles"));
 	CollectionParticles->SetTemplate(particles.Object);
 	CollectionParticles->AttachTo(GemModel);
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
@@ -101,11 +101,12 @@ void AGem::Tick( float DeltaTime )
 
 	if (Player != nullptr) {
 		CollectionParticles->SetVectorParameter("PlayerPosition", Player->GetActorLocation());
-		CollectionParticles->SetVectorParameter("PlayerSize1", Player->GetActorLocation() + FVector(-45.0f,-45.0f,-45.0f));
-		CollectionParticles->SetVectorParameter("PlayerSize2", Player->GetActorLocation() + FVector(45.0f, 45.0f, 45.0f));
-		CollectionParticles->SetFloatParameter("Strength", (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer))/5.0f);
+		CollectionParticles->SetVectorParameter("PlayerSize1", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(-45.0f, -45.0f, -45.0f));
+		CollectionParticles->SetVectorParameter("PlayerSize2", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(45.0f, 45.0f, 45.0f));
+		CollectionParticles->SetFloatParameter("Strength", (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer))/1.00f);
 	}
 
+	// Eliot made me put this here.
 	if (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer) != -1.0f) {
 		gemmat->SetScalarParameterValue("Break", 20.0f*GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer));
 	}
