@@ -4,7 +4,6 @@
 #include "Gem.h"
 #include "Auyron.h"
 #include "AuyronMovementComponent.h"
-#include "AuyronWallJumpMovementComponent.h"
 #include "CameraOverrideRegion.h"
 #include "MovingPlatform.h"
 #include "RotatingPlatform.h"
