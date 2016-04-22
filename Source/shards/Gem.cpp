@@ -80,7 +80,7 @@ void AGem::BeginPlay()
 	GemModel->SetStaticMesh(meshes[FMath::RandRange(0, 5)]);
 	curTime = FMath::FRandRange(0.0f, 2.0f*3.14f);
 
-	CollectionParticles->bAutoActivate = false;
+	CollectionParticles->bAutoActivate = false;//
 	CollectionParticles->DeactivateSystem();
 	CollectionParticles->UpdateInstances();
 	//baseHeight = GetActorrelativeloca().Z;//
@@ -93,17 +93,19 @@ void AGem::Tick( float DeltaTime )
 
 	CollectionParticles->SetColorParameter("ParticleColor", GemColor);
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
+	CollectionParticles->SetWorldRotation(FRotator::ZeroRotator);
 	//CollectionParticles->UpdateInstances();
 	FVector loc = GetActorLocation();
 	loc = FVector(0.0f, 0.0f, 10.0f*DeltaTime*FMath::Cos(curTime*PI));
-	SetActorLocation(GetActorLocation()+loc);
-	AddActorWorldRotation(FRotator(0.0f, 60.0f*DeltaTime, 0.0f));
 
 	if (Player != nullptr) {
-		CollectionParticles->SetVectorParameter("PlayerPosition", Player->GetActorLocation());
+		CollectionParticles->SetVectorParameter("PlayerPosition", 2.0f*(Player->GetActorLocation()-GetActorLocation()));
 		CollectionParticles->SetVectorParameter("PlayerSize1", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(-45.0f, -45.0f, -45.0f));
 		CollectionParticles->SetVectorParameter("PlayerSize2", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(45.0f, 45.0f, 45.0f));
 		CollectionParticles->SetFloatParameter("Strength", (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer))/1.00f);
+	} else {
+		SetActorLocation(GetActorLocation() + loc);
+		GemModel->AddWorldRotation(FRotator(0.0f, 60.0f*DeltaTime, 0.0f));
 	}
 
 	// Eliot made me put this here.
