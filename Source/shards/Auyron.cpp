@@ -293,10 +293,10 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
 	TeleportRiftMaterial = riftmat.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/thisthingagain"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Textures/Effects/drawbehind"));
 	TestTeleEffectBase = riftmat2.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/wezeldanow"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Textures/Effects/celshader"));
 	CelShaderMaterial = celshade.Object;
 
 	const ConstructorHelpers::FObjectFinder<USoundCue> jsound(TEXT("/Game/Sound/SoundEffects/jump"));
