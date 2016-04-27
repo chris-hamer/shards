@@ -48,7 +48,7 @@ AGem::AGem()
 	BaseGemMaterial = mat.Object;
 
 	CollectionParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("CollectionParticles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/ColletionParticles.CollectionParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/CollectionParticles.CollectionParticles"));
 	CollectionParticles->SetTemplate(particles.Object);
 	CollectionParticles->AttachTo(GemModel);
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
@@ -102,7 +102,7 @@ void AGem::Tick( float DeltaTime )
 		CollectionParticles->SetVectorParameter("PlayerPosition", 2.0f*(Player->GetActorLocation()-GetActorLocation()));
 		CollectionParticles->SetVectorParameter("PlayerSize1", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(-45.0f, -45.0f, -45.0f));
 		CollectionParticles->SetVectorParameter("PlayerSize2", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(45.0f, 45.0f, 45.0f));
-		CollectionParticles->SetFloatParameter("Strength", (GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer))/1.00f);
+		CollectionParticles->SetFloatParameter("Strength", (1.0f/DeltaTime)*FMath::Clamp(GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer) / 2.0f, 0.0f, 1.0f)*FMath::Clamp(GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer) / 2.0f, 0.0f, 1.0f));
 	} else {
 		SetActorLocation(GetActorLocation() + loc);
 		GemModel->AddWorldRotation(FRotator(0.0f, 60.0f*DeltaTime, 0.0f));

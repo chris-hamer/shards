@@ -769,7 +769,7 @@ void AAuyron::Tick(float DeltaTime)
 		// Handle jumping.
 		if (JumpNextFrame && !IsInDialogue) {
 			bool wouldhavebeenotg = OnTheGround;
-			if (OnTheGround || (StoredWallNormal.Size() > 0.95f&&JumpSettings.HasWallJump) || MovementComponent->offGroundTime < JumpSettings.CoyoteJumpTime) {
+			if (OnTheGround || (StoredWallNormal.Size() > 0.95f && JumpSettings.HasWallJump) || MovementComponent->offGroundTime < JumpSettings.CoyoteJumpTime) {
 
 				// Jump while taking the floor's angle and vertical movement into account.
 				CapsuleComponent->AddImpulse((JumpSettings.JumpPower) * FVector::UpVector, NAME_None, true);
@@ -784,7 +784,7 @@ void AAuyron::Tick(float DeltaTime)
 
 				UGameplayStatics::PlaySound2D(this, JumpSound);
 
-				if (StoredWallNormal.Size() > 0.3f && !wouldhavebeenotg) {
+				if (StoredWallNormal.Size() > 0.3f && !wouldhavebeenotg && JumpSettings.HasWallJump) {
 					// No cheating.
 					if (IsGliding || AlreadyGlided) {
 						AlreadyGlided = true;
