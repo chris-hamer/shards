@@ -5,6 +5,12 @@
 #include "MovingPlatform.h"
 #include "RotatingPlatform.generated.h"
 
+UENUM() namespace RotatingPlatformDirection {
+	enum Enum {
+		CW                UMETA(DisplayName = "Clockwise"),
+		CCW               UMETA(DisplayName = "Counterclockwise")
+	};
+}
 /**
  * 
  */
@@ -13,11 +19,6 @@ class SHARDS_API ARotatingPlatform : public AMovingPlatform
 {
 	GENERATED_BODY()
 public:
-
-	UENUM() enum Dir {
-		CW                UMETA(DisplayName = "Clockwise"),
-		CCW               UMETA(DisplayName = "Counterclockwise")
-	};
 
 	ARotatingPlatform();
 	virtual void Tick(float DeltaSeconds) override;
@@ -28,6 +29,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement") float AngularPeriod;
 
 	// The direction (clockwise or counterclockwise) that the platform rotates when looked at from the top down.
-	UPROPERTY(EditAnywhere, Category = "Movement") TEnumAsByte<Dir> SpinDirection;
+	UPROPERTY(EditAnywhere, Category = "Movement") TEnumAsByte<RotatingPlatformDirection::Enum> SpinDirection;
 
 };

@@ -15,13 +15,16 @@ ACameraOverrideRegion::ACameraOverrideRegion()
 
 	Region = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	Region->AttachTo(Root);
+	//Region->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 
 	TargetCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Target Camera"));
 	TargetCamera->AttachTo(Root);
+	//TargetCamera->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	Axis = CreateDefaultSubobject<UArrowComponent>(TEXT("Axis"));
 	Axis->AttachTo(Root);
+	//Axis->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 }
 
 // Called when the game starts or when spawned

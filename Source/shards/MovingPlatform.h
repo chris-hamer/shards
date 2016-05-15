@@ -5,17 +5,19 @@
 #include "GameFramework/Actor.h"
 #include "MovingPlatform.generated.h"
 
-UCLASS()
-class SHARDS_API AMovingPlatform : public AActor
-{
-	GENERATED_BODY()
-
-	UENUM() enum Type {
+UENUM() namespace MovingPlatformType {
+	enum Enum {
 		WAVE                  UMETA(DisplayName = "Wave"),
 		LINEAR                UMETA(DisplayName = "Linear"),
 		BLINK                 UMETA(DisplayName = "Blink"),
 		ONEWAY				  UMETA(DisplayName = "OneWay")
 	};
+}
+
+UCLASS()
+class SHARDS_API AMovingPlatform : public AActor
+{
+	GENERATED_BODY()
 
 private:
 	float timer;
@@ -50,7 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement") float CycleTime;
 
 	/** The type of movement pattern this platform uses. */
-	UPROPERTY(EditAnywhere, Category = "Movement") TEnumAsByte<Type> MovementType;
+	UPROPERTY(EditAnywhere, Category = "Movement") TEnumAsByte<MovingPlatformType::Enum> MovementType;
 
 	/* The platform's current velocity. */
 	FVector Velocity;

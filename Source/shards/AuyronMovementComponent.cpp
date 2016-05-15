@@ -102,7 +102,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)ShapeTraceResult.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
 				platformangularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)ShapeTraceResult.GetActor())->AngularPeriod;
 				platformangularfrequency *= (((ARotatingPlatform*)ShapeTraceResult.GetActor())->Deactivated ? 0.0f : 1.0f);
-				platformspindir = (((ARotatingPlatform*)ShapeTraceResult.GetActor())->SpinDirection == ARotatingPlatform::CW ? -1 : 1);
+				platformspindir = (((ARotatingPlatform*)ShapeTraceResult.GetActor())->SpinDirection == RotatingPlatformDirection::CW ? -1 : 1);
 				groundvelocity += platformangularfrequency * displacement.Size() *
 									FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *
 									platformspindir;

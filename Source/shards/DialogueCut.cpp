@@ -18,6 +18,7 @@ ADialogueCut::ADialogueCut()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->AttachTo(Root);
+	//Camera->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 }
 
 // Called when the game starts or when spawned

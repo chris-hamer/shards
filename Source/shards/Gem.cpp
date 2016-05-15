@@ -43,6 +43,7 @@ AGem::AGem()
 	GemModel->SetCastShadow(false);
 	GemModel->SetStaticMesh(meshes[FMath::RandRange(0, 5)]);
 	GemModel->AttachTo(RootComponent);
+	//GemModel->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> mat(TEXT("/Game/Textures/Gems/BaseGemMaterial"));
 	BaseGemMaterial = mat.Object;
@@ -51,6 +52,7 @@ AGem::AGem()
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/CollectionParticles.CollectionParticles"));
 	CollectionParticles->SetTemplate(particles.Object);
 	CollectionParticles->AttachTo(GemModel);
+	//CollectionParticles->AttachToComponent(GemModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
 	CollectionParticles->bAutoActivate = false;
 }
@@ -99,7 +101,7 @@ void AGem::Tick( float DeltaTime )
 	loc = FVector(0.0f, 0.0f, 10.0f*DeltaTime*FMath::Cos(curTime*PI));
 
 	if (Player != nullptr) {
-		CollectionParticles->SetVectorParameter("PlayerPosition", 2.0f*(Player->GetActorLocation()-GetActorLocation()));
+		CollectionParticles->SetVectorParameter("PlayerPosition", 1.0f*(Player->GetActorLocation()-GetActorLocation()));
 		CollectionParticles->SetVectorParameter("PlayerSize1", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(-45.0f, -45.0f, -45.0f));
 		CollectionParticles->SetVectorParameter("PlayerSize2", Player->GetActorLocation() + (DeltaTime / 0.016f)*FVector(45.0f, 45.0f, 45.0f));
 		CollectionParticles->SetFloatParameter("Strength", (1.0f/DeltaTime)*FMath::Clamp(GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer) / 2.0f, 0.0f, 1.0f)*FMath::Clamp(GetWorldTimerManager().GetTimerElapsed(PostCollectionTimer) / 2.0f, 0.0f, 1.0f));

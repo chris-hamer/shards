@@ -17,6 +17,7 @@ AForceRegion::AForceRegion()
 
 	Region = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	Region->AttachTo(Root);
+	//Region->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 }
 

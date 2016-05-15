@@ -274,21 +274,21 @@ struct FCelShader
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FColor Tint;
 };
 
+UENUM() enum AimType {
+	HOLD			UMETA(DisplayName = "Hold"),
+	TOGGLE			UMETA(DisplayName = "Toggle")
+};
+
+UENUM() enum AxisType {
+	STANDARD		UMETA(DisplayName = "Standard"),
+	INVERTED		UMETA(DisplayName = "Inverted")
+};
+
 UCLASS() class AAuyron : public APawn
 {
 	GENERATED_BODY()
 
 public:
-
-	UENUM() enum AimType {
-		HOLD			UMETA(DisplayName = "Hold"),
-		TOGGLE			UMETA(DisplayName = "Toggle")
-	};
-	
-	UENUM() enum AxisType {
-		STANDARD		UMETA(DisplayName = "Standard"),
-		INVERTED		UMETA(DisplayName = "Inverted")
-	};
 
 	// Sets default values for this pawn's properties
 	AAuyron();
@@ -538,6 +538,10 @@ private:
 	bool OnTheGround;
 	bool HelpEnabled;
 
+	FScriptDelegate onbeginoverlapdelegate;
+	FScriptDelegate onendoverlapdelegate;
+	FScriptDelegate onhitdelegate;
+
 	AStick* closeststick;
 
 	FVector StoredWallNormal;
@@ -642,7 +646,7 @@ private:
 	float BackupDefaultArmLength;
 	
 	float defaultfov;
-	TEnumAsByte<ATwoDimensionalMovementRegion::AxisEnum> LockedMovementAxis;
+	TEnumAsByte<MovementRegionLockedAxis::Axis> LockedMovementAxis;
 	FVector CameraOverrideTargetDisplacement;
 	FVector CameraOverrideTargetOffset;
 	FVector CameraOverrideTargetLocation;

@@ -10,13 +10,15 @@ ATwoDimensionalMovementRegion::ATwoDimensionalMovementRegion()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	LockedAxis = XAXIS;
+	LockedAxis = MovementRegionLockedAxis::XAXIS;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
 	Region = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	Region->AttachTo(Root);
+	//Region->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 }
 

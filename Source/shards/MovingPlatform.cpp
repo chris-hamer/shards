@@ -11,7 +11,7 @@ AMovingPlatform::AMovingPlatform()
 	PrimaryActorTick.bCanEverTick = true;
 
 	CycleTime = 6.0f;
-	MovementType = LINEAR;
+	MovementType = MovingPlatformType::LINEAR;
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/platform"));
@@ -21,10 +21,12 @@ AMovingPlatform::AMovingPlatform()
 
 	StartPosition = CreateDefaultSubobject<USceneComponent>(TEXT("Start Position"));
 	StartPosition->AttachTo(RootComponent);
+	//StartPosition->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	StartPosition->SetRelativeLocation(FVector::ZeroVector);
 
 	EndPosition = CreateDefaultSubobject<USceneComponent>(TEXT("End Position"));
 	EndPosition->AttachTo(RootComponent);
+	//EndPosition->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	EndPosition->SetRelativeLocation(FVector::ZeroVector);
 
 }
@@ -82,16 +84,16 @@ void AMovingPlatform::Tick( float DeltaTime )
 			float(*f)(float, float) = &linear;
 			float(*v)(float, float) = &linear;
 			switch (MovementType) {
-			case LINEAR:
+			case MovingPlatformType::LINEAR:
 				f = &linear;
 				break;
-			case WAVE:
+			case MovingPlatformType::WAVE:
 				f = &wave;
 				break;
-			case BLINK:
+			case MovingPlatformType::BLINK:
 				f = &blink;
 				break;
-			case ONEWAY:
+			case MovingPlatformType::ONEWAY:
 				f = &blink;
 				break;
 			}

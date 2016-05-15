@@ -116,9 +116,15 @@ AAuyron::AAuyron()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
 	CapsuleComponent->InitCapsuleSize(45.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
-	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
-	CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
-	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
+	onbeginoverlapdelegate.BindUFunction(this, "Hit");
+	CapsuleComponent->OnComponentBeginOverlap.Add(onbeginoverlapdelegate);
+	onendoverlapdelegate.BindUFunction(this, "UnHit");
+	CapsuleComponent->OnComponentEndOverlap.Add(onendoverlapdelegate);
+	onhitdelegate.BindUFunction(this, "Stay");
+	CapsuleComponent->OnComponentHit.Add(onhitdelegate);
+	//CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
+	//CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
+	//CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
 	CapsuleComponent->SetSimulatePhysics(true);
 	CapsuleComponent->SetEnableGravity(false);
 	CapsuleComponent->SetLinearDamping(0.0f);
@@ -130,6 +136,7 @@ AAuyron::AAuyron()
 	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
 	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
 	CapsuleComponent->AttachTo(RootComponent);
+	//CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	SetActorEnableCollision(true);
 
 	// It you.
@@ -139,6 +146,7 @@ AAuyron::AAuyron()
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->bRenderCustomDepth = true;
 	PlayerModel->AttachTo(CapsuleComponent);
+	//PlayerModel->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	//static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimationBlueprint(TEXT("/Game/Animations/Characters/Auyron/Anim_Auyron"));
 	//PlayerModel->SetAnimInstanceClass(AnimationBlueprint.Object->GetAnimBlueprintGeneratedClass());
@@ -153,10 +161,12 @@ AAuyron::AAuyron()
 	SpringArm->CameraLagMaxDistance = 1000.0f;
 	SpringArm->ProbeSize = 20.0f;
 	SpringArm->AttachTo(CapsuleComponent);
+	//SpringArm->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	// Camera so the casuals can "see what they're doing" or whatever.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
 	Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
+	//Camera->AttachToComponent(SpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);//4.12
 
 	// May god have mercy on your GPU.
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
@@ -165,6 +175,7 @@ AAuyron::AAuyron()
 	DashParticles->bAutoActivate = false;
 	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	DashParticles->AttachTo(PlayerModel);
+	//DashParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
@@ -172,6 +183,7 @@ AAuyron::AAuyron()
 	FloatParticles->bAutoActivate = false;
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	FloatParticles->AttachTo(PlayerModel);
+	//FloatParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Particles/SlamParticles"));
@@ -179,6 +191,7 @@ AAuyron::AAuyron()
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	SlamParticles->AttachTo(PlayerModel);
+	//SlamParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
@@ -186,6 +199,7 @@ AAuyron::AAuyron()
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	SlamTrail->AttachTo(PlayerModel);
+	//SlamTrail->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
@@ -193,6 +207,7 @@ AAuyron::AAuyron()
 	TrailParticlesL->bAutoActivate = false;
 	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesL->AttachTo(PlayerModel);
+	//TrailParticlesL->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
@@ -200,6 +215,7 @@ AAuyron::AAuyron()
 	TrailParticlesR->bAutoActivate = false;
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	TrailParticlesR->AttachTo(PlayerModel);
+	//TrailParticlesR->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
@@ -253,6 +269,7 @@ AAuyron::AAuyron()
 	TheAbyss->SetRelativeLocation(FVector(185.0f, 0.0f, 120.0f));
 	TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, 0.0f));
 	TheAbyss->AttachTo(PlayerModel);
+	//TheAbyss->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
 	BootsR->SetVisibility(DashSettings.HasDash);
@@ -272,6 +289,7 @@ AAuyron::AAuyron()
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
 	PostProcess->AttachTo(RootComponent);
+	//PostProcess->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	// NINTENDON'T DO 16 BIT.
 	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> riftmatfile(TEXT("/Game/Textures/Effects/RiftRTT"));
@@ -581,12 +599,19 @@ void AAuyron::BeginPlay()
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
 	
-	TeleClaw->AttachTo(PlayerModel, "RightHand", EAttachLocation::SnapToTargetIncludingScale);
-	BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R", EAttachLocation::SnapToTargetIncludingScale);
-	BootsL->AttachTo(PlayerModel, "WHATARETHOSE_L", EAttachLocation::SnapToTargetIncludingScale);
-	Bracelet->AttachTo(PlayerModel, "Bracelet", EAttachLocation::SnapToTargetIncludingScale);
-	Belt->AttachTo(PlayerModel, "Belt", EAttachLocation::SnapToTargetIncludingScale);
-	Wings->AttachTo(PlayerModel, "Wings", EAttachLocation::SnapToTargetIncludingScale);
+	//TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
+	//BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
+	//BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
+	//Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
+	//Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
+	//Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
+
+	TeleClaw->AttachTo(PlayerModel, "RightHand");
+	BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R");
+	BootsL->AttachTo(PlayerModel, "WHATARETHOSE_L");
+	Bracelet->AttachTo(PlayerModel, "Bracelet");
+	Belt->AttachTo(PlayerModel, "Belt");
+	Wings->AttachTo(PlayerModel,  "Wings");
 
 	((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
 
@@ -811,7 +836,7 @@ void AAuyron::Tick(float DeltaTime)
 
 					newmodelrotation.Yaw = ((tangentalvelocity.IsNearlyZero() ? 1.0f : 0.75f)*StoredWallNormal.GetSafeNormal() + 0.25f*tangentalvelocity.GetSafeNormal()).GetSafeNormal().Rotation().Yaw;// = (StoredWallNormal.GetSafeNormal() + FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), StoredWallNormal.GetSafeNormal()).GetSafeNormal() + FVector::VectorPlaneProject((Right*MovementInput.X + Forward*MovementInput.Y).GetSafeNormal(), StoredWallNormal.GetSafeNormal())).Rotation().Yaw;
 					PlayerModel->SetWorldRotation(newmodelrotation);
-					TargetDirection = newmodelrotation;
+					TargetDirection = newmodelrotation;//
 				}
 			}
 		}
@@ -1377,18 +1402,18 @@ void AAuyron::Tick(float DeltaTime)
 			timesinceoverrideenter += DeltaTime;
 			SpringArm->bDoCollisionTest = false;
 
-			if (currentoverrideregion->LockType == ACameraOverrideRegion::ELockType::POINT) {
+			if (currentoverrideregion->LockType == CameraLockType::POINT) {
 				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation());
 				if (currentoverrideregion->LookAtPlayer) {
 					SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
 				}
 			}
-			if (currentoverrideregion->LockType == ACameraOverrideRegion::ELockType::AXIS) {
+			if (currentoverrideregion->LockType == CameraLockType::AXIS) {
 				FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
 				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + currentoverrideregion->Axis->GetForwardVector().GetSafeNormal() * (currentoverrideregion->Axis->GetForwardVector().GetSafeNormal() | camerarelativedisplacement));
 
 			}
-			if (currentoverrideregion->LockType == ACameraOverrideRegion::ELockType::PLANE) {
+			if (currentoverrideregion->LockType == CameraLockType::PLANE) {
 				FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
 				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + FVector::VectorPlaneProject(camerarelativedisplacement,currentoverrideregion->Axis->GetForwardVector().GetSafeNormal()));
 			}
@@ -1549,17 +1574,17 @@ void AAuyron::Tick(float DeltaTime)
 		if (MovementAxisLocked) {
 			FVector newpos(GetActorLocation());
 			switch (LockedMovementAxis) {
-				case ATwoDimensionalMovementRegion::XAXIS:
+				case MovementRegionLockedAxis::XAXIS:
 					newpos.X = LockedAxisValue;
 					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(0.0f, 1.0f, 1.0f));
 					MovementInput.Y = 0.0f;
 					break;
-				case ATwoDimensionalMovementRegion::YAXIS:
+				case MovementRegionLockedAxis::YAXIS:
 					newpos.Y = LockedAxisValue;
 					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 0.0f, 1.0f));
 					MovementInput.Y = 0.0f;
 					break;
-				case ATwoDimensionalMovementRegion::ZAXIS:
+				case MovementRegionLockedAxis::ZAXIS:
 					newpos.Z = LockedAxisValue;
 					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 1.0f, 0.0f));
 					break;
@@ -1617,11 +1642,11 @@ void AAuyron::Tick(float DeltaTime)
 				if (MovementAxisLocked) {
 					FVector tempvector(TargetDirection.Vector());
 					switch (LockedMovementAxis) {
-						case ATwoDimensionalMovementRegion::XAXIS:
+						case MovementRegionLockedAxis::XAXIS:
 							tempvector.X = 0.0f;
 							TargetDirection = tempvector.Rotation();
 							break;
-						case ATwoDimensionalMovementRegion::YAXIS:
+						case MovementRegionLockedAxis::YAXIS:
 							tempvector.Y = 0.0f;
 							TargetDirection = tempvector.Rotation();
 							break;
@@ -1705,17 +1730,17 @@ void AAuyron::MoveForward(float AxisValue)
 
 void AAuyron::PitchCamera(float AxisValue)
 {
-	if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
-		AxisValue *= -1;
-	}
+	//if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
+	//	AxisValue *= -1;
+	//}
 	CameraInput.Y = AxisValue;
 }
 
 void AAuyron::YawCamera(float AxisValue)
 {
-	if ((ztarget && XAxisAimingStyle == INVERTED) || (!ztarget && XAxisStyle == INVERTED)) {
-		AxisValue *= -1;
-	}
+	//if ((ztarget && XAxisAimingStyle == INVERTED) || (!ztarget && XAxisStyle == INVERTED)) {
+	//	AxisValue *= -1;
+	//}
 	CameraInput.X = AxisValue;
 }
 

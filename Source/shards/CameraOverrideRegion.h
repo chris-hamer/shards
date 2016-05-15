@@ -5,18 +5,20 @@
 #include "GameFramework/Actor.h"
 #include "CameraOverrideRegion.generated.h"
 
-UCLASS()
-class SHARDS_API ACameraOverrideRegion : public AActor
-{
-	GENERATED_BODY()
-	
-public:	
-
-	UENUM() enum ELockType {
+UENUM() namespace CameraLockType {
+	 enum Type {
 		POINT			UMETA(DisplayName = "Point"),
 		AXIS			UMETA(DisplayName = "Axis"),
 		PLANE			UMETA(DisplayName = "Plane")
 	};
+}
+
+UCLASS()
+class ACameraOverrideRegion : public AActor
+{
+	GENERATED_BODY()
+	
+public:	
 
 	// Sets default values for this actor's properties
 	ACameraOverrideRegion();
@@ -32,7 +34,7 @@ public:
 	UPROPERTY(EditAnywhere) UCameraComponent* TargetCamera;
 	UPROPERTY(EditAnywhere) UArrowComponent* Axis;
 
-	UPROPERTY(EditAnywhere, Category = "Camera") TEnumAsByte<ELockType> LockType;
+	UPROPERTY(EditAnywhere, Category = "Camera") TEnumAsByte<CameraLockType::Type> LockType;
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LookAtPlayer;
 
 };
