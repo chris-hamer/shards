@@ -449,6 +449,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* TrailParticlesR;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* grassparticles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UPostProcessComponent* PostProcess;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UDecalComponent* DropShadow;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* HairMatBase;

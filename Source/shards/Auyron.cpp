@@ -145,6 +145,7 @@ AAuyron::AAuyron()
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->bRenderCustomDepth = true;
+	PlayerModel->bReceivesDecals = false;
 	PlayerModel->AttachTo(CapsuleComponent);
 	//PlayerModel->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
@@ -217,12 +218,21 @@ AAuyron::AAuyron()
 	TrailParticlesR->AttachTo(PlayerModel);
 	//TrailParticlesR->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/grassparticles"));
 	grassparticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Grass Particles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/grassparticles"));
 	grassparticles->SetTemplate(gpr.Object);
 	grassparticles->bAutoActivate = false;
 	grassparticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	grassparticles->AttachTo(PlayerModel);
+
+	DropShadow = CreateDefaultSubobject<UDecalComponent>(TEXT("Drop Shadow"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> dsmat(TEXT("/Game/Textures/Effects/dropshadow"));
+	DropShadow->SetMaterial(0,dsmat.Object);
+	DropShadow->DecalSize = FVector(1000.0f, 45.0f, 45.0f);
+	DropShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -950.0f));
+	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -850.0f));
+	DropShadow->AttachTo(PlayerModel);
 
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
@@ -235,6 +245,7 @@ AAuyron::AAuyron()
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TeleClaw->bRenderCustomDepth = true;
+	TeleClaw->bReceivesDecals = false;
 
 	// WHAT ARE THOSE?
 	BootsR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsR"));
@@ -242,11 +253,13 @@ AAuyron::AAuyron()
 	BootsR->SetStaticMesh(bootsmodel.Object);
 	BootsR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BootsR->bRenderCustomDepth = true;
+	BootsR->bReceivesDecals = false;
 
 	BootsL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsL"));
 	BootsL->SetStaticMesh(bootsmodel.Object);
 	BootsL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BootsL->bRenderCustomDepth = true;
+	BootsL->bReceivesDecals = false;
 
 	// WWE CHAMPIONSHIP BELT
 	Belt = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Belt"));
@@ -254,18 +267,21 @@ AAuyron::AAuyron()
 	Belt->SetStaticMesh(beltmodel.Object);
 	Belt->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Belt->bRenderCustomDepth = true;
+	Belt->bReceivesDecals = false;
 
 	Bracelet = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Bracelet"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> braceletmodel(TEXT("/Game/Models/Weapons/Bracelet"));
 	Bracelet->SetStaticMesh(braceletmodel.Object);
 	Bracelet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Bracelet->bRenderCustomDepth = true;
+	Bracelet->bReceivesDecals = false;
 
 	Wings = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Wings"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> wingsmodel(TEXT("/Game/Models/Weapons/Wings"));
 	Wings->SetStaticMesh(wingsmodel.Object);
 	Wings->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Wings->bRenderCustomDepth = true;
+	Wings->bReceivesDecals = false;
 
 	// It gazes also into you.
 	TheAbyss = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TheAbyss"));
