@@ -447,6 +447,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* SlamTrail;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* TrailParticlesL;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* TrailParticlesR;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* grassparticles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") class UAuyronMovementComponent* MovementComponent;
 

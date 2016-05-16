@@ -217,6 +217,13 @@ AAuyron::AAuyron()
 	TrailParticlesR->AttachTo(PlayerModel);
 	//TrailParticlesR->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/grassparticles"));
+	grassparticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Grass Particles"));
+	grassparticles->SetTemplate(gpr.Object);
+	grassparticles->bAutoActivate = false;
+	grassparticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	grassparticles->AttachTo(PlayerModel);
+
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
 	const ConstructorHelpers::FObjectFinder<UPhysicalMaterial> PlayerPhysMat(TEXT("/Game/Textures/Characters/Auyron/PlayerPhysMaterial"));
@@ -430,6 +437,10 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 			}
 		}
 
+		if (OtherComp->IsA(UInstancedStaticMeshComponent::StaticClass())) {
+			grassparticles->DeactivateSystem();
+		}
+
 		if (OtherActor->IsA(AForceRegion::StaticClass())) {
 			AppliedForce -= ((AForceRegion*)OtherActor)->Direction * ((AForceRegion*)OtherActor)->Magnitude;
 		}
@@ -468,7 +479,9 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			GemCount++;
 			UGameplayStatics::PlaySound2D(this, CollectSound);
 		}
-
+		if (OtherComp->IsA(UInstancedStaticMeshComponent::StaticClass()) ) {
+			grassparticles->ActivateSystem();
+		}
 		if (OtherActor->IsA(AEquipmentPickup::StaticClass()))
 		{
 			if (((AEquipmentPickup*)OtherActor)->Name == "TeleClaw") {
@@ -624,6 +637,10 @@ void AAuyron::BeginPlay()
 	SlamParticles->DeactivateSystem();
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->DeactivateSystem();
+	grassparticles->bAutoActivate = false;
+	grassparticles->DeactivateSystem();
+	grassparticles->bAutoDestroy = false;
+	grassparticles->SecondsBeforeInactive = 0.0f;
 }
 
 void AAuyron::whywhy() {
@@ -1432,6 +1449,7 @@ void AAuyron::Tick(float DeltaTime)
 			// Find the direction the player and camera should be facing.
 			FRotator NewRotation = SpringArm->RelativeRotation;
 
+
 			// Update the player model's target facing direction.
 			TargetDirection.Yaw = NewRotation.Yaw;
 
@@ -1462,7 +1480,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 
 			// Face the player and camera to the new rotation.
-			PlayerModel->RelativeRotation.Yaw = NewRotation.Yaw;
+			PlayerModel->SetWorldRotation(FRotator(0.0f, NewRotation.Yaw,0.0f));
 			SpringArm->TargetArmLength = 300.0f;
 			DefaultArmLength = 300.0f;
 			SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag * (wasztarget ? CameraLagSettings.AimingLagMultiplier : 1.0f);
