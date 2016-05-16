@@ -16,7 +16,7 @@ AGem::AGem()
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("RootComponent"));
 	SphereComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	RootComponent = SphereComponent;
-	SphereComponent->InitSphereRadius(60.0f);
+	SphereComponent->InitSphereRadius(120.0f);
 	SphereComponent->SetCollisionProfileName(TEXT("Collectible"));
 	SphereComponent->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 	SetActorEnableCollision(true);
@@ -39,6 +39,7 @@ AGem::AGem()
 	
 	GemModel->SetCollisionProfileName(TEXT("NoCollision"));
 	GemModel->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
+	GemModel->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	GemModel->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	GemModel->SetCastShadow(false);
 	GemModel->SetStaticMesh(meshes[FMath::RandRange(0, 5)]);
@@ -96,6 +97,7 @@ void AGem::Tick( float DeltaTime )
 	CollectionParticles->SetColorParameter("ParticleColor", GemColor);
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
 	CollectionParticles->SetWorldRotation(FRotator::ZeroRotator);
+	CollectionParticles->SetWorldScale3D(FVector(1.0f, 1.0f, 1.0f));
 	//CollectionParticles->UpdateInstances();
 	FVector loc = GetActorLocation();
 	loc = FVector(0.0f, 0.0f, 10.0f*DeltaTime*FMath::Cos(curTime*PI));

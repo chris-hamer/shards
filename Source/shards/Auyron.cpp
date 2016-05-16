@@ -32,7 +32,7 @@ AAuyron::AAuyron()
 	PhysicsSettings.MinVelocity = 10.0f;
 	PhysicsSettings.TerminalVelocity = 2000.0f;
 	PhysicsSettings.Gravity = 1960.0f;
-	PhysicsSettings.MaxSlope = 30.0f;
+	PhysicsSettings.MaxSlope = 70.0f;
 	PhysicsSettings.SlopeSlideTime = 0.15f;
 	PhysicsSettings.PushForceFactor = 50.0f;
 	PhysicsSettings.HighVelocityForceExponent = 2.5f;
@@ -1439,7 +1439,7 @@ void AAuyron::Tick(float DeltaTime)
 			if (!wasztarget) {
 				BackupDefaultArmLength = TargetDefaultArmLength;
 
-				// ...orient the new rotation to be level with the xy axis...
+				// ...orient the new rotation to be level with the xy plane...
 				//NewRotation.Pitch = 0.0f;
 
 				// ...and face the camera in direction that the player is facing...

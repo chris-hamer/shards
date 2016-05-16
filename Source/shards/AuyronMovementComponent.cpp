@@ -15,6 +15,7 @@ UAuyronMovementComponent::UAuyronMovementComponent()
 	groundverticalvelocity = 0.0f;
 	enforcementtimer = -1.0f;
 	minnormalz = 0.9f;
+	minnormalz = 0.0f;
 	timerlimit = 0.15f;
 }
 
@@ -87,31 +88,22 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 		onground = true;
 		offGroundTime = 0.0f;
-		// It's a moving platform.
-		if (ShapeTraceResult.GetActor() != nullptr && ShapeTraceResult.GetActor()->GetClass() != nullptr && (ShapeTraceResult.GetActor()->GetClass() == AMovingPlatform::StaticClass() || ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass())) {
-			// Record the platform's velocity and acceleration so the character controller can deal with it.
-			groundvelocity = ((AMovingPlatform*)ShapeTraceResult.GetActor())->Velocity;
-			groundvelocity *= (((AMovingPlatform*)ShapeTraceResult.GetActor())->Deactivated ? 0.0f : 1.0f);
 
-			// It's a ROTATING platform.
-			if (ShapeTraceResult.GetActor()->GetClass() == ARotatingPlatform::StaticClass() && ((ARotatingPlatform*)ShapeTraceResult.GetActor())->AngularPeriod > 0.0f) {
-				// Add its rotational velocity, which we get my multiplying its magnitude (angular frequency
-				// times distance from center) by the unit vector in the angular direction (which we get by crossing
-				// the player's displacement from the center with the z axis), then make it negative if the platform
-				// is rotating clockwise.  
-				FVector displacement = FVector::VectorPlaneProject(GetActorLocation() - ((ARotatingPlatform*)ShapeTraceResult.GetActor())->Model->GetComponentLocation(),FVector::UpVector);
-				platformangularfrequency = 2.0f * 3.14159f / ((ARotatingPlatform*)ShapeTraceResult.GetActor())->AngularPeriod;
-				platformangularfrequency *= (((ARotatingPlatform*)ShapeTraceResult.GetActor())->Deactivated ? 0.0f : 1.0f);
-				platformspindir = (((ARotatingPlatform*)ShapeTraceResult.GetActor())->SpinDirection == RotatingPlatformDirection::CW ? -1 : 1);
-				groundvelocity += platformangularfrequency * displacement.Size() *
-									FVector::CrossProduct(displacement,FVector::UpVector).GetSafeNormal() *
-									platformspindir;
-			}
+		FVector pvel;
+		// Handle moving platforms.
+		if (ShapeTraceResult.GetActor() != nullptr && ShapeTraceResult.GetComponent() != nullptr && ShapeTraceResult.GetComponent()->IsA(UStaticMeshComponent::StaticClass())) {
+			
+			// The motion of a point on a rigid body is the combination of its motion about the center of mass...
+			FVector angvel = FMath::DegreesToRadians((((UStaticMeshComponent*)ShapeTraceResult.GetComponent())->GetPhysicsAngularVelocity()));
+			FVector rr = GetActorLocation() - (((UStaticMeshComponent*)ShapeTraceResult.GetComponent())->GetComponentLocation());
+			FVector rvel = FVector::CrossProduct(angvel, rr);
+
+			// ...and the motion of the center of mass itself.
+			FVector cmvel = (((UStaticMeshComponent*)ShapeTraceResult.GetComponent())->GetPhysicsLinearVelocity());
+			
+			groundvelocity = rvel + cmvel;
+			platformangularfrequency = -angvel.Z;
 		}
-	}
-
-	if (groundvelocity.Z > 0.0f) {
-		//groundvelocity.Z = 0.0f;
 	}
 
 	justjumped = false;
