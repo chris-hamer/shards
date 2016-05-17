@@ -427,6 +427,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetHasSlam(bool has);
 
+	
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetStillScrolling(bool b);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetSkipText();
+
 	FVector MovementInput;
 	FVector CameraInput;
 
@@ -603,6 +609,9 @@ private:
 
 	bool justteleported;
 	bool justswished;
+
+	bool stillscrolling;
+	bool skiptext;
 
 	float warpanimtimer;
 

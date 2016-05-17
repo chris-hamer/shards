@@ -1030,33 +1030,43 @@ void AAuyron::Tick(float DeltaTime)
 		// Advances text.
 		if (IsInDialogue && ((JumpNextFrame && CurrentCut->CutDuration <= 0.0f) || CurrentCut->cuttimer > CurrentCut->CutDuration)) {
 			currentdialoguebpactivated = false;
-			if (CurrentCut->Next != nullptr) {
-				CurrentCut->cuttimer = -1.0f;
-				CurrentCut = CurrentCut->Next;
-				FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
-				TargetDirection = (-displacement).Rotation();
-				FRotator rot = displacement.Rotation();
-				rot.Pitch = 0.0f;
-				rot.Roll = 0.0f;
-				CurrentNPC->SetActorRotation(rot);
-				TArray<TCHAR> escape = TArray<TCHAR>();
-				escape.Add('\n');
-				CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
-				if (CurrentCut->CutDuration > 0.0f) {
-					CurrentCut->cuttimer = 0.0f;
-				}
-			} else {
-				IsInDialogue = false;
-				movementlocked = false;
-				SpringArm->CameraLagSpeed = 0.0f;
-				SpringArm->CameraRotationLagSpeed = 0.0f;
-				SpringArm->SetWorldTransform(lastcamerabeforedialogue);
-				SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
-				SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
-				SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
+			if ((JumpNextFrame && CurrentCut->CutDuration <= 0.0f) && stillscrolling) {
+				skiptext = true;
+			}
+			if (!stillscrolling) {
+				if (CurrentCut->Next != nullptr) {
+					CurrentCut->cuttimer = -1.0f;
+					CurrentCut = CurrentCut->Next;
+					stillscrolling = true;
+					FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
+					TargetDirection = (-displacement).Rotation();
+					FRotator rot = displacement.Rotation();
+					rot.Pitch = 0.0f;
+					rot.Roll = 0.0f;
+					CurrentNPC->SetActorRotation(rot);
+					TArray<TCHAR> escape = TArray<TCHAR>();
+					escape.Add('\n');
+					CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
+					if (CurrentCut->CutDuration > 0.0f) {
+						CurrentCut->cuttimer = 0.0f;
+					}
+				} else {
+					IsInDialogue = false;
+					movementlocked = false;
+					SpringArm->CameraLagSpeed = 0.0f;
+					SpringArm->CameraRotationLagSpeed = 0.0f;
+					SpringArm->SetWorldTransform(lastcamerabeforedialogue);
+					SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
+					SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
+					SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 
+				}
 			}
 			JumpNextFrame = false;
+		}
+
+		if (!stillscrolling) {
+			skiptext = false;
 		}
 
 		// Use the player as the source for the teleport raycast...
@@ -1356,6 +1366,7 @@ void AAuyron::Tick(float DeltaTime)
 				CurrentNPC = closestNPC;
 				TArray<TCHAR> escape = TArray<TCHAR>();
 				escape.Add('\n');
+				stillscrolling = true;
 				CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
 
 				// Look at me when I'm talking to you!
@@ -2116,6 +2127,16 @@ bool AAuyron::HasSlam()
 void AAuyron::SetHasSlam(bool has)
 {
 	SlamSettings.HasSlam = has;
+}
+
+void AAuyron::SetStillScrolling(bool b)
+{
+	stillscrolling = b;
+}
+
+bool AAuyron::GetSkipText()
+{
+	return skiptext;
 }
 
 UParticleSystemComponent* AAuyron::GetTrailParticlesL() {
