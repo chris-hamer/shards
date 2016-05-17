@@ -343,6 +343,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetSpeed();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FVector GetPlayerVelocity();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetActualSpeed();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	float GetModelOpacity();

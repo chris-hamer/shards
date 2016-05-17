@@ -141,11 +141,17 @@ AAuyron::AAuyron()
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PlayerModel"));
-	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron"));
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron2"));
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->bRenderCustomDepth = true;
+	PlayerModel->SetSimulatePhysics(false);
 	PlayerModel->bReceivesDecals = false;
+	PlayerModel->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	PlayerModel->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	PlayerModel->SetCollisionResponseToChannel(ECC_PhysicsBody, ECollisionResponse::ECR_Block);
+	PlayerModel->SetCollisionObjectType(ECC_PhysicsBody);
+	PlayerModel->SetSimulatePhysics(false);
 	PlayerModel->AttachTo(CapsuleComponent);
 	//PlayerModel->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
@@ -229,6 +235,7 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> dsmat(TEXT("/Game/Textures/Effects/dropshadow"));
 	DropShadow->SetMaterial(0,dsmat.Object);
 	DropShadow->DecalSize = FVector(1000.0f, 45.0f, 45.0f);
+	DropShadow->DecalSize = FVector(1000.0f, 90.0f, 90.0f);
 	DropShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -950.0f));
 	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -850.0f));
@@ -787,7 +794,7 @@ void AAuyron::Tick(float DeltaTime)
 		{
 			FCollisionShape WallJumpCapsuleShape = FCollisionShape::MakeCapsule(55.0f, 90.0f);
 			FCollisionObjectQueryParams QueryParams;
-			QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+			QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);//
 			QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 			QueryParams.AddObjectTypesToQuery(ECC_Destructible);
 
@@ -1915,6 +1922,11 @@ void AAuyron::CameraZoomOut() {
 float AAuyron::GetSpeed()
 {
 	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity, FVector::UpVector)).Size();
+}
+
+FVector AAuyron::GetPlayerVelocity()
+{
+	return (CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity);
 }
 
 float AAuyron::GetActualSpeed()
