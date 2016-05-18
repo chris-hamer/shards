@@ -380,8 +380,9 @@ void AAuyron::Respawn() {
 void AAuyron::StopClimbing() {
 	isclimbing = false;
 	//CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	grabbedledge = nullptr;
 	CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Ignore);
+	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
 	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera,ECollisionResponse::ECR_Ignore);
 	//SetActorLocation(GetActorLocation() + PlayerModel->GetForwardVector()*75.0f + 15.9f*FVector::UpVector, false, NULL, ETeleportType::TeleportPhysics);//56.582f  ,false,nullptr,ETeleportType::TeleportPhysics
@@ -718,7 +719,7 @@ void AAuyron::Tick(float DeltaTime)
 	if (RootMotion.bHasRootMotion)
 	{
 		FTransform WorldRootMotion = PlayerModel->ConvertLocalRootMotionToWorld(RootMotion.RootMotionTransform);
-		CapsuleComponent->SetWorldLocation(CapsuleComponent->GetComponentLocation() + WorldRootMotion.GetTranslation());
+		CapsuleComponent->SetWorldLocation(CapsuleComponent->GetComponentLocation() + WorldRootMotion.GetTranslation(),false,NULL,ETeleportType::TeleportPhysics);
 	}
 
 	// This isn't Doom.
@@ -734,7 +735,7 @@ void AAuyron::Tick(float DeltaTime)
 		movementlocked = true;
 		cameralocked = true;
 	}
-
+	
 	if (isclimbing) {
 		movementlocked = true;
 	}
@@ -783,6 +784,8 @@ void AAuyron::Tick(float DeltaTime)
 	// Update OnTheGround state.
 	OnTheGround = MovementComponent->onground;
 
+	//DropShadow->bVisible = !OnTheGround;
+
 	// Temporarily remove camera lag if player is teleported by some
 	// mechanism other than the TeleClaw.
 	if (justteleported&&!justswished) {
@@ -803,6 +806,7 @@ void AAuyron::Tick(float DeltaTime)
 	// Inform the MovementComponent of our velocity.
 	MovementComponent->PlayerVelocity = CapsuleComponent->GetPhysicsLinearVelocity();
 	MovementComponent->forceregiondirection = AppliedForce;
+	MovementComponent->isclimbing = isclimbing;
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity); // - (MovementComponent->groundvelocity + pushvelocity)
@@ -834,18 +838,48 @@ void AAuyron::Tick(float DeltaTime)
 			FHitResult ShapeTraceResult;
 			FVector head = GetActorLocation() + 20.0f*FVector::UpVector;
 			GetWorld()->SweepSingleByChannel(ShapeTraceResult, head - 20.0f*PlayerModel->GetForwardVector(), head + 50.0f*PlayerModel->GetForwardVector(), FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
-			
-			if (!isclimbing && !OnTheGround && CapsuleComponent->GetPhysicsLinearVelocity().Z<0.0f && ShapeTraceResult.IsValidBlockingHit()) {
+
+			if (!OnTheGround && CapsuleComponent->GetPhysicsLinearVelocity().Z<0.0f && ShapeTraceResult.IsValidBlockingHit()) {
 				FVector WallNormal;
 				FVector TraceHit;
-				WallNormal = ShapeTraceResult.ImpactNormal;
+				WallNormal = FVector::VectorPlaneProject(ShapeTraceResult.ImpactNormal, FVector::UpVector);
 				TraceHit = ShapeTraceResult.ImpactPoint;
 				FHitResult LedgeTraceResult;
 				GetWorld()->SweepSingleByChannel(LedgeTraceResult, TraceHit + 200.0f*FVector::UpVector, TraceHit, FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
+				FHitResult ceilhit;
+				FCollisionShape CeilFinderShape = FCollisionShape::MakeSphere(20.0f);// (55.0f, 90.0f);
+				GetWorld()->SweepSingleByChannel(ceilhit, GetActorLocation() + 65.0f*FVector::UpVector, GetActorLocation() + 200.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, CeilFinderShape);
+				bool underceiling = ceilhit.GetActor() != nullptr && ceilhit.GetComponent() != nullptr && ceilhit.GetComponent()->IsA(UStaticMeshComponent::StaticClass());
 				if (LedgeTraceResult.IsValidBlockingHit()) {
+					if (LedgeTraceResult.GetActor() != nullptr && LedgeTraceResult.GetComponent() != nullptr && LedgeTraceResult.GetComponent()->IsA(UStaticMeshComponent::StaticClass())) {
+						grabbedledge = ((UStaticMeshComponent*)LedgeTraceResult.GetComponent());
+						// The motion of a point on a rigid body is the combination of its motion about the center of mass...
+						FVector angvel = FMath::DegreesToRadians(grabbedledge->GetPhysicsAngularVelocity());
+						FVector rr = LedgeTraceResult.ImpactPoint - (grabbedledge->GetComponentLocation());
+						FVector rvel = FVector::CrossProduct(angvel, rr);
+
+						// ...and the motion of the center of mass itself.
+						FVector cmvel = (grabbedledge->GetPhysicsLinearVelocity());
+
+						ledgegroundvelocity = rvel + cmvel;
+						ledgeangularfrequency = -angvel.Z;
+					} else {
+						// BSP a shit
+						//ledgegroundvelocity = FVector::ZeroVector;
+
+						ledgegroundvelocity = FVector::ZeroVector;
+						ledgeangularfrequency = 0.0f;
+					}
+
+				}
+
+				if (!isclimbing && !underceiling && !dunk && LedgeTraceResult.IsValidBlockingHit() && LedgeTraceResult.ImpactNormal.Z>0.85f) {
 					FVector LedgeTop = FVector(TraceHit.X, TraceHit.Y, LedgeTraceResult.ImpactPoint.Z);
 					FVector NewPlayerLocation = LedgeTop + 45.0f*WallNormal;
 					if (true) {
+						IsGliding = false;
+						dashing = false;
+						dunk = false;
 						TargetDirection = (-WallNormal).Rotation();
 						PlayerModel->SetWorldRotation(TargetDirection);
 						SetActorLocation(NewPlayerLocation-52.0f*FVector::UpVector);
@@ -853,12 +887,48 @@ void AAuyron::Tick(float DeltaTime)
 						climblocation = LedgeTop;
 						isclimbing = true;
 						PhysicsSettings.Gravity = 0.0f;
-						CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
-						CapsuleComponent->SetPhysicsLinearVelocity(5.0f*PlayerModel->GetForwardVector());
-						CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+						CapsuleComponent->SetPhysicsLinearVelocity(ledgegroundvelocity);
+						CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+						CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+						CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+						CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Block);
 						GetWorld()->GetTimerManager().SetTimer(climbtimer, this, &AAuyron::StopClimbing, 1.667f/2.0f);
 					}
 				}
+			}
+
+			if (isclimbing) {
+				FVector WallNormal;
+				FVector TraceHit;
+				WallNormal = FVector::VectorPlaneProject(ShapeTraceResult.ImpactNormal,FVector::UpVector);
+				TraceHit = ShapeTraceResult.ImpactPoint;
+				FHitResult LedgeTraceResult;
+				GetWorld()->SweepSingleByChannel(LedgeTraceResult, head + 50.0f*PlayerModel->GetForwardVector() + 200.0f*FVector::UpVector, head + 50.0f*PlayerModel->GetForwardVector() - 200.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
+
+				if (LedgeTraceResult.GetActor() != nullptr && LedgeTraceResult.GetComponent() != nullptr) {
+					if (LedgeTraceResult.GetComponent()->IsA(UStaticMeshComponent::StaticClass())) {
+						grabbedledge = ((UStaticMeshComponent*)LedgeTraceResult.GetComponent());
+						// The motion of a point on a rigid body is the combination of its motion about the center of mass...
+						FVector angvel = FMath::DegreesToRadians(grabbedledge->GetPhysicsAngularVelocity());
+						FVector rr = LedgeTraceResult.ImpactPoint - (grabbedledge->GetComponentLocation());
+						FVector rvel = FVector::CrossProduct(angvel, rr);
+
+						// ...and the motion of the center of mass itself.
+						FVector cmvel = (grabbedledge->GetPhysicsLinearVelocity());
+
+						ledgegroundvelocity = rvel + cmvel;
+						ledgeangularfrequency = -angvel.Z;
+					} else {
+						// BSP a shit
+						//ledgegroundvelocity = FVector::ZeroVector;
+
+						ledgegroundvelocity = FVector::ZeroVector;
+						ledgeangularfrequency = 0.0f;
+					}
+
+				}
+				CapsuleComponent->SetPhysicsLinearVelocity(ledgegroundvelocity);
+				MovementComponent->platformangularfrequency = ledgeangularfrequency;
 			}
 		}
 
@@ -1856,17 +1926,17 @@ void AAuyron::MoveForward(float AxisValue)
 
 void AAuyron::PitchCamera(float AxisValue)
 {
-	//if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
-	//	AxisValue *= -1;
-	//}
+	if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
+		AxisValue *= -1;
+	}
 	CameraInput.Y = AxisValue;
 }
 
 void AAuyron::YawCamera(float AxisValue)
 {
-	//if ((ztarget && XAxisAimingStyle == INVERTED) || (!ztarget && XAxisStyle == INVERTED)) {
-	//	AxisValue *= -1;
-	//}
+	if ((ztarget && XAxisAimingStyle == INVERTED) || (!ztarget && XAxisStyle == INVERTED)) {
+		AxisValue *= -1;
+	}
 	CameraInput.X = AxisValue;
 }
 

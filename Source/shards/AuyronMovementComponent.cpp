@@ -43,6 +43,10 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 	}
 
+	if (isclimbing) {
+		return;
+	}
+
 	TArray<FHitResult> results;
 	if (forceregiondirection.Z == 0.0f) {
 		GetWorld()->SweepMultiByChannel(results, UpdatedComponent->GetComponentLocation() - 0.0f*45.0f*FVector::UpVector, UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, shape, Params); //100

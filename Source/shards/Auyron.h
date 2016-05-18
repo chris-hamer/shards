@@ -622,6 +622,9 @@ private:
 	float warpanimtimer;
 
 	FVector climblocation;
+	FVector ledgegroundvelocity;
+	float ledgeangularfrequency;
+	UStaticMeshComponent* grabbedledge;
 
 	FVector warphere;
 	FVector warpvel;

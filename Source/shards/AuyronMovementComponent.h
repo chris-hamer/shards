@@ -55,6 +55,8 @@ public:
 	FVector forceregiondirection;
 	bool justjumped;
 
+	bool isclimbing;
+
 	float enforcementtimer;
 	float minnormalz;
 	float timerlimit;
