@@ -329,6 +329,7 @@ public:
 	void HereWeGo();
 	void FadeInMusic();
 	void whywhy();
+	void StopClimbing();
 
 	void FlattenVelocity();
 	
@@ -432,6 +433,10 @@ public:
 	void SetStillScrolling(bool b);
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetSkipText();
+
+	
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetIsClimbing();
 
 	FVector MovementInput;
 	FVector CameraInput;
@@ -577,6 +582,7 @@ private:
 	FTimerHandle PreWarpTimer;
 	FTimerHandle MusicChangeTimer;
 	FTimerHandle WHY;
+	FTimerHandle climbtimer;
 
 	UMaterialInstanceDynamic* hairmat;
 	UMaterialInstanceDynamic* bandanamat;
@@ -615,6 +621,8 @@ private:
 
 	float warpanimtimer;
 
+	FVector climblocation;
+
 	FVector warphere;
 	FVector warpvel;
 
@@ -651,6 +659,12 @@ private:
 	bool blockedbyblueprint;
 
 	bool WasInCameraOverrideRegion;
+
+	bool ingrass;
+	bool grassactive;
+
+	bool ishanging;
+	bool isclimbing;
 
 	float ActualDefaultArmLength;
 	float ActualDefaultCameraLag;

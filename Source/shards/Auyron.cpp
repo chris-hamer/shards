@@ -377,6 +377,18 @@ void AAuyron::Respawn() {
 	SetActorLocation(RespawnPoint, false,NULL,ETeleportType::TeleportPhysics);
 }
 
+void AAuyron::StopClimbing() {
+	isclimbing = false;
+	//CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Ignore);
+	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
+	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera,ECollisionResponse::ECR_Ignore);
+	//SetActorLocation(GetActorLocation() + PlayerModel->GetForwardVector()*75.0f + 15.9f*FVector::UpVector, false, NULL, ETeleportType::TeleportPhysics);//56.582f  ,false,nullptr,ETeleportType::TeleportPhysics
+	//SetActorLocation(climblocation, false, NULL, ETeleportType::TeleportPhysics);//56.582f  ,false,nullptr,ETeleportType::TeleportPhysics//
+	PhysicsSettings.Gravity = DefaultGravity;
+}
+
 void AAuyron::HereWeGo()
 {
 
@@ -461,7 +473,7 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 		}
 
 		if (OtherComp->IsA(UInstancedStaticMeshComponent::StaticClass())) {
-			grassparticles->DeactivateSystem();
+			ingrass = false;
 		}
 
 		if (OtherActor->IsA(AForceRegion::StaticClass())) {
@@ -503,7 +515,7 @@ void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp
 			UGameplayStatics::PlaySound2D(this, CollectSound);
 		}
 		if (OtherComp->IsA(UInstancedStaticMeshComponent::StaticClass()) ) {
-			grassparticles->ActivateSystem();
+			ingrass = true;
 		}
 		if (OtherActor->IsA(AEquipmentPickup::StaticClass()))
 		{
@@ -701,6 +713,14 @@ void AAuyron::Tick(float DeltaTime)
 		MovementInput.Y = FMath::Sign(MovementInput.Y);
 	}
 
+	FRootMotionMovementParams RootMotion = PlayerModel->ConsumeRootMotion();
+
+	if (RootMotion.bHasRootMotion)
+	{
+		FTransform WorldRootMotion = PlayerModel->ConvertLocalRootMotionToWorld(RootMotion.RootMotionTransform);
+		CapsuleComponent->SetWorldLocation(CapsuleComponent->GetComponentLocation() + WorldRootMotion.GetTranslation());
+	}
+
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
 
@@ -713,6 +733,20 @@ void AAuyron::Tick(float DeltaTime)
 	if (GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) >= 0.0f) {
 		movementlocked = true;
 		cameralocked = true;
+	}
+
+	if (isclimbing) {
+		movementlocked = true;
+	}
+
+	if (ingrass && OnTheGround) {
+		if (!grassactive) {
+			grassparticles->ActivateSystem();
+		}
+		grassactive = true;
+	} else {
+		grassactive = false;
+		grassparticles->DeactivateSystem();
 	}
 
 	JustWallJumped = false;
@@ -789,6 +823,44 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Handle player abilities.
 	{
+
+		{
+			FCollisionShape LedgeFinderShape = FCollisionShape::MakeSphere(50.0f);// (55.0f, 90.0f);
+			FCollisionObjectQueryParams QueryParams;
+			QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);//
+			QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+			QueryParams.AddObjectTypesToQuery(ECC_Destructible);
+			FCollisionQueryParams Params;
+			FHitResult ShapeTraceResult;
+			FVector head = GetActorLocation() + 20.0f*FVector::UpVector;
+			GetWorld()->SweepSingleByChannel(ShapeTraceResult, head - 20.0f*PlayerModel->GetForwardVector(), head + 50.0f*PlayerModel->GetForwardVector(), FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
+			
+			if (!isclimbing && !OnTheGround && CapsuleComponent->GetPhysicsLinearVelocity().Z<0.0f && ShapeTraceResult.IsValidBlockingHit()) {
+				FVector WallNormal;
+				FVector TraceHit;
+				WallNormal = ShapeTraceResult.ImpactNormal;
+				TraceHit = ShapeTraceResult.ImpactPoint;
+				FHitResult LedgeTraceResult;
+				GetWorld()->SweepSingleByChannel(LedgeTraceResult, TraceHit + 200.0f*FVector::UpVector, TraceHit, FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
+				if (LedgeTraceResult.IsValidBlockingHit()) {
+					FVector LedgeTop = FVector(TraceHit.X, TraceHit.Y, LedgeTraceResult.ImpactPoint.Z);
+					FVector NewPlayerLocation = LedgeTop + 45.0f*WallNormal;
+					if (true) {
+						TargetDirection = (-WallNormal).Rotation();
+						PlayerModel->SetWorldRotation(TargetDirection);
+						SetActorLocation(NewPlayerLocation-52.0f*FVector::UpVector);
+						ActivateNextFrame = false;
+						climblocation = LedgeTop;
+						isclimbing = true;
+						PhysicsSettings.Gravity = 0.0f;
+						CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+						CapsuleComponent->SetPhysicsLinearVelocity(5.0f*PlayerModel->GetForwardVector());
+						CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+						GetWorld()->GetTimerManager().SetTimer(climbtimer, this, &AAuyron::StopClimbing, 1.667f/2.0f);
+					}
+				}
+			}
+		}
 
 		// Determine if the player is rubbing up against a wall and get the wall normal if they are.
 		{
@@ -1572,60 +1644,61 @@ void AAuyron::Tick(float DeltaTime)
 
 	// Physiiiiicccss.
 	{
-		// Get horizontal velocity projection.
-		FVector Velocity2D = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector);
+		if (!isclimbing) {
+			// Get horizontal velocity projection.
+			FVector Velocity2D = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector);
 
-		// Adjust movement input to reflect camera direction.
-		FVector AdjustedMovementInput = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f);
+			// Adjust movement input to reflect camera direction.
+			FVector AdjustedMovementInput = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f);
 
-		// Get acceleration magnitude depending if the player is in the air or not.
-		float CurrentAccelRate = (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate) * 10000.0f;
-		
-		// Apply acceleration based on movement inputs.
-		if (!dashing) {
-			CapsuleComponent->AddForce(AdjustedMovementInput * CurrentAccelRate, NAME_None, false);
-		}
+			// Get acceleration magnitude depending if the player is in the air or not.
+			float CurrentAccelRate = (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate) * 10000.0f;
 
-		// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
-		// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
-		// quickly and immediately change directions.
-		if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
-			!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
-			(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
-			CapsuleComponent->AddImpulse((MovementComponent->groundvelocity - previousgroundvelocity), NAME_None, true);
-		}
+			// Apply acceleration based on movement inputs.
+			if (!dashing) {
+				CapsuleComponent->AddForce(AdjustedMovementInput * CurrentAccelRate, NAME_None, false);
+			}
 
-		// Apply gravity if in the air, and stop vertical movement if on the ground.
-		if (!OnTheGround&&!IsInDialogue&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
-			CapsuleComponent->AddForce(PhysicsSettings.Gravity*FVector::UpVector, NAME_None, true);
-		} else {
-			FlattenVelocity();
-		}
+			// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
+			// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
+			// quickly and immediately change directions.
+			if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
+				!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
+				(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
+				CapsuleComponent->AddImpulse((MovementComponent->groundvelocity - previousgroundvelocity), NAME_None, true);
+			}
 
-		// Apply drag.
-		if (!OnTheGround && FMath::Abs(CapsuleComponent->GetPhysicsLinearVelocity().Z) > JumpSettings.JumpPower) {
-			float mult = ((CapsuleComponent->GetPhysicsLinearVelocity().Z > 0.0f && (AppliedForce.Z > 0.0f || IsGliding)) ? 16.0f : 1.0f);
-			CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity * FMath::Pow(CapsuleComponent->GetPhysicsLinearVelocity().Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(CapsuleComponent->GetPhysicsLinearVelocity().Z)*200.0f*mult);
-		}
+			// Apply gravity if in the air, and stop vertical movement if on the ground.
+			if (!OnTheGround && !IsInDialogue&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f) {
+				CapsuleComponent->AddForce(PhysicsSettings.Gravity*FVector::UpVector, NAME_None, true);
+			} else {
+				FlattenVelocity();
+			}
 
-		// Handle force regions.
-		CapsuleComponent->AddForce(AppliedForce*200.0f, NAME_None, false);
-		if (AppliedForce.Z > 0.0f) {
-			AlreadyUnjumped = true;
-			OnTheGround = false;
-		}
+			// Apply drag.
+			if (!OnTheGround && FMath::Abs(CapsuleComponent->GetPhysicsLinearVelocity().Z) > JumpSettings.JumpPower) {
+				float mult = ((CapsuleComponent->GetPhysicsLinearVelocity().Z > 0.0f && (AppliedForce.Z > 0.0f || IsGliding)) ? 16.0f : 1.0f);
+				CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity * FMath::Pow(CapsuleComponent->GetPhysicsLinearVelocity().Z / PhysicsSettings.TerminalVelocity, 2.0f) * FMath::Sign(CapsuleComponent->GetPhysicsLinearVelocity().Z)*200.0f*mult);
+			}
 
-		// Apply a deceleration that scales with the player's velocity
-		// in such a way that it limits it to MaxVelocity.
-		if (!dashing) {
-			float mult = FMath::Lerp(FMath::Sqrt(Velocity2D.Size() / PhysicsSettings.MaxVelocity), Velocity2D.Size() / PhysicsSettings.MaxVelocity, Velocity2D.Size() / PhysicsSettings.MaxVelocity);
-			CapsuleComponent->AddForce(-Velocity2D.GetSafeNormal()*CurrentAccelRate*mult, NAME_None, false);
-		}
+			// Handle force regions.
+			CapsuleComponent->AddForce(AppliedForce*200.0f, NAME_None, false);
+			if (AppliedForce.Z > 0.0f) {
+				AlreadyUnjumped = true;
+				OnTheGround = false;
+			}
 
-		// This is a 2D platformer now.
-		if (MovementAxisLocked) {
-			FVector newpos(GetActorLocation());
-			switch (LockedMovementAxis) {
+			// Apply a deceleration that scales with the player's velocity
+			// in such a way that it limits it to MaxVelocity.
+			if (!dashing) {
+				float mult = FMath::Lerp(FMath::Sqrt(Velocity2D.Size() / PhysicsSettings.MaxVelocity), Velocity2D.Size() / PhysicsSettings.MaxVelocity, Velocity2D.Size() / PhysicsSettings.MaxVelocity);
+				CapsuleComponent->AddForce(-Velocity2D.GetSafeNormal()*CurrentAccelRate*mult, NAME_None, false);
+			}
+
+			// This is a 2D platformer now.
+			if (MovementAxisLocked) {
+				FVector newpos(GetActorLocation());
+				switch (LockedMovementAxis) {
 				case MovementRegionLockedAxis::XAXIS:
 					newpos.X = LockedAxisValue;
 					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(0.0f, 1.0f, 1.0f));
@@ -1640,8 +1713,9 @@ void AAuyron::Tick(float DeltaTime)
 					newpos.Z = LockedAxisValue;
 					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 1.0f, 0.0f));
 					break;
+				}
+				SetActorLocation(newpos);
 			}
-			SetActorLocation(newpos);
 		}
 
 		// Put Velocity back in the reference frame of the stationary world.
@@ -2137,6 +2211,11 @@ void AAuyron::SetStillScrolling(bool b)
 bool AAuyron::GetSkipText()
 {
 	return skiptext;
+}
+
+bool AAuyron::GetIsClimbing()
+{
+	return isclimbing;
 }
 
 UParticleSystemComponent* AAuyron::GetTrailParticlesL() {
