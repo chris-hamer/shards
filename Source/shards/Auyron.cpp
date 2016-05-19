@@ -880,6 +880,7 @@ void AAuyron::Tick(float DeltaTime)
 						IsGliding = false;
 						dashing = false;
 						dunk = false;
+						JumpNextFrame = false; 
 						TargetDirection = (-WallNormal).Rotation();
 						PlayerModel->SetWorldRotation(TargetDirection);
 						SetActorLocation(NewPlayerLocation-52.0f*FVector::UpVector);
