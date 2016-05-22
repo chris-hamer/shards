@@ -147,6 +147,7 @@ AAuyron::AAuyron()
 	PlayerModel->bRenderCustomDepth = true;
 	PlayerModel->SetSimulatePhysics(false);
 	PlayerModel->bReceivesDecals = false;
+	PlayerModel->bCastInsetShadow = false;
 	PlayerModel->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	PlayerModel->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	PlayerModel->SetCollisionResponseToChannel(ECC_PhysicsBody, ECollisionResponse::ECR_Block);
@@ -341,7 +342,7 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
 	TeleportRiftMaterial = riftmat.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Textures/Effects/drawbehind"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Textures/Effects/Outline"));
 	TestTeleEffectBase = riftmat2.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Textures/Effects/celshader"));
@@ -374,6 +375,8 @@ void AAuyron::Respawn() {
 
 	CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	justteleported = true;
+	IsGliding = false;
+	dunk = false;
 	SetActorLocation(RespawnPoint, false,NULL,ETeleportType::TeleportPhysics);
 }
 
@@ -738,6 +741,11 @@ void AAuyron::Tick(float DeltaTime)
 	
 	if (isclimbing) {
 		movementlocked = true;
+		JumpNextFrame = false;
+		ActivateNextFrame = false;
+		SlamNextFrame = false;
+		GlideNextFrame = false;
+		ztarget = false;
 	}
 
 	if (ingrass && OnTheGround) {
@@ -1578,7 +1586,11 @@ void AAuyron::Tick(float DeltaTime)
 
 			// Move the camera's pitch in response to the y input of the mouse/stick.
 			NewRotation = SpringArm->GetComponentRotation();
-			NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
+			float slowfactor = 1.0f;
+			if (CameraInput.Y<0.0f && CameraControllerInput.Y<0.0f && SpringArm->RelativeRotation.Pitch<0.0f) {
+				slowfactor = FMath::Pow(1.0f-(SpringArm->RelativeRotation.Pitch / (-CameraMaxAngle)),0.5f);
+			}
+			NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + slowfactor*CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 			SpringArm->SetWorldRotation(NewRotation);
 
@@ -1803,6 +1815,7 @@ void AAuyron::Tick(float DeltaTime)
 		previousgroundvelocity = MovementComponent->groundvelocity;
 
 		pushvelocity = FVector::ZeroVector;
+		CameraInput = FVector::ZeroVector;
 
 		JumpNextFrame = false;
 		ActivateNextFrame = false;
@@ -1893,6 +1906,8 @@ void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 	InputComponent->Priority = 1000;
 	InputComponent->BindAxis("MoveX", this, &AAuyron::MoveRight);
 	InputComponent->BindAxis("MoveY", this, &AAuyron::MoveForward);
+	InputComponent->BindAxis("ControllerCameraPitch", this, &AAuyron::ControllerPitchCamera);
+	InputComponent->BindAxis("ControllerCameraYaw", this, &AAuyron::ControllerYawCamera);
 	InputComponent->BindAxis("CameraPitch", this, &AAuyron::PitchCamera);
 	InputComponent->BindAxis("CameraYaw", this, &AAuyron::YawCamera);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
@@ -1929,6 +1944,10 @@ void AAuyron::MoveForward(float AxisValue)
 
 void AAuyron::PitchCamera(float AxisValue)
 {
+	CameraMouseInput.Y = AxisValue;
+	if(CameraInput.Y != 0.0f) {
+		return;
+	}
 	if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
 		AxisValue *= -1;
 	}
@@ -1937,10 +1956,40 @@ void AAuyron::PitchCamera(float AxisValue)
 
 void AAuyron::YawCamera(float AxisValue)
 {
+	CameraMouseInput.X = AxisValue;
+	if (CameraInput.X != 0.0f) {
+		return;
+	}
 	if ((ztarget && XAxisAimingStyle == INVERTED) || (!ztarget && XAxisStyle == INVERTED)) {
 		AxisValue *= -1;
 	}
 	CameraInput.X = AxisValue;
+}
+
+void AAuyron::ControllerPitchCamera(float AxisValue)
+{
+	if ((ztarget && YAxisAimingStyle == INVERTED) || (!ztarget && YAxisStyle == INVERTED)) {
+		AxisValue *= -1;
+	}
+	float sqr = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f));
+	CameraControllerInput.Y = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
+	if (CameraInput.Y != 0.0f) {
+		return;
+	}
+	CameraInput.Y = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
+}
+
+void AAuyron::ControllerYawCamera(float AxisValue)
+{
+	if ((ztarget && XAxisAimingStyle == STANDARD) || (!ztarget && XAxisStyle == INVERTED)) {
+		AxisValue *= -1;
+	}
+	float sqr = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f));
+	CameraControllerInput.X = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
+	if (CameraInput.X != 0.0f) {
+		return;
+	}
+	CameraInput.X = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
 }
 
 void AAuyron::Pause()

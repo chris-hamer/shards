@@ -309,6 +309,8 @@ public:
 	void MoveRight(float AxisValue);
 	void PitchCamera(float AxisValue);
 	void YawCamera(float AxisValue);
+	void ControllerPitchCamera(float AxisValue);
+	void ControllerYawCamera(float AxisValue);
 	void Pause();
 	void Unpause();
 	void Jump();
@@ -440,6 +442,8 @@ public:
 
 	FVector MovementInput;
 	FVector CameraInput;
+	FVector CameraMouseInput;
+	FVector CameraControllerInput;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UCameraComponent* Camera;
