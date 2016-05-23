@@ -61,8 +61,8 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		}
 	}
 
-	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 90.0f * FVector::UpVector; // 50
-	float RequiredDistance = (onground ? 50.0f : 10.0f); //50,1
+	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 45.0f * FVector::UpVector; // 50
+	float RequiredDistance = (onground ? 50.0f : 10.0f)+45.0f; //50,1
 	DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	overground = ShapeTraceResult.IsValidBlockingHit();
 	if (!onground) {
@@ -83,7 +83,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 	FloorNormal = FVector::ZeroVector;
 
-	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance && (PlayerVelocity.Z <= 0.0f || wasonground) && !justjumped) { // 
+	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance &&!justjumped) { // (PlayerVelocity.Z <= 0.0f || wasonground)
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
 			if (enforcementtimer == -1.0f) {
 				enforcementtimer = 0.0f;

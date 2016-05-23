@@ -476,6 +476,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* TeleportRiftMaterial;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UTextureRenderTarget2D* TeleportRiftRenderTarget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* CelShaderMaterial;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* DrawBehindMaterial;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds") USoundCue* JumpSound;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds") USoundCue* DashSound;
@@ -592,6 +593,7 @@ private:
 	UMaterialInstanceDynamic* bandanamat;
 	UMaterialInstanceDynamic* bodymat;
 	UMaterialInstanceDynamic* teletestmat;
+	UMaterialInstanceDynamic* outlinemat;
 	UMaterialInstanceDynamic* celshadermat;
 
 	UMaterialInterface* bluewings;
@@ -609,6 +611,8 @@ private:
 	float GlideTimer;
 	float warptimer;
 	float timesinceoverrideenter;
+
+	bool justlandedcameraflag;
 
 	bool IsInDialogue;
 	ADialogueCut* CurrentCut;

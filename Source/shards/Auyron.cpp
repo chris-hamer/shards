@@ -342,8 +342,11 @@ AAuyron::AAuyron()
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
 	TeleportRiftMaterial = riftmat.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Textures/Effects/Outline"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Textures/Effects/warpmat"));
 	TestTeleEffectBase = riftmat2.Object;
+
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> behindmat(TEXT("/Game/Textures/Effects/Outline"));
+	DrawBehindMaterial = behindmat.Object;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Textures/Effects/celshader"));
 	CelShaderMaterial = celshade.Object;
@@ -451,9 +454,11 @@ void AAuyron::PostInitializeComponents()
 	bandanamat = UMaterialInstanceDynamic::Create(BandanaMatBase, this);
 	teletestmat = UMaterialInstanceDynamic::Create(TestTeleEffectBase, this);
 	celshadermat = UMaterialInstanceDynamic::Create(CelShaderMaterial, this);
+	outlinemat = UMaterialInstanceDynamic::Create(DrawBehindMaterial, this);
 
 	Camera->AddOrUpdateBlendable(teletestmat);
 	Camera->AddOrUpdateBlendable(celshadermat);
+	Camera->AddOrUpdateBlendable(outlinemat);
 
 	PlayerModel->SetMaterial(0, bodymat);
 	PlayerModel->SetMaterial(1, hairmat);
@@ -706,10 +711,13 @@ void AAuyron::Tick(float DeltaTime)
 
 	Capture2D->GetCaptureComponent2D()->Deactivate();
 
-	if (MovementInput.IsNearlyZero()) {
+	TimeSinceLastMovementInputReleased += DeltaTime;
+	if (!justlandedcameraflag && (MovementInput.IsNearlyZero() || !OnTheGround)) {
 		TimeSinceLastMovementInputReleased = 0.0f;
-	} else {
-		TimeSinceLastMovementInputReleased += DeltaTime;
+	}
+
+	if (!CameraInput.IsNearlyZero() || FMath::Abs(SpringArm->RelativeRotation.Pitch - CameraAutoTurnSettings.CameraDefaultPitch) < 2.0f) {
+		justlandedcameraflag = false;
 	}
 
 	if (FMath::Abs(MovementInput.X) > 0.9f) {
@@ -1569,6 +1577,10 @@ void AAuyron::Tick(float DeltaTime)
 				TimeSinceLastMouseInput += DeltaTime;
 			}
 
+			if (CapsuleComponent->GetPhysicsLinearVelocity().Z < -900.0f && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
+				CameraInput.Y = -FMath::Clamp(-0.0005f*CapsuleComponent->GetPhysicsLinearVelocity().Z,0.0f,1.0f);
+			}
+
 			// Temporary variable to hold the camera's new rotation.
 			FRotator NewRotation = SpringArm->GetComponentRotation();
 
@@ -1581,6 +1593,10 @@ void AAuyron::Tick(float DeltaTime)
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
 					NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, CameraAutoTurnSettings.CameraDefaultPitch, CameraAutoTurnSettings.CameraDefaultPitchRate);
 				}
+				if ((OnTheGround && !WasOnTheGround&&TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime)) {
+					justlandedcameraflag = true;
+					TimeSinceLastMovementInputReleased = CameraAutoTurnSettings.CameraResetTime + DeltaTime;
+				}
 			}
 
 			// Set the rotation of the camera.
@@ -1590,7 +1606,7 @@ void AAuyron::Tick(float DeltaTime)
 			NewRotation = SpringArm->GetComponentRotation();
 			float slowfactor = 1.0f;
 			if (CameraInput.Y<0.0f && CameraControllerInput.Y<0.0f && SpringArm->RelativeRotation.Pitch<0.0f) {
-				slowfactor = FMath::Pow(1.0f-(SpringArm->RelativeRotation.Pitch / (-CameraMaxAngle)),0.5f);
+				//slowfactor = FMath::Pow(1.0f-(SpringArm->RelativeRotation.Pitch / (-CameraMaxAngle)),1.0f);
 			}
 			NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + slowfactor*CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
@@ -1624,6 +1640,10 @@ void AAuyron::Tick(float DeltaTime)
 			if (currentoverrideregion->LockType == CameraLockType::PLANE) {
 				FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
 				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + FVector::VectorPlaneProject(camerarelativedisplacement,currentoverrideregion->Axis->GetForwardVector().GetSafeNormal()));
+			}
+			if (currentoverrideregion->HintRegion) {
+				InCameraOverrideRegion = false;
+				currentoverrideregion = nullptr;
 			}
 		} else if (!InCameraOverrideRegion) {
 			Camera->RelativeRotation.Roll = 0.0f;
@@ -1835,7 +1855,6 @@ void AAuyron::Tick(float DeltaTime)
 		justteleported = false;
 		JustJumped = false;
 	}
-	SpringArm->bEnableCameraLag = false;
 
 	// Handle rotating the player model in response to player input.
 	{

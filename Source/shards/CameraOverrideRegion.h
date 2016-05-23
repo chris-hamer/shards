@@ -34,6 +34,7 @@ public:
 	UPROPERTY(EditAnywhere) UCameraComponent* TargetCamera;
 	UPROPERTY(EditAnywhere) UArrowComponent* Axis;
 
+	UPROPERTY(EditAnywhere, Category = "Camera") bool HintRegion;
 	UPROPERTY(EditAnywhere, Category = "Camera") TEnumAsByte<CameraLockType::Type> LockType;
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LookAtPlayer;
 
