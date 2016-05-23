@@ -77,6 +77,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	wasonground = onground;
 	onground = false;
+	prevgroundvelocity = groundvelocity;
 	groundvelocity = FVector::ZeroVector;
 	platformangularfrequency = 0.0f;
 	platformspindir = 1;

@@ -694,6 +694,8 @@ void AAuyron::Tick(float DeltaTime)
 
 	Super::Tick(DeltaTime);
 
+	SpeedRelativeToGround = (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity, FVector::UpVector)).Size();
+
 	// The definitions of "Right" and "Forward" depend on the direction that the camera's facing.
 	FVector Right = Camera->GetRightVector();
 	Right.Z = 0.0f;
@@ -1745,10 +1747,13 @@ void AAuyron::Tick(float DeltaTime)
 			// If the platform we're standing on is accelerating, add that acceleration to the player's acceleration,
 			// but only if the player didn't just jump onto or off of the platform, and the platform didn't just
 			// quickly and immediately change directions.
-			if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
-				!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
-				(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
+			//if (!(previousgroundvelocity.IsNearlyZero() && !MovementComponent->groundvelocity.IsNearlyZero()) &&
+			//	!(!previousgroundvelocity.IsNearlyZero() && MovementComponent->groundvelocity.IsNearlyZero()) &&
+			//	(MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 1000.0f) {
+			if((MovementComponent->groundvelocity - previousgroundvelocity).Size() / DeltaTime < 10000.0f) {
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, (MovementComponent->groundvelocity - previousgroundvelocity).ToString()+"             "+(CapsuleComponent->GetPhysicsLinearVelocity()-previousvelocity).ToString());
 				CapsuleComponent->AddImpulse((MovementComponent->groundvelocity - previousgroundvelocity), NAME_None, true);
+				//SetActorLocation(GetActorLocation() + (MovementComponent->groundvelocity - previousgroundvelocity)*DeltaTime,false,nullptr,ETeleportType::TeleportPhysics);
 			}
 
 			// Apply gravity if in the air, and stop vertical movement if on the ground.
@@ -1824,10 +1829,13 @@ void AAuyron::Tick(float DeltaTime)
 		GlideNextFrame = false;
 		swish = false;
 
+		lastdt = DeltaTime;
+
 		justswished = false;
 		justteleported = false;
 		JustJumped = false;
 	}
+	SpringArm->bEnableCameraLag = false;
 
 	// Handle rotating the player model in response to player input.
 	{
@@ -2128,7 +2136,7 @@ void AAuyron::CameraZoomOut() {
 // Getter functions used by the animation blueprints.
 float AAuyron::GetSpeed()
 {
-	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity, FVector::UpVector)).Size();
+	return SpeedRelativeToGround;
 }
 
 FVector AAuyron::GetPlayerVelocity()
@@ -2139,7 +2147,8 @@ FVector AAuyron::GetPlayerVelocity()
 float AAuyron::GetActualSpeed()
 {
 	//return (CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity).Size();
-	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity, FVector::UpVector)).Size();
+	return SpeedRelativeToGround;
+	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() + (MovementComponent->groundvelocity - previousgroundvelocity), FVector::UpVector)).Size();
 }
 
 float AAuyron::GetModelOpacity()

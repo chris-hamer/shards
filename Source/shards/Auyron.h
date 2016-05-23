@@ -599,6 +599,7 @@ private:
 	float DefaultGravity;
 
 	float lastdt;
+	float SpeedRelativeToGround;
 
 	bool GlideNextFrame;
 	bool IsGliding;

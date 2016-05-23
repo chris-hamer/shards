@@ -34,6 +34,8 @@ public:
 
 	// Velocity of the platform you're standing on.
 	FVector groundvelocity;
+	FVector prevgroundvelocity;
+	FVector groundaccel;
 
 	// Vertical velocity of the platform you're standing on.
 	// Stored separatly because the z component of groundvelocity
