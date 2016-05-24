@@ -939,7 +939,6 @@ void AAuyron::Tick(float DeltaTime)
 						ledgeangularfrequency = -angvel.Z;
 					} else {
 						// BSP a shit
-						//ledgegroundvelocity = FVector::ZeroVector;
 
 						ledgegroundvelocity = FVector::ZeroVector;
 						ledgeangularfrequency = 0.0f;
@@ -1612,6 +1611,18 @@ void AAuyron::Tick(float DeltaTime)
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 			SpringArm->SetWorldRotation(NewRotation);
 
+		}
+
+		// Camera raycast shenanigans.
+		FVector camf = Camera->GetForwardVector();
+		FVector camu = Camera->GetUpVector();
+		for (int i = 0; i < 5; i++) {
+			FVector testdir = camf.RotateAngleAxis(-60.0f + i*30.0f, camu);
+			FHitResult camhit;
+			GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation(), Camera->GetComponentLocation() + (Camera->GetComponentLocation()-GetActorLocation()).Size()*testdir, ECC_Camera);
+			if (camhit.IsValidBlockingHit()) {
+				SpringArm->AddRelativeRotation(FRotator(0.0f, 0.1f*FMath::Sign(-60.0f + i*30.0f)*((camhit.ImpactPoint - Camera->GetComponentLocation()) | Camera->GetForwardVector())/(camhit.ImpactPoint - Camera->GetComponentLocation()).Size(), 0.0f));
+			}
 		}
 		
 		// Handle CameraOverrideRegions.
