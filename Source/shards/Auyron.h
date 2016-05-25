@@ -332,6 +332,7 @@ public:
 	void CameraZoomOut();
 	void Respawn();
 	void HereWeGo();
+	void MoveIt();
 	void FadeInMusic();
 	void whywhy();
 	void StopClimbing();
@@ -374,6 +375,8 @@ public:
 	bool GetJustWallJumped();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsInDialogue();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	float GetWarpTimerCompleted();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	FString GetDialogueText();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
@@ -591,6 +594,7 @@ private:
 
 	FTimerHandle WarpAnimationTimer;
 	FTimerHandle PreWarpTimer;
+	FTimerHandle PreWarpTimer2;
 	FTimerHandle MusicChangeTimer;
 	FTimerHandle WHY;
 	FTimerHandle climbtimer;

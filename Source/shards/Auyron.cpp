@@ -434,6 +434,18 @@ void AAuyron::HereWeGo()
 	GetWorld()->GetTimerManager().ClearTimer(PreWarpTimer);
 }
 
+void AAuyron::MoveIt()
+{
+	Capture2D->AddActorLocalOffset(FVector::ZeroVector);
+	Capture2D->AddActorLocalOffset(FVector::ZeroVector);
+	Capture2D->AddActorLocalOffset(FVector::ZeroVector);
+	Capture2D->AddActorLocalOffset(FVector::ZeroVector);
+	Capture2D->GetCaptureComponent2D()->UpdateContent();
+	Capture2D->GetCaptureComponent2D()->Activate();
+	SetActorLocation(warphere, false, nullptr, ETeleportType::TeleportPhysics);
+	GetWorld()->GetTimerManager().ClearTimer(PreWarpTimer2);
+}
+
 void AAuyron::FlattenVelocity()
 {
 	FVector temp = CapsuleComponent->GetPhysicsLinearVelocity();
@@ -1138,6 +1150,10 @@ void AAuyron::Tick(float DeltaTime)
 				dashtimer += DeltaTime;
 			}
 
+			//if (airdashing) {
+				Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+			//}
+
 			// Stop dashing if the player was dashing for too long.
 			if (dashtimer > DashSettings.DashDuration) {
 				dashing = false;
@@ -1338,6 +1354,7 @@ void AAuyron::Tick(float DeltaTime)
 						HereWeGo();
 					} else {
 						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer, this, &AAuyron::HereWeGo, TeleportSettings.TeleportAnimationDuration);
+						GetWorld()->GetTimerManager().SetTimer(PreWarpTimer2, this, &AAuyron::MoveIt, 0.75f*TeleportSettings.TeleportAnimationDuration);
 						TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
 						//TheAbyss->SetVisibility(true);
 
@@ -1368,15 +1385,11 @@ void AAuyron::Tick(float DeltaTime)
 						//Capture2D->SetActorLocation(warphere);
 						//Capture2D->SetActorRotation(SpringArm->GetComponentRotation());
 						//Capture2D->AddActorLocalOffset(-BackupDefaultArmLength*FVector::ForwardVector);
-						Capture2D->SetActorTransform(Camera->GetComponentTransform());
-						Capture2D->AddActorLocalOffset(FVector::ZeroVector);
-						Capture2D->AddActorLocalOffset(FVector::ZeroVector);
-						Capture2D->AddActorLocalOffset(FVector::ZeroVector);
-						Capture2D->AddActorLocalOffset(FVector::ZeroVector);
-						Capture2D->GetCaptureComponent2D()->UpdateContent();
-						Capture2D->GetCaptureComponent2D()->Activate();
 						//GetWorld()->GetTimerManager().SetTimer(WHY, this, &AAuyron::whywhy, 0.25f);
 						lel = true;
+						Capture2D->SetActorTransform(Camera->GetComponentTransform());
+						FVector temp = GetActorLocation();
+						SetActorLocation(warphere, false, nullptr, ETeleportType::TeleportPhysics);
 
 						TargetDefaultArmLength = BackupDefaultArmLength;
 						DefaultArmLength = TargetDefaultArmLength;
@@ -1386,8 +1399,8 @@ void AAuyron::Tick(float DeltaTime)
 
 						SpringArm->CameraLagSpeed = 0.0f; 1.0f / 128.0f;
 						SpringArm->CameraRotationLagSpeed = 0.0f; 1.0f / 128.0f;
-						SetActorLocation(warphere, false, nullptr, ETeleportType::TeleportPhysics);
 						SpringArm->SetRelativeLocation(FVector::ZeroVector);// = DefaultArmLength;
+						SetActorLocation(temp, false, nullptr, ETeleportType::TeleportPhysics);
 					}
 				}
 			}
@@ -2420,6 +2433,14 @@ bool AAuyron::GetJustWallJumped()
 bool AAuyron::GetIsInDialogue()
 {
 	return IsInDialogue && !CurrentCut->NoText;
+}
+
+float AAuyron::GetWarpTimerCompleted()
+{
+	if (GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f) {
+		return -1.0f;
+	}
+	return GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)/TeleportSettings.TeleportAnimationDuration;
 }
 
 FString AAuyron::GetDialogueText()
