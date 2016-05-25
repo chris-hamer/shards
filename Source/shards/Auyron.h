@@ -361,6 +361,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsOnTheGround();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	bool GetIsDashing();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetHelpEnabled();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	uint8 GetGemAmount();

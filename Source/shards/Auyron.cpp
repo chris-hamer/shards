@@ -2226,6 +2226,11 @@ bool AAuyron::GetIsOnTheGround()
 	return OnTheGround;
 }
 
+bool AAuyron::GetIsDashing()
+{
+	return dashing;
+}
+
 bool AAuyron::GetHelpEnabled()
 {
 	return HelpEnabled;
