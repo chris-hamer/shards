@@ -154,6 +154,9 @@ struct FAbilitiesDash
 
 	/* The player's initial forward velocity when dash wall jumping, in multiples of their normal max velocity. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float DashWallJumpMultiplier;
+
+	/* Whether or not we can use air dash. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool HasAirDash;
 };
 
 
@@ -555,6 +558,7 @@ private:
 	bool SlamNextFrame;
 	bool JustSlammed;
 	bool AlreadySlammed;
+	bool AlreadyAirDash;
 	bool OnTheGround;
 	bool HelpEnabled;
 
@@ -652,6 +656,7 @@ private:
 	bool DashNextFrame;
 	bool holdingdash;
 	bool dashing;
+	bool airdashing;
 	bool ztarget;
 	bool wasztarget;
 	bool movementlocked;

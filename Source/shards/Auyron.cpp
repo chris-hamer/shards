@@ -68,6 +68,7 @@ AAuyron::AAuyron()
 	DashSettings.DashSpeed = 1500.0f;
 	DashSettings.DashDuration = 0.5f;
 	DashSettings.DashWallJumpMultiplier = 3.0f;
+	DashSettings.HasAirDash = true;
 
 	GlideSettings.HasGlide = false;
 	GlideSettings.GlideTurnRateMultiplier = 1.0f;
@@ -891,7 +892,7 @@ void AAuyron::Tick(float DeltaTime)
 
 				}
 
-				if (!isclimbing && !underceiling && !dunk && LedgeTraceResult.IsValidBlockingHit() && LedgeTraceResult.ImpactNormal.Z>0.85f) {
+				if (!isclimbing && !underceiling && !dunk && !airdashing && LedgeTraceResult.IsValidBlockingHit() && LedgeTraceResult.ImpactNormal.Z>0.85f) {
 					FVector LedgeTop = FVector(TraceHit.X, TraceHit.Y, LedgeTraceResult.ImpactPoint.Z);
 					FVector NewPlayerLocation = LedgeTop + 45.0f*WallNormal;
 					if (true) {
@@ -1099,6 +1100,7 @@ void AAuyron::Tick(float DeltaTime)
 		if (OnTheGround) {
 			AlreadyGlided = false;
 			AlreadyUnjumped = false;
+			AlreadyAirDash = false;
 		}
 
 		// Make the player start dashing in response to input.
@@ -1109,10 +1111,24 @@ void AAuyron::Tick(float DeltaTime)
 				dashing = true;
 				UGameplayStatics::PlaySound2D(this, DashSound);
 			}
+			if (!OnTheGround&&DashSettings.HasAirDash&&!AlreadyAirDash) {
+				DashParticles->ActivateSystem();
+				dashing = true;
+				airdashing = true;
+				FlattenVelocity();
+				if (!MovementInput.IsNearlyZero()) {
+					FRotator NewRotation;
+					NewRotation.Pitch = 0.0f;
+					NewRotation.Yaw = SpringArm->GetComponentRotation().Yaw +
+						(MovementInput.X >= 0 ? 1 : -1) * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+					TargetDirection = NewRotation;
+				}
+				UGameplayStatics::PlaySound2D(this, DashSound);
+			}
 		}
 
 		// Handle dashing.
-		if (dashing) {
+		if (dashing || airdashing) {
 
 			// Set the player's horizontal velocity while preserving their vertical velocity.
 			CapsuleComponent->SetPhysicsLinearVelocity(TargetDirection.Vector().GetSafeNormal()*DashSettings.DashSpeed+ CapsuleComponent->GetPhysicsLinearVelocity().Z*FVector::UpVector, NAME_None);
@@ -1125,13 +1141,17 @@ void AAuyron::Tick(float DeltaTime)
 			// Stop dashing if the player was dashing for too long.
 			if (dashtimer > DashSettings.DashDuration) {
 				dashing = false;
+				if (airdashing) {
+					AlreadyAirDash = true;
+				}
+				airdashing = false;
 				DashParticles->DeactivateSystem();
 				dashtimer = 0.0f;
 			}
 		}
 
 		// This ain't Megaman X, kiddo.
-		if (dashing&&!DashSettings.HasDashJump&&(!OnTheGround||JustJumped)) {
+		if (dashing&&!airdashing&&(!OnTheGround||JustJumped)) {
 			DashParticles->DeactivateSystem();
 			dashing = false;
 			dashtimer = 0.0f;
@@ -1620,7 +1640,7 @@ void AAuyron::Tick(float DeltaTime)
 			FVector testdir = camf.RotateAngleAxis(-60.0f + i*30.0f, camu);
 			FHitResult camhit;
 			GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation(), Camera->GetComponentLocation() + (Camera->GetComponentLocation()-GetActorLocation()).Size()*testdir, ECC_Camera);
-			if (camhit.IsValidBlockingHit()) {
+			if (camhit.IsValidBlockingHit()&& TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
 				SpringArm->AddRelativeRotation(FRotator(0.0f, 0.1f*FMath::Sign(-60.0f + i*30.0f)*((camhit.ImpactPoint - Camera->GetComponentLocation()) | Camera->GetForwardVector())/(camhit.ImpactPoint - Camera->GetComponentLocation()).Size(), 0.0f));
 			}
 		}
@@ -1788,7 +1808,7 @@ void AAuyron::Tick(float DeltaTime)
 			}
 
 			// Apply gravity if in the air, and stop vertical movement if on the ground.
-			if (!OnTheGround && !IsInDialogue&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f) {
+			if (!OnTheGround && !IsInDialogue&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f&&!airdashing) {
 				CapsuleComponent->AddForce(PhysicsSettings.Gravity*FVector::UpVector, NAME_None, true);
 			} else {
 				FlattenVelocity();
