@@ -786,7 +786,9 @@ void AAuyron::Tick(float DeltaTime)
 	FHitResult d;
 	teletestmat->SetScalarParameterValue("t", GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) / TeleportSettings.TeleportAnimationDuration);
 	outlinemat->SetScalarParameterValue("Nope", GetWorld()->LineTraceSingleByChannel(d,Camera->GetComponentLocation(),GetActorLocation(),ECC_Visibility));
-	
+	DashParticles->SetVectorParameter("WingColor", (Wings->GetMaterial(0) == bluewings ? FVector(2.0f, 26.0f, 30.0f) : FVector(5.0f, 5.0f, 25.0f)));
+	FloatParticles->SetVectorParameter("WingColor", (Wings->GetMaterial(0) == bluewings ? FVector(2.0f, 26.0f, 30.0f) : FVector(5.0f, 5.0f, 25.0f)));
+
 	// A blueprint is overriding player input.
 	if (blockedbyblueprint) {
 		movementlocked = true;
@@ -1068,6 +1070,10 @@ void AAuyron::Tick(float DeltaTime)
 			GlideNextFrame = false;
 		}
 
+		if (airdashing) {
+			GlideNextFrame = false;
+		}
+
 		// Start gliding.
 		if (GlideNextFrame&&!AlreadyGlided&&!dunk&&GlideSettings.HasGlide&&!WasOnTheGround) {
 			if (AppliedForce.Z <= 0.0f) {
@@ -1129,6 +1135,7 @@ void AAuyron::Tick(float DeltaTime)
 				DashParticles->ActivateSystem();
 				dashing = true;
 				airdashing = true;
+				IsGliding = false;
 				FlattenVelocity();
 				if (!MovementInput.IsNearlyZero()) {
 					FRotator NewRotation;
