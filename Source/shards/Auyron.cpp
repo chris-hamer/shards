@@ -783,7 +783,9 @@ void AAuyron::Tick(float DeltaTime)
 
 	JustWallJumped = false;
 
-	teletestmat->SetScalarParameterValue("t", GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer)/TeleportSettings.TeleportAnimationDuration);
+	FHitResult d;
+	teletestmat->SetScalarParameterValue("t", GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) / TeleportSettings.TeleportAnimationDuration);
+	outlinemat->SetScalarParameterValue("Nope", GetWorld()->LineTraceSingleByChannel(d,Camera->GetComponentLocation(),GetActorLocation(),ECC_Visibility));
 	
 	// A blueprint is overriding player input.
 	if (blockedbyblueprint) {
