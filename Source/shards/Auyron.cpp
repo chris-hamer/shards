@@ -1066,7 +1066,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// >_>
-		if (MovementComponent->DistanceFromImpact < 25.0f && MovementComponent->overground) {
+		if (MovementComponent->DistanceFromImpact < 25.0f + 45.0f && MovementComponent->overground) {
 			GlideNextFrame = false;
 		}
 
