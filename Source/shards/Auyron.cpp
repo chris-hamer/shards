@@ -22,7 +22,7 @@
 #include "WarpCrystal.h"
 #include "Switch.h"
 
-// Sets default values
+// Sets default values4//
 AAuyron::AAuyron()
 {	
 	// These should work.//
@@ -117,15 +117,15 @@ AAuyron::AAuyron()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
 	CapsuleComponent->InitCapsuleSize(45.0f, 90.0f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
-	onbeginoverlapdelegate.BindUFunction(this, "Hit");
-	CapsuleComponent->OnComponentBeginOverlap.Add(onbeginoverlapdelegate);
-	onendoverlapdelegate.BindUFunction(this, "UnHit");
-	CapsuleComponent->OnComponentEndOverlap.Add(onendoverlapdelegate);
-	onhitdelegate.BindUFunction(this, "Stay");
-	CapsuleComponent->OnComponentHit.Add(onhitdelegate);
-	//CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
+	//onbeginoverlapdelegate.BindUFunction(this, "Hit");
+	//CapsuleComponent->OnComponentBeginOverlap.Add(onbeginoverlapdelegate);
+	//onendoverlapdelegate.BindUFunction(this, "UnHit");
+	//CapsuleComponent->OnComponentEndOverlap.Add(onendoverlapdelegate);
+	//onhitdelegate.BindUFunction(this, "Stay");
+	//CapsuleComponent->OnComponentHit.Add(onhitdelegate);
+	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
 	//CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
-	//CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
+	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
 	CapsuleComponent->SetSimulatePhysics(true);
 	CapsuleComponent->SetEnableGravity(false);
 	CapsuleComponent->SetLinearDamping(0.0f);
@@ -136,8 +136,7 @@ AAuyron::AAuyron()
 	CapsuleComponent->BodyInstance.PositionSolverIterationCount = 16;
 	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
 	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
-	CapsuleComponent->AttachTo(RootComponent);
-	//CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	SetActorEnableCollision(true);
 
 	// It you.
@@ -154,8 +153,8 @@ AAuyron::AAuyron()
 	PlayerModel->SetCollisionResponseToChannel(ECC_PhysicsBody, ECollisionResponse::ECR_Block);
 	PlayerModel->SetCollisionObjectType(ECC_PhysicsBody);
 	PlayerModel->SetSimulatePhysics(false);
-	PlayerModel->AttachTo(CapsuleComponent);
-	//PlayerModel->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//PlayerModel->AttachTo(CapsuleComponent);
+	PlayerModel->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	//static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimationBlueprint(TEXT("/Game/Animations/Characters/Auyron/Anim_Auyron"));
 	//PlayerModel->SetAnimInstanceClass(AnimationBlueprint.Object->GetAnimBlueprintGeneratedClass());
@@ -169,13 +168,13 @@ AAuyron::AAuyron()
 	SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
 	SpringArm->CameraLagMaxDistance = 1000.0f;
 	SpringArm->ProbeSize = 20.0f;
-	SpringArm->AttachTo(CapsuleComponent);
-	//SpringArm->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//SpringArm->AttachTo(CapsuleComponent);
+	SpringArm->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	// Camera so the casuals can "see what they're doing" or whatever.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
-	Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
-	//Camera->AttachToComponent(SpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);//4.12
+	//Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
+	Camera->AttachToComponent(SpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);//4.12
 
 	// May god have mercy on your GPU.
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
@@ -183,55 +182,56 @@ AAuyron::AAuyron()
 	DashParticles->SetTemplate(dp.Object);
 	DashParticles->bAutoActivate = false;
 	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
-	DashParticles->AttachTo(PlayerModel);
-	//DashParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//DashParticles->AttachTo(PlayerModel);
+	DashParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
 	FloatParticles->SetTemplate(fp.Object);
 	FloatParticles->bAutoActivate = false;
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
-	FloatParticles->AttachTo(PlayerModel);
-	//FloatParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//FloatParticles->AttachTo(PlayerModel);
+	FloatParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Particles/SlamParticles"));
 	SlamParticles->SetTemplate(sp.Object);
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	SlamParticles->AttachTo(PlayerModel);
-	//SlamParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//SlamParticles->AttachTo(PlayerModel);
+	SlamParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
 	SlamTrail->SetTemplate(st.Object);
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
-	SlamTrail->AttachTo(PlayerModel);
-	//SlamTrail->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//SlamTrail->AttachTo(PlayerModel);
+	SlamTrail->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesL->SetTemplate(tpl.Object);
 	TrailParticlesL->bAutoActivate = false;
 	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
-	TrailParticlesL->AttachTo(PlayerModel);
-	//TrailParticlesL->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//TrailParticlesL->AttachTo(PlayerModel);
+	TrailParticlesL->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
 	TrailParticlesR->SetTemplate(tpr.Object);
 	TrailParticlesR->bAutoActivate = false;
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
-	TrailParticlesR->AttachTo(PlayerModel);
-	//TrailParticlesR->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//TrailParticlesR->AttachTo(PlayerModel);
+	TrailParticlesR->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	grassparticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Grass Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/grassparticles"));
 	grassparticles->SetTemplate(gpr.Object);
 	grassparticles->bAutoActivate = false;
 	grassparticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
-	grassparticles->AttachTo(PlayerModel);
+	//grassparticles->AttachTo(PlayerModel);
+	grassparticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	DropShadow = CreateDefaultSubobject<UDecalComponent>(TEXT("Drop Shadow"));
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> dsmat(TEXT("/Game/Textures/Effects/dropshadow"));
@@ -244,7 +244,8 @@ AAuyron::AAuyron()
 	DropShadow->DecalSize = FVector(90.0f, 90.0f, 90.0f);
 	DropShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	DropShadow->AttachTo(PlayerModel);
+	//DropShadow->AttachTo(PlayerModel);
+	DropShadow->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
@@ -303,8 +304,8 @@ AAuyron::AAuyron()
 	TheAbyss->SetWorldScale3D(FVector(0.2f, 1.6f, 1.0f));
 	TheAbyss->SetRelativeLocation(FVector(185.0f, 0.0f, 120.0f));
 	TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, 0.0f));
-	TheAbyss->AttachTo(PlayerModel);
-	//TheAbyss->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//TheAbyss->AttachTo(PlayerModel);
+	TheAbyss->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
 	BootsR->SetVisibility(DashSettings.HasDash);
@@ -323,8 +324,8 @@ AAuyron::AAuyron()
 	
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
-	PostProcess->AttachTo(RootComponent);
-	//PostProcess->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//PostProcess->AttachTo(RootComponent);
+	PostProcess->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 
 	// NINTENDON'T DO 16 BIT.
 	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> riftmatfile(TEXT("/Game/Textures/Effects/RiftRTT"));
@@ -485,7 +486,8 @@ void AAuyron::PostInitializeComponents()
 	PostProcess->bUnbound = true;
 }
 
-void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+UFUNCTION()
+void AAuyron::UnHit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
 		// We just exited a camera override region.
@@ -515,22 +517,11 @@ void AAuyron::UnHit(class AActor* OtherActor, class UPrimitiveComponent* OtherCo
 	}
 }
 
-void AAuyron::Stay(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
-	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
-		// Get out mah way!
-		if (OtherComp->IsSimulatingPhysics()) {
-			float scalefactor = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector).Size() / PhysicsSettings.MaxVelocity;
-			scalefactor = (scalefactor > 1.0f ? FMath::Pow(scalefactor, PhysicsSettings.HighVelocityForceExponent) : 1.0f);
-			OtherComp->AddImpulse((OtherComp->GetComponentLocation() - GetActorLocation()).GetSafeNormal()*scalefactor*PhysicsSettings.PushForceFactor, NAME_None, true);
-		}
-	}
-}
-
-void AAuyron::Hit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+UFUNCTION()
+void AAuyron::Hit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
 {
 	// Stop hitting yourself.
-	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL))
+	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
 		// We just picked up a gem.
 		if (OtherActor->IsA(AGem::StaticClass()))
@@ -672,19 +663,19 @@ void AAuyron::BeginPlay()
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
 	
-	//TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
-	//BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
-	//BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
-	//Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
-	//Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
-	//Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
+	TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
+	BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
+	BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
+	Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
+	Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
+	Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
 
-	TeleClaw->AttachTo(PlayerModel, "RightHand");
-	BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R");
-	BootsL->AttachTo(PlayerModel, "WHATARETHOSE_L");
-	Bracelet->AttachTo(PlayerModel, "Bracelet");
-	Belt->AttachTo(PlayerModel, "Belt");
-	Wings->AttachTo(PlayerModel,  "Wings");
+	//TeleClaw->AttachTo(PlayerModel, "RightHand");
+	//BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R");
+	//BootsL->AttachTo(PlayerModel, "WHATARETHOSE_L");
+	//Bracelet->AttachTo(PlayerModel, "Bracelet");
+	//Belt->AttachTo(PlayerModel, "Belt");
+	//Wings->AttachTo(PlayerModel,  "Wings");
 
 	((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
 

@@ -8,8 +8,8 @@ ARotatingPlatform::ARotatingPlatform() {
 	AngularPeriod = 4;
 
 	Center = CreateDefaultSubobject<USceneComponent>(TEXT("Center"));
-	Center->AttachTo(RootComponent);
-	//Center->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//Center->AttachTo(RootComponent);
+	Center->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 }
 
 void ARotatingPlatform::Tick(float DeltaTime)

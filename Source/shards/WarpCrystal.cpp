@@ -14,13 +14,13 @@ AWarpCrystal::AWarpCrystal()
 	RootComponent = Root;
 
 	WarpRegion = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
-	WarpRegion->AttachTo(Root);
-	//WarpRegion->AttachToComponent(Root,FAttachmentTransformRules::KeepRelativeTransform); //4.12
+	//WarpRegion->AttachTo(Root);
+	WarpRegion->AttachToComponent(Root,FAttachmentTransformRules::KeepRelativeTransform); //4.12
 	WarpRegion->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 
 	WarpExit = CreateDefaultSubobject<USceneComponent>(TEXT("Exit"));
-	WarpExit->AttachTo(Root);
-	//WarpExit->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform); //4.12
+	//WarpExit->AttachTo(Root);
+	WarpExit->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform); //4.12
 
 }
 

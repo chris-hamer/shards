@@ -23,8 +23,8 @@ AStick::AStick()
 	RootComponent = StickModel;
 
 	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
-	PointLight->AttachTo(RootComponent);
-	//PointLight->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//PointLight->AttachTo(RootComponent);
+	PointLight->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	PointLight->CastShadows = false;
 	PointLight->SetRelativeLocation(FVector(0.0f, 0.0f, 6.8f));
 	PointLight->Intensity = 0.0f; 1385.76f;
@@ -34,8 +34,8 @@ AStick::AStick()
 	PointLight->LightColor = FColor(230, 255, 235);
 
 	Here = CreateDefaultSubobject<USceneComponent>(TEXT("Here"));
-	Here->AttachTo(StickModel);
-	//Here->AttachToComponent(StickModel, FAttachmentTransformRules::KeepRelativeTransform);
+	//Here->AttachTo(StickModel);
+	Here->AttachToComponent(StickModel, FAttachmentTransformRules::KeepRelativeTransform);
 	Here->SetRelativeLocation(FVector::ZeroVector);
 	PostTeleportVelocity = FVector(0.0f, 0.0f, 0.0f);
 

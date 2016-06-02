@@ -22,8 +22,8 @@ ABrokenBox::ABrokenBox()
 	DestructibleMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
 	DestructibleMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	DestructibleMesh->SetSimulatePhysics(true);
-	DestructibleMesh->AttachTo(RootComponent);
-	//DestructibleMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	//DestructibleMesh->AttachTo(RootComponent);
+	DestructibleMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 }
 
 // Called when the game starts or when spawned
