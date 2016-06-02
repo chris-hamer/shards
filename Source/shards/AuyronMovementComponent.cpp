@@ -65,6 +65,11 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	float RequiredDistance = (onground ? 50.0f : 10.0f)+45.0f; //50,1
 	DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	overground = ShapeTraceResult.IsValidBlockingHit();
+
+	FHitResult groundhitresult;
+	GetWorld()->LineTraceSingleByChannel(groundhitresult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 10000.0f*FVector::UpVector, ECC_Visibility);
+	groundtracehit = groundhitresult.ImpactPoint;
+
 	if (!onground) {
 		offGroundTime += DeltaTime;
 	}

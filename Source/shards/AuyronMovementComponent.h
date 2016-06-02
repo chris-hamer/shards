@@ -37,6 +37,8 @@ public:
 	FVector prevgroundvelocity;
 	FVector groundaccel;
 
+	FVector groundtracehit;
+
 	// Vertical velocity of the platform you're standing on.
 	// Stored separatly because the z component of groundvelocity
 	// is set to zero if it is positive to compensate for collision

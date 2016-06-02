@@ -241,6 +241,9 @@ AAuyron::AAuyron()
 	DropShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -950.0f));
 	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -850.0f));
+	DropShadow->DecalSize = FVector(90.0f, 90.0f, 90.0f);
+	DropShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	DropShadow->AttachTo(PlayerModel);
 
 	// Deferring application of physical material because Unreal crashes
@@ -789,6 +792,8 @@ void AAuyron::Tick(float DeltaTime)
 	DashParticles->SetVectorParameter("WingColor", (Wings->GetMaterial(0) == bluewings ? FVector(2.0f, 26.0f, 30.0f) : FVector(5.0f, 5.0f, 25.0f)));
 	FloatParticles->SetVectorParameter("WingColor", (Wings->GetMaterial(0) == bluewings ? FVector(2.0f, 26.0f, 30.0f) : FVector(5.0f, 5.0f, 25.0f)));
 
+	DropShadow->SetWorldLocation(MovementComponent->groundtracehit);
+
 	// A blueprint is overriding player input.
 	if (blockedbyblueprint) {
 		movementlocked = true;
@@ -884,7 +889,10 @@ void AAuyron::Tick(float DeltaTime)
 				FHitResult ceilhit;
 				FCollisionShape CeilFinderShape = FCollisionShape::MakeSphere(20.0f);// (55.0f, 90.0f);
 				GetWorld()->SweepSingleByChannel(ceilhit, GetActorLocation() + 65.0f*FVector::UpVector, GetActorLocation() + 200.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, CeilFinderShape);
-				bool underceiling = ceilhit.GetActor() != nullptr && ceilhit.GetComponent() != nullptr && ceilhit.GetComponent()->IsA(UStaticMeshComponent::StaticClass());
+				bool underceiling = ceilhit.GetActor() != nullptr && ceilhit.GetComponent() != nullptr;// && ceilhit.GetComponent()->IsA(UStaticMeshComponent::StaticClass());
+				FHitResult floorhit;
+				GetWorld()->SweepSingleByChannel(floorhit, GetActorLocation() - 65.0f*FVector::UpVector, GetActorLocation() - 200.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, CeilFinderShape);
+				bool floorcheck = floorhit.GetActor() != nullptr && floorhit.GetComponent() != nullptr;// && floorhit.GetComponent()->IsA(UStaticMeshComponent::StaticClass());
 				if (LedgeTraceResult.IsValidBlockingHit()) {
 					if (LedgeTraceResult.GetActor() != nullptr && LedgeTraceResult.GetComponent() != nullptr && LedgeTraceResult.GetComponent()->IsA(UStaticMeshComponent::StaticClass())) {
 						grabbedledge = ((UStaticMeshComponent*)LedgeTraceResult.GetComponent());
@@ -908,7 +916,7 @@ void AAuyron::Tick(float DeltaTime)
 
 				}
 
-				if (!isclimbing && !underceiling && !dunk && !airdashing && LedgeTraceResult.IsValidBlockingHit() && LedgeTraceResult.ImpactNormal.Z>0.85f) {
+				if (!isclimbing && !underceiling && !floorcheck && !dunk && !airdashing && LedgeTraceResult.IsValidBlockingHit() && LedgeTraceResult.ImpactNormal.Z>0.85f) {
 					FVector LedgeTop = FVector(TraceHit.X, TraceHit.Y, LedgeTraceResult.ImpactPoint.Z);
 					FVector NewPlayerLocation = LedgeTop + 45.0f*WallNormal;
 					if (true) {
@@ -1656,17 +1664,39 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Camera raycast shenanigans.
-		FVector camf = Camera->GetForwardVector();
-		FVector camu = Camera->GetUpVector();
-		for (int i = 0; i < 5; i++) {
-			FVector testdir = camf.RotateAngleAxis(-60.0f + i*30.0f, camu);
-			FHitResult camhit;
-			GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation(), Camera->GetComponentLocation() + (Camera->GetComponentLocation()-GetActorLocation()).Size()*testdir, ECC_Camera);
-			if (camhit.IsValidBlockingHit()&& TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
-				SpringArm->AddRelativeRotation(FRotator(0.0f, 0.1f*FMath::Sign(-60.0f + i*30.0f)*((camhit.ImpactPoint - Camera->GetComponentLocation()) | Camera->GetForwardVector())/(camhit.ImpactPoint - Camera->GetComponentLocation()).Size(), 0.0f));
+		if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
+			FVector camf = Camera->GetForwardVector();
+			FVector camu = Camera->GetUpVector();
+			int imax = 100;
+			float finalr = 0.0f;
+			float numhits = 0.0f;
+			float numl = 0.0f;
+			float numr = 0.0f;
+			for (int i = 0; i < imax; i++) {
+				FVector testdir = camf.RotateAngleAxis(-60.0f + i*(120.0f / (imax - 1)), camu).GetSafeNormal();
+				FHitResult camhit;
+				float modifieddot = 3 * FMath::Pow(2.0f*(camf | testdir) - 1.0f, 2) - 2 * FMath::Pow(2.0f*(camf | testdir) - 1.0f, 3);
+				GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation(), Camera->GetComponentLocation() + modifieddot * ((Camera->GetComponentLocation() - GetActorLocation()).Size()*testdir), ECC_Camera);
+				if (camhit.IsValidBlockingHit()) {
+					float dot = FMath::Clamp((camhit.ImpactPoint - Camera->GetComponentLocation()).GetSafeNormal() | Camera->GetForwardVector(), 0.0f, 1.0f);
+					float dist = (camhit.ImpactPoint - Camera->GetComponentLocation()).Size();
+					float sign = FMath::Sign(-60.0f + i*(120.0f / (imax - 1)));
+					float scale = 1000.0f;
+					//float thing = FMath::Lerp(FMath::Pow(dot, 2), FMath::Pow(dot, 0.5f), dot);
+					float thing = 3 * FMath::Pow(dot, 2) - 2 * FMath::Pow(dot, 3);
+					finalr += scale*sign*thing*(1.0f / dist)*(1.0f / imax);
+					numhits++;
+					if (sign < 0) {
+						numl++;
+					} else {
+						numr++;
+					}
+				}
 			}
+			finalr *= FMath::Pow(FMath::Abs(numl - numr) / numhits, 2);
+			SpringArm->AddRelativeRotation(FRotator(0.0f, finalr, 0.0f));
 		}
-		
+
 		// Handle CameraOverrideRegions.
 		if(InCameraOverrideRegion&&!ztarget) {
 			
