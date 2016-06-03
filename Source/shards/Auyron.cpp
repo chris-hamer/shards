@@ -99,7 +99,7 @@ AAuyron::AAuyron()
 	CameraAutoTurnSettings.CameraAutoTurnFactor = 60.0f;
 	CameraAutoTurnSettings.CameraResetTime = 1.0f;
 	CameraAutoTurnSettings.CameraDefaultPitch = -30.0f;
-	CameraAutoTurnSettings.CameraDefaultPitchRate = 0.1f;
+	CameraAutoTurnSettings.CameraDefaultPitchRate = 0.01f;
 
 	CameraModelFadeSettings.ModelFadeEnabled = false;
 	CameraModelFadeSettings.ModelFadeDistance = 250.0f;
@@ -1631,7 +1631,9 @@ void AAuyron::Tick(float DeltaTime)
 			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
 				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X), 1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector) / PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
-					NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, CameraAutoTurnSettings.CameraDefaultPitch, CameraAutoTurnSettings.CameraDefaultPitchRate);
+					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
+					float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(),FVector::UpVector).GetSafeNormal());
+					NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, modifiedpitch, CameraAutoTurnSettings.CameraDefaultPitchRate);
 				}
 				if ((OnTheGround && !WasOnTheGround&&TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime)) {
 					justlandedcameraflag = true;
@@ -1668,7 +1670,7 @@ void AAuyron::Tick(float DeltaTime)
 				FHitResult camhit;
 				float modifieddot = 3 * FMath::Pow(2.0f*(camf | testdir) - 1.0f, 2) - 2 * FMath::Pow(2.0f*(camf | testdir) - 1.0f, 3);
 				GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation(), Camera->GetComponentLocation() + modifieddot * ((Camera->GetComponentLocation() - GetActorLocation()).Size()*testdir), ECC_Camera);
-				if (camhit.IsValidBlockingHit()) {
+				if (camhit.IsValidBlockingHit() && camhit.ImpactNormal.Z < 0.3f) {
 					float dot = FMath::Clamp((camhit.ImpactPoint - Camera->GetComponentLocation()).GetSafeNormal() | Camera->GetForwardVector(), 0.0f, 1.0f);
 					float dist = (camhit.ImpactPoint - Camera->GetComponentLocation()).Size();
 					float sign = FMath::Sign(-60.0f + i*(120.0f / (imax - 1)));
