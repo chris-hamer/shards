@@ -81,11 +81,17 @@ AAuyron::AAuyron()
 	SlamSettings.HasSlam = false;
 	SlamSettings.SlamVelocity = 1500.0f;
 
+	CelShaderSettings.LightMin = 0.4f;
+	CelShaderSettings.LightMax = 0.8f;
+	CelShaderSettings.AdditiveLightBias = 0.0f;
+	CelShaderSettings.MultiplicativeLightBias = 2.0f;
+	CelShaderSettings.Tint = FLinearColor(1.0f,1.0f,1.0f,0.0f);
+
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
 	DefaultArmLength = 1000.0f;
-	MinimumArmLength = 600.0f;
-	MaximumArmLength = 1400.0f;
+	MinimumArmLength = 200.0f;
+	MaximumArmLength = 1600.0f;
 	CameraZoomRate = 0.05f;
 	CameraZoomStep = 200.0f;
 	CameraLagZoomScale = 2.0f;
@@ -99,7 +105,7 @@ AAuyron::AAuyron()
 	CameraAutoTurnSettings.CameraAutoTurnFactor = 60.0f;
 	CameraAutoTurnSettings.CameraResetTime = 1.0f;
 	CameraAutoTurnSettings.CameraDefaultPitch = -30.0f;
-	CameraAutoTurnSettings.CameraDefaultPitchRate = 0.01f;
+	CameraAutoTurnSettings.CameraDefaultPitchRate = 2.0f;
 
 	CameraModelFadeSettings.ModelFadeEnabled = false;
 	CameraModelFadeSettings.ModelFadeDistance = 250.0f;
@@ -782,6 +788,11 @@ void AAuyron::Tick(float DeltaTime)
 	outlinemat->SetScalarParameterValue("Nope", GetWorld()->LineTraceSingleByChannel(d,Camera->GetComponentLocation(),GetActorLocation(),ECC_Visibility));
 	DashParticles->SetVectorParameter("WingColor", (Wings->GetMaterial(0) == bluewings ? FVector(2.0f, 26.0f, 30.0f) : FVector(5.0f, 5.0f, 25.0f)));
 	FloatParticles->SetVectorParameter("WingColor", (Wings->GetMaterial(0) == bluewings ? FVector(2.0f, 26.0f, 30.0f) : FVector(5.0f, 5.0f, 25.0f)));
+	celshadermat->SetScalarParameterValue("Light Min", CelShaderSettings.LightMin);
+	celshadermat->SetScalarParameterValue("Light Max", CelShaderSettings.LightMax);
+	celshadermat->SetScalarParameterValue("Additive Light Bias", CelShaderSettings.AdditiveLightBias);
+	celshadermat->SetScalarParameterValue("Multiplicative Light Bias", CelShaderSettings.MultiplicativeLightBias);
+	celshadermat->SetVectorParameterValue("Tint", CelShaderSettings.Tint);
 
 	DropShadow->SetWorldLocation(MovementComponent->groundtracehit);
 
@@ -1366,8 +1377,9 @@ void AAuyron::Tick(float DeltaTime)
 						TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
 						//TheAbyss->SetVisibility(true);
 
-						FRotator NewRotation = SpringArm->GetComponentRotation();
-						NewRotation.Yaw = PlayerModel->GetComponentRotation().Yaw;
+						//FRotator NewRotation = SpringArm->GetComponentRotation();
+						FRotator NewRotation = FRotator::ZeroRotator;
+						NewRotation.Yaw += PlayerModel->GetComponentRotation().Yaw;
 						if (wasztarget) {
 							NewRotation.Pitch = -30.0f;
 						}
@@ -1622,10 +1634,11 @@ void AAuyron::Tick(float DeltaTime)
 			}
 
 			// Temporary variable to hold the camera's new rotation.
-			FRotator NewRotation = SpringArm->GetComponentRotation();
+			//FRotator NewRotation = SpringArm->GetComponentRotation();
+			FRotator NewRotation = FRotator::ZeroRotator;
 
 			// Move the camera's yaw in response to the x input of the mouse/stick.
-			NewRotation.Yaw = NewRotation.Yaw + CameraInput.X;
+			NewRotation.Yaw += (DeltaTime*120.0f)*CameraInput.X;
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
@@ -1633,7 +1646,7 @@ void AAuyron::Tick(float DeltaTime)
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
 					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
 					float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(),FVector::UpVector).GetSafeNormal());
-					NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, modifiedpitch, CameraAutoTurnSettings.CameraDefaultPitchRate);
+					//NewRotation.Pitch += FMath::Lerp(SpringArm->RelativeRotation.Pitch, modifiedpitch, CameraAutoTurnSettings.CameraDefaultPitchRate);
 				}
 				if ((OnTheGround && !WasOnTheGround&&TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime)) {
 					justlandedcameraflag = true;
@@ -1642,17 +1655,28 @@ void AAuyron::Tick(float DeltaTime)
 			}
 
 			// Set the rotation of the camera.
-			SpringArm->SetWorldRotation(NewRotation);
+			SpringArm->SetWorldRotation(SpringArm->GetComponentRotation() + NewRotation);
 
 			// Move the camera's pitch in response to the y input of the mouse/stick.
-			NewRotation = SpringArm->GetComponentRotation();
+			//NewRotation = SpringArm->GetComponentRotation();
+			NewRotation = FRotator::ZeroRotator;
 			float slowfactor = 1.0f;
 			if (CameraInput.Y<0.0f && CameraControllerInput.Y<0.0f && SpringArm->RelativeRotation.Pitch<0.0f) {
-				//slowfactor = FMath::Pow(1.0f-(SpringArm->RelativeRotation.Pitch / (-CameraMaxAngle)),1.0f);
+				slowfactor = FMath::Pow(1.0f-(SpringArm->RelativeRotation.Pitch / (-CameraMaxAngle)),1.0f);
 			}
-			NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch + slowfactor*CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
+
+			NewRotation.Pitch = FMath::Clamp(SpringArm->GetComponentRotation().Pitch + (DeltaTime*120.0f)*slowfactor*CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
+			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
+				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
+					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
+					float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(), FVector::UpVector).GetSafeNormal());
+					NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, modifiedpitch, DeltaTime*CameraAutoTurnSettings.CameraDefaultPitchRate);
+				}
+			}
 			SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag;
-			SpringArm->SetWorldRotation(NewRotation);
+			FRotator temp = SpringArm->RelativeRotation;
+			temp.Pitch = 0.0f;
+			SpringArm->SetWorldRotation(temp+NewRotation);
 
 		}
 
@@ -2377,6 +2401,31 @@ void AAuyron::ResumeInput()
 	blockedbyblueprint = false;
 	movementlocked = false;
 	cameralocked = false;
+}
+
+void AAuyron::SetLightMin(float newvalue)
+{
+	CelShaderSettings.LightMin = newvalue;
+}
+
+void AAuyron::SetLightMax(float newvalue)
+{
+	CelShaderSettings.LightMax = newvalue;
+}
+
+void AAuyron::SetAdditiveLightBias(float newvalue)
+{
+	CelShaderSettings.AdditiveLightBias = newvalue;
+}
+
+void AAuyron::SetMultiplicativeLightBias(float newvalue)
+{
+	CelShaderSettings.MultiplicativeLightBias = newvalue;
+}
+
+void AAuyron::SetTint(FLinearColor newvalue)
+{
+	CelShaderSettings.Tint = newvalue;
 }
 
 void AAuyron::SetMaterial(int32 index, UMaterialInterface * newmat)

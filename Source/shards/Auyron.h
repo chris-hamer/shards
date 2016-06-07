@@ -274,7 +274,7 @@ struct FCelShader
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float AdditiveLightBias;
 
 	/* Color used for white in the cel shader. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FColor Tint;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FLinearColor Tint;
 };
 
 UENUM() enum AimType {
@@ -411,6 +411,16 @@ public:
 	void BlockInput();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void ResumeInput();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetLightMin(float newvalue);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetLightMax(float newvalue);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetAdditiveLightBias(float newvalue);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetMultiplicativeLightBias(float newvalue);
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetTint(FLinearColor newvalue);
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetMaterial(int32 index, UMaterialInterface* newmat);
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
