@@ -1629,7 +1629,7 @@ void AAuyron::Tick(float DeltaTime)
 				TimeSinceLastMouseInput += DeltaTime;
 			}
 
-			if (CapsuleComponent->GetPhysicsLinearVelocity().Z < -900.0f && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
+			if (!ztarget && CapsuleComponent->GetPhysicsLinearVelocity().Z < -900.0f && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
 				CameraInput.Y = -FMath::Clamp(-0.0005f*CapsuleComponent->GetPhysicsLinearVelocity().Z,0.0f,1.0f);
 			}
 
@@ -1641,7 +1641,7 @@ void AAuyron::Tick(float DeltaTime)
 			NewRotation.Yaw += (DeltaTime*120.0f)*CameraInput.X;
 
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
-			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
+			if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
 				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X), 1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector) / PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
 					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
@@ -1661,12 +1661,12 @@ void AAuyron::Tick(float DeltaTime)
 			//NewRotation = SpringArm->GetComponentRotation();
 			NewRotation = FRotator::ZeroRotator;
 			float slowfactor = 1.0f;
-			if (CameraInput.Y<0.0f && CameraControllerInput.Y<0.0f && SpringArm->RelativeRotation.Pitch<0.0f) {
+			if (!ztarget && CameraInput.Y<0.0f && CameraControllerInput.Y<0.0f && SpringArm->RelativeRotation.Pitch<0.0f) {
 				slowfactor = FMath::Pow(1.0f-(SpringArm->RelativeRotation.Pitch / (-CameraMaxAngle)),1.0f);
 			}
 
 			NewRotation.Pitch = FMath::Clamp(SpringArm->GetComponentRotation().Pitch + (DeltaTime*120.0f)*slowfactor*CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
-			if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
+			if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
 					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
 					float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(), FVector::UpVector).GetSafeNormal());
@@ -1681,7 +1681,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Camera raycast shenanigans.
-		if (TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
+		if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
 			FVector camf = Camera->GetForwardVector();
 			FVector camu = Camera->GetUpVector();
 			int imax = 100;
