@@ -88,7 +88,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 	FloorNormal = FVector::ZeroVector;
 
-	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance &&!justjumped) { // (PlayerVelocity.Z <= 0.0f || wasonground)
+	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance &&!justjumped&& (PlayerVelocity.Z <= 0.0f || wasonground)) { // (PlayerVelocity.Z <= 0.0f || wasonground)
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
 			if (enforcementtimer == -1.0f) {
 				enforcementtimer = 0.0f;

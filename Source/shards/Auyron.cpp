@@ -783,6 +783,16 @@ void AAuyron::Tick(float DeltaTime)
 
 	JustWallJumped = false;
 
+	FLinearColor tintmult = FLinearColor(1.0f,1.0f,1.0f,1.0f);
+	for (TActorIterator<APointLight> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		APointLight* a = ((APointLight*)ActorItr.operator->());
+		float ar = a->PointLightComponent->AttenuationRadius;
+		FLinearColor col = a->GetLightComponent()->LightColor;
+		if ((a->GetActorLocation() - GetActorLocation()).Size() < ar) {
+			tintmult = FMath::Lerp(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f),col,(1- (a->GetActorLocation() - GetActorLocation()).Size()/ar));
+		}
+	}
+
 	FHitResult d;
 	teletestmat->SetScalarParameterValue("t", GetWorld()->GetTimerManager().GetTimerElapsed(PreWarpTimer) / TeleportSettings.TeleportAnimationDuration);
 	outlinemat->SetScalarParameterValue("Nope", GetWorld()->LineTraceSingleByChannel(d,Camera->GetComponentLocation(),GetActorLocation(),ECC_Visibility));
@@ -792,7 +802,7 @@ void AAuyron::Tick(float DeltaTime)
 	celshadermat->SetScalarParameterValue("Light Max", CelShaderSettings.LightMax);
 	celshadermat->SetScalarParameterValue("Additive Light Bias", CelShaderSettings.AdditiveLightBias);
 	celshadermat->SetScalarParameterValue("Multiplicative Light Bias", CelShaderSettings.MultiplicativeLightBias);
-	celshadermat->SetVectorParameterValue("Tint", CelShaderSettings.Tint);
+	celshadermat->SetVectorParameterValue("Tint", CelShaderSettings.Tint*tintmult);
 
 	DropShadow->SetWorldLocation(MovementComponent->groundtracehit);
 
