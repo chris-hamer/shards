@@ -1653,6 +1653,44 @@ void AAuyron::Tick(float DeltaTime)
 			// The camera should only turn with the player if the mouse hasn't been touched recently.
 			if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
 				NewRotation.Yaw += FMath::Pow(FMath::Abs(MovementInput.X), 1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector) / PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
+				float thing = FMath::Pow(FMath::Abs(MovementInput.X), 1.0f) * (Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector) / PhysicsSettings.MaxVelocity) * DeltaTime * CameraAutoTurnSettings.CameraAutoTurnFactor;
+
+				if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
+					FVector camf = Camera->GetForwardVector();
+					FVector camu = Camera->GetUpVector();
+					int imax = 100;
+					float finalr = 0.0f;
+					float numhits = 0.0f;
+					float numl = 0.0f;
+					float numr = 0.0f;
+					float angle = 15.0f;
+					for (int i = 0; i < imax; i++) {
+						float asdf = -angle + i*(2.0f * angle / (imax - 1));
+						FVector testdir = camf.RotateAngleAxis(asdf, camu).GetSafeNormal();
+						FHitResult camhit;
+						float modifieddot = 3 * FMath::Pow(2.0f*(camf | testdir) - 1.0f, 2) - 2 * FMath::Pow(2.0f*(camf | testdir) - 1.0f, 3);
+						GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation(), Camera->GetComponentLocation() + modifieddot * (((Camera->GetComponentLocation() - GetActorLocation()).Size()-90.0f)*testdir), ECC_Camera);
+						if (camhit.IsValidBlockingHit() && camhit.ImpactNormal.Z < 0.3f) {
+							float dot = FMath::Clamp((camhit.ImpactPoint - Camera->GetComponentLocation()).GetSafeNormal() | Camera->GetForwardVector(), 0.0f, 1.0f);
+							float dist = (camhit.ImpactPoint - Camera->GetComponentLocation()).Size();
+							float sign = FMath::Sign(asdf);
+							float scale = 10000.0f;
+							//float thing = FMath::Lerp(FMath::Pow(dot, 2), FMath::Pow(dot, 0.5f), dot);
+							float thing = 3 * FMath::Pow(dot, 2) - 2 * FMath::Pow(dot, 3);
+							finalr += scale*sign*thing*(1.0f / dist)*(1.0f / imax);
+							numhits++;
+							if (sign < 0) {
+								numl++;
+							} else {
+								numr++;
+							}
+						}
+					}
+					finalr *= FMath::Pow(FMath::Abs(numl - numr) / numhits, 2);
+					if (FMath::Sign(finalr) == FMath::Sign(thing)) {
+						SpringArm->AddRelativeRotation(FRotator(0.0f, finalr*FMath::Abs(thing), 0.0f));
+					}
+				}
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
 					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
 					float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(),FVector::UpVector).GetSafeNormal());
