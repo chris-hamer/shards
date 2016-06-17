@@ -733,12 +733,6 @@ void AAuyron::Tick(float DeltaTime)
 		justlandedcameraflag = false;
 	}
 
-	if (FMath::Abs(MovementInput.X) > 0.9f) {
-		MovementInput.X = FMath::Sign(MovementInput.X);
-	}
-	if (FMath::Abs(MovementInput.Y) > 0.9f) {
-		MovementInput.Y = FMath::Sign(MovementInput.Y);
-	}
 
 	FRootMotionMovementParams RootMotion = PlayerModel->ConsumeRootMotion();
 
@@ -750,6 +744,15 @@ void AAuyron::Tick(float DeltaTime)
 
 	// This isn't Doom.
 	MovementInput = MovementInput.GetClampedToMaxSize(1.0f);
+
+	// Xbox controller a shit.
+	if (MovementInput.Size() > 0.9f) {
+		MovementInput = MovementInput.GetSafeNormal();
+	}
+
+	// Apply a curve to the movement input that allows the player able to walk/move slowly without having to edge the deadzone.
+	float sqr = FMath::Clamp<float>(MovementInput.Size(), -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(MovementInput.Size(), -1.0f, 1.0f));
+	MovementInput = MovementInput.GetSafeNormal()*FMath::Lerp(FMath::Clamp<float>(MovementInput.Size(), -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(MovementInput.Size(), -1.0f, 1.0f)));
 
 	// Now how did you get down there?
 	if (GetActorLocation().Z < -20000.0f) {
@@ -1226,7 +1229,6 @@ void AAuyron::Tick(float DeltaTime)
 				UGameplayStatics::PlaySound2D(this, DunkSound);
 			}
 		}
-
 		// Looks like we're talking to someone.
 		if (IsInDialogue) {
 
@@ -1688,7 +1690,7 @@ void AAuyron::Tick(float DeltaTime)
 					}
 					finalr *= FMath::Pow(FMath::Abs(numl - numr) / numhits, 2);
 					if (FMath::Sign(finalr) == FMath::Sign(thing)) {
-						SpringArm->AddRelativeRotation(FRotator(0.0f, finalr*FMath::Abs(thing), 0.0f));
+						SpringArm->AddRelativeRotation(FRotator(0.0f, finalr*FMath::Pow(FMath::Abs(thing),0.5f), 0.0f));
 					}
 				}
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
@@ -1715,6 +1717,25 @@ void AAuyron::Tick(float DeltaTime)
 
 			NewRotation.Pitch = FMath::Clamp(SpringArm->GetComponentRotation().Pitch + (DeltaTime*120.0f)*slowfactor*CameraInput.Y, -CameraMaxAngle, -CameraMinAngle);
 			if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime && !ztarget && !movementlocked) {
+				FVector f = FVector::VectorPlaneProject(Camera->GetForwardVector(), FVector::UpVector).GetSafeNormal();
+				FHitResult camhit;//
+				GetWorld()->LineTraceSingleByChannel(camhit, Camera->GetComponentLocation() + 40.0f*f, Camera->GetComponentLocation() - 80.0f*f, ECC_Camera);
+				////////////////////////////////
+				if (false&&camhit.IsValidBlockingHit()) {
+					float buttcast = (camhit.Normal | f)*60.0f;
+					buttcast = FMath::Clamp(60.0f*((SpringArm->TargetArmLength / (GetActorLocation() - Camera->GetComponentLocation()).Size())-1), -CameraAutoTurnSettings.CameraDefaultPitch,82.0f);
+					NewRotation.Pitch = FMath::Clamp(FMath::Lerp(SpringArm->RelativeRotation.Pitch, -buttcast, 1), -90.0f, 90.0f);
+					GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, FString::SanitizeFloat(buttcast));
+				} else {
+					if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
+						//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
+
+
+						float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(), FVector::UpVector).GetSafeNormal());
+						NewRotation.Pitch = FMath::Lerp(SpringArm->RelativeRotation.Pitch, modifiedpitch, DeltaTime*CameraAutoTurnSettings.CameraDefaultPitchRate);
+					}
+				}
+				////////////////////////////
 				if (TimeSinceLastMovementInputReleased > CameraAutoTurnSettings.CameraResetTime) {
 					//float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | TargetDirection.Vector());
 					float modifiedpitch = CameraAutoTurnSettings.CameraDefaultPitch - 50.0f*(MovementComponent->FloorNormal | FVector::VectorPlaneProject(Camera->GetForwardVector(), FVector::UpVector).GetSafeNormal());
@@ -1729,7 +1750,7 @@ void AAuyron::Tick(float DeltaTime)
 		}
 
 		// Camera raycast shenanigans.
-		if (!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
+		if (false&&!ztarget && TimeSinceLastMouseInput > CameraAutoTurnSettings.CameraResetTime) {
 			FVector camf = Camera->GetForwardVector();
 			FVector camu = Camera->GetUpVector();
 			int imax = 100;
@@ -1902,7 +1923,7 @@ void AAuyron::Tick(float DeltaTime)
 			FVector Velocity2D = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector);
 
 			// Adjust movement input to reflect camera direction.
-			FVector AdjustedMovementInput = (Right*MovementInput.X + Forward*MovementInput.Y).GetClampedToMaxSize(1.0f);
+			FVector AdjustedMovementInput = (Right*MovementInput.X + Forward*MovementInput.Y);// .GetClampedToMaxSize(1.0f);
 
 			// Get acceleration magnitude depending if the player is in the air or not.
 			float CurrentAccelRate = (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate) * 10000.0f;
@@ -2108,6 +2129,10 @@ void AAuyron::MoveRight(float AxisValue)
 {
 	float sqr = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f));
 	MovementInput.X = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
+	if (FMath::Abs(AxisValue) > 0.67) {
+		MovementInput.X = FMath::Sign(AxisValue);
+	}
+	MovementInput.X = AxisValue;
 }
 
 // and X for vertical? I mean who does that?
@@ -2115,6 +2140,10 @@ void AAuyron::MoveForward(float AxisValue)
 {
 	float sqr = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f));
 	MovementInput.Y = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
+	if (FMath::Abs(AxisValue) > 0.67) {
+		MovementInput.Y = FMath::Sign(AxisValue);
+	}
+	MovementInput.Y = AxisValue;
 }
 
 void AAuyron::PitchCamera(float AxisValue)
