@@ -1274,6 +1274,7 @@ void AAuyron::Tick(float DeltaTime)
 					TArray<TCHAR> escape = TArray<TCHAR>();
 					escape.Add('\n');
 					CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
+					CurrentTextWidth = CurrentCut->DialogueWidth;
 					if (CurrentCut->CutDuration > 0.0f) {
 						CurrentCut->cuttimer = 0.0f;
 					}
@@ -1593,6 +1594,7 @@ void AAuyron::Tick(float DeltaTime)
 				escape.Add('\n');
 				stillscrolling = true;
 				CurrentLine = CurrentCut->DialogueText.ReplaceEscapedCharWithChar(&escape);
+				CurrentTextWidth = CurrentCut->DialogueWidth;
 
 				// Look at me when I'm talking to you!
 				FVector displacement = (GetActorLocation() - CurrentNPC->GetActorLocation());
@@ -2604,6 +2606,11 @@ float AAuyron::GetWarpTimerCompleted()
 FString AAuyron::GetDialogueText()
 {
 	return CurrentLine;
+}
+
+float AAuyron::GetDialogueWidth()
+{
+	return CurrentTextWidth;
 }
 
 USkeletalMeshComponent* AAuyron::GetMesh() {

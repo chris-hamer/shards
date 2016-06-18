@@ -32,6 +32,9 @@ public:
 
 	/* The text to display. */
 	UPROPERTY(EditAnywhere) FString DialogueText;
+
+	/* The width of the text. */
+	UPROPERTY(EditAnywhere) float DialogueWidth;
 	
 	/* Blueprint that should execute when this cut is acivated. */
 	UPROPERTY(EditAnywhere) AActor* BlueprintToExecute;

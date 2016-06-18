@@ -380,6 +380,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	FString GetDialogueText();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	float GetDialogueWidth();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool AboutToWarp();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetAimStyle(FString Style);
@@ -639,6 +641,7 @@ private:
 	ANPC* CurrentNPC;
 	FTransform DialogueCameraTransform;
 	FString CurrentLine;
+	float CurrentTextWidth;
 
 	AStick* thisguy;
 

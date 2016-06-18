@@ -12,6 +12,7 @@ ADialogueCut::ADialogueCut()
 
 	CutDuration = 0.0f;
 	cuttimer = -1.0f;
+	DialogueWidth = 950.0f;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
