@@ -710,6 +710,7 @@ private:
 	
 	float defaultfov;
 	TEnumAsByte<MovementRegionLockedAxis::Axis> LockedMovementAxis;
+	USplineComponent* newspline;
 	FVector CameraOverrideTargetDisplacement;
 	FVector CameraOverrideTargetOffset;
 	FVector CameraOverrideTargetLocation;

@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "shards.h"
+#include "CameraOverrideRegion.h"
 #include "TwoDimensionalMovementRegion.h"
 
 
@@ -20,19 +21,20 @@ ATwoDimensionalMovementRegion::ATwoDimensionalMovementRegion()
 	Region->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
+
+	path = CreateDefaultSubobject<USplineComponent>(TEXT("Path"));
+	path->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // Called when the game starts or when spawned
 void ATwoDimensionalMovementRegion::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
 void ATwoDimensionalMovementRegion::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
-
 }
 

@@ -3,6 +3,8 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Components/SplineComponent.h"
+#include "CameraOverrideRegion.h"
 #include "TwoDimensionalMovementRegion.generated.h"
 
 UENUM() namespace MovementRegionLockedAxis {
@@ -33,5 +35,6 @@ public:
 	UPROPERTY(EditAnywhere) UBoxComponent* Region;
 	UPROPERTY(EditAnywhere) TEnumAsByte<MovementRegionLockedAxis::Axis> LockedAxis;
 	UPROPERTY(EditAnywhere) float LockedCoordinate;
+	UPROPERTY(EditAnywhere) USplineComponent* path;
 	
 };

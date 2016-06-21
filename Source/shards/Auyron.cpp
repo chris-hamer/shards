@@ -104,7 +104,7 @@ AAuyron::AAuyron()
 
 	CameraAutoTurnSettings.CameraAutoTurnFactor = 60.0f;
 	CameraAutoTurnSettings.CameraResetTime = 1.0f;
-	CameraAutoTurnSettings.CameraDefaultPitch = -30.0f;
+	CameraAutoTurnSettings.CameraDefaultPitch = -15.0f;
 	CameraAutoTurnSettings.CameraDefaultPitchRate = 2.0f;
 
 	CameraModelFadeSettings.ModelFadeEnabled = false;
@@ -504,6 +504,9 @@ void AAuyron::UnHit(class UPrimitiveComponent* thisguy, class AActor* OtherActor
 				InCameraOverrideRegion = false;
 			}
 		}
+		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
+			InCameraOverrideRegion = false;
+		}
 
 		if (OtherComp->IsA(UInstancedStaticMeshComponent::StaticClass())) {
 			ingrass = false;
@@ -576,8 +579,10 @@ void AAuyron::Hit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, 
 
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = true;
-			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;
+			LockedAxisValue = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedCoordinate;//
 			LockedMovementAxis = ((ATwoDimensionalMovementRegion*)OtherActor)->LockedAxis;
+			newspline = ((ATwoDimensionalMovementRegion*)OtherActor)->path;
+			InCameraOverrideRegion = true;
 		}
 
 		if (OtherActor->IsA(ACheckpoint::StaticClass())) {
@@ -808,6 +813,10 @@ void AAuyron::Tick(float DeltaTime)
 	celshadermat->SetVectorParameterValue("Tint", CelShaderSettings.Tint*tintmult);
 
 	DropShadow->SetWorldLocation(MovementComponent->groundtracehit);
+
+	if (MovementAxisLocked) {
+		//currentoverrideregion->Axis->SetWorldRotation(newspline->FindRightVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).Rotation());
+	}
 
 	// A blueprint is overriding player input.
 	if (blockedbyblueprint) {
@@ -1180,6 +1189,12 @@ void AAuyron::Tick(float DeltaTime)
 			// Tick up the dash timer.
 			if (!DashSettings.HasInfiniteDash) {
 				dashtimer += DeltaTime;
+			}
+
+			if (MovementAxisLocked) {
+				FVector f = newspline->FindTangentClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).GetSafeNormal();
+				TargetDirection = (FMath::Sign(TargetDirection.Vector() | f) * f).Rotation();
+				//TargetDirection = FMath::Sign(TargetDirection.Vector() | newspline->FindTangentClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).GetSafeNormal()) * newspline->FindTangentClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).GetSafeNormal().Rotation();
 			}
 
 			//if (airdashing) {
@@ -1787,34 +1802,49 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Handle CameraOverrideRegions.
 		if(InCameraOverrideRegion&&!ztarget) {
-			
-			if (!wasztarget) {
-				SpringArm->CameraLagSpeed = ActualDefaultCameraLag;
-				SpringArm->CameraRotationLagSpeed = ActualDefaultCameraLag;
-			}
-			SpringArm->TargetArmLength = DefaultArmLength;
-			SpringArm->SetWorldRotation(currentoverrideregion->TargetCamera->GetForwardVector().Rotation().Quaternion());
-			timesinceoverrideenter += DeltaTime;
-			SpringArm->bDoCollisionTest = false;
+			if (MovementAxisLocked) {
 
-			if (currentoverrideregion->LockType == CameraLockType::POINT) {
-				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation());
-				if (currentoverrideregion->LookAtPlayer) {
-					SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
+				if (!wasztarget) {
+					SpringArm->CameraLagSpeed = ActualDefaultCameraLag;
+					SpringArm->CameraRotationLagSpeed = ActualDefaultCameraLag;
 				}
-			}
-			if (currentoverrideregion->LockType == CameraLockType::AXIS) {
-				FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
-				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + currentoverrideregion->Axis->GetForwardVector().GetSafeNormal() * (currentoverrideregion->Axis->GetForwardVector().GetSafeNormal() | camerarelativedisplacement));
+				SpringArm->TargetArmLength = DefaultArmLength;
+				SpringArm->SetWorldRotation(newspline->FindRightVectorClosestToWorldLocation(GetActorLocation(),ESplineCoordinateSpace::World).Rotation().Quaternion());
+				timesinceoverrideenter += DeltaTime;
+				SpringArm->bDoCollisionTest = false;
 
-			}
-			if (currentoverrideregion->LockType == CameraLockType::PLANE) {
-				FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
-				SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + FVector::VectorPlaneProject(camerarelativedisplacement,currentoverrideregion->Axis->GetForwardVector().GetSafeNormal()));
-			}
-			if (currentoverrideregion->HintRegion) {
-				InCameraOverrideRegion = false;
-				currentoverrideregion = nullptr;
+				FVector camerarelativedisplacement = (GetActorLocation() - 600.0f*newspline->FindRightVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).GetSafeNormal());
+				//SpringArm->SetWorldLocation(FVector::VectorPlaneProject(camerarelativedisplacement, -newspline->FindRightVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).GetSafeNormal()));
+				SpringArm->SetWorldLocation(camerarelativedisplacement);
+			} else {
+				if (!wasztarget) {
+					SpringArm->CameraLagSpeed = ActualDefaultCameraLag;
+					SpringArm->CameraRotationLagSpeed = ActualDefaultCameraLag;
+				}
+				SpringArm->TargetArmLength = DefaultArmLength;
+				SpringArm->SetWorldRotation(currentoverrideregion->TargetCamera->GetForwardVector().Rotation().Quaternion());
+				timesinceoverrideenter += DeltaTime;
+				SpringArm->bDoCollisionTest = false;
+
+				if (currentoverrideregion->LockType == CameraLockType::POINT) {
+					SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation());
+					if (currentoverrideregion->LookAtPlayer) {
+						SpringArm->SetRelativeRotation((-SpringArm->RelativeLocation).Rotation());
+					}
+				}
+				if (currentoverrideregion->LockType == CameraLockType::AXIS) {
+					FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
+					SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + currentoverrideregion->Axis->GetForwardVector().GetSafeNormal() * (currentoverrideregion->Axis->GetForwardVector().GetSafeNormal() | camerarelativedisplacement));
+
+				}
+				if (currentoverrideregion->LockType == CameraLockType::PLANE) {
+					FVector camerarelativedisplacement = (GetActorLocation() - currentoverrideregion->Axis->GetComponentLocation());
+					SpringArm->SetWorldLocation(currentoverrideregion->TargetCamera->GetComponentLocation() + FVector::VectorPlaneProject(camerarelativedisplacement, currentoverrideregion->Axis->GetForwardVector().GetSafeNormal()));
+				}
+				if (currentoverrideregion->HintRegion) {
+					InCameraOverrideRegion = false;
+					currentoverrideregion = nullptr;
+				}
 			}
 		} else if (!InCameraOverrideRegion) {
 			Camera->RelativeRotation.Roll = 0.0f;
@@ -1927,6 +1957,14 @@ void AAuyron::Tick(float DeltaTime)
 			// Adjust movement input to reflect camera direction.
 			FVector AdjustedMovementInput = (Right*MovementInput.X + Forward*MovementInput.Y);// .GetClampedToMaxSize(1.0f);
 
+			if (MovementAxisLocked) {
+				FVector tempvector(MovementInput);
+				FVector f = newspline->FindTangentClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World).GetSafeNormal();
+				tempvector = FMath::Sign(Right | f) * f * MovementInput.X;
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Green, tempvector.ToString());
+				AdjustedMovementInput = tempvector;
+			}
+
 			// Get acceleration magnitude depending if the player is in the air or not.
 			float CurrentAccelRate = (OnTheGround ? PhysicsSettings.GroundAccelerationRate : PhysicsSettings.AirAccelerationRate) * 10000.0f;
 
@@ -1977,22 +2015,26 @@ void AAuyron::Tick(float DeltaTime)
 			// This is a 2D platformer now.
 			if (MovementAxisLocked) {
 				FVector newpos(GetActorLocation());
-				switch (LockedMovementAxis) {
-				case MovementRegionLockedAxis::XAXIS:
-					newpos.X = LockedAxisValue;
-					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(0.0f, 1.0f, 1.0f));
-					MovementInput.Y = 0.0f;
-					break;
-				case MovementRegionLockedAxis::YAXIS:
-					newpos.Y = LockedAxisValue;
-					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 0.0f, 1.0f));
-					MovementInput.Y = 0.0f;
-					break;
-				case MovementRegionLockedAxis::ZAXIS:
-					newpos.Z = LockedAxisValue;
-					CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 1.0f, 0.0f));
-					break;
-				}
+				newpos = newspline->FindLocationClosestToWorldLocation(GetActorLocation(),ESplineCoordinateSpace::World);
+				newpos = FVector::VectorPlaneProject(newpos, newspline->FindUpVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World));
+				newpos += (GetActorLocation() | newspline->FindUpVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World))*newspline->FindUpVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);//GetActorLocation().GetSafeNormal();// newspline->FindUpVectorClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
+				//newspline-
+				//switch (LockedMovementAxis) {
+				//case MovementRegionLockedAxis::XAXIS:
+				//	newpos.X = LockedAxisValue;
+				//	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(0.0f, 1.0f, 1.0f));
+				//	MovementInput.Y = 0.0f;
+				//	break;
+				//case MovementRegionLockedAxis::YAXIS:
+				//	newpos.Y = LockedAxisValue;
+				//	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 0.0f, 1.0f));
+				//	MovementInput.Y = 0.0f;
+				//	break;
+				//case MovementRegionLockedAxis::ZAXIS:
+				//	newpos.Z = LockedAxisValue;
+				//	CapsuleComponent->SetPhysicsLinearVelocity(CapsuleComponent->GetPhysicsLinearVelocity()*FVector(1.0f, 1.0f, 0.0f));
+				//	break;
+				//}
 				SetActorLocation(newpos);
 			}
 		}
@@ -2045,20 +2087,15 @@ void AAuyron::Tick(float DeltaTime)
 
 			// (but I forgive you)
 			if (!MovementInput.IsNearlyZero() && !ztarget) {
-				TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
-					reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+				if (!MovementAxisLocked || !dashing) {
+					TargetDirection.Yaw = SpringArm->GetComponentRotation().Yaw +
+						reflect * FMath::RadiansToDegrees(FMath::Acos(MovementInput.GetSafeNormal() | FVector(0, 1, 0)));
+				}
 				if (MovementAxisLocked) {
 					FVector tempvector(TargetDirection.Vector());
-					switch (LockedMovementAxis) {
-						case MovementRegionLockedAxis::XAXIS:
-							tempvector.X = 0.0f;
-							TargetDirection = tempvector.Rotation();
-							break;
-						case MovementRegionLockedAxis::YAXIS:
-							tempvector.Y = 0.0f;
-							TargetDirection = tempvector.Rotation();
-							break;
-					}
+					FVector f = newspline->FindTangentClosestToWorldLocation(GetActorLocation(), ESplineCoordinateSpace::World);
+					tempvector = FMath::Sign(tempvector | f) * f;
+					TargetDirection = tempvector.Rotation();
 				}
 			}
 		}
