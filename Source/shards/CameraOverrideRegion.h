@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Components/SplineComponent.h"
 #include "CameraOverrideRegion.generated.h"
 
 UENUM() namespace CameraLockType {
@@ -37,5 +38,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Camera") bool HintRegion;
 	UPROPERTY(EditAnywhere, Category = "Camera") TEnumAsByte<CameraLockType::Type> LockType;
 	UPROPERTY(EditAnywhere, Category = "Camera") bool LookAtPlayer;
+	UPROPERTY(EditAnywhere, Category = "Camera") bool UseSpline;
+	UPROPERTY(EditAnywhere, Category = "Camera") USplineComponent* path;
 
 };

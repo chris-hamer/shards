@@ -1802,7 +1802,11 @@ void AAuyron::Tick(float DeltaTime)
 
 		// Handle CameraOverrideRegions.
 		if(InCameraOverrideRegion&&!ztarget) {
-			if (MovementAxisLocked) {
+			if (MovementAxisLocked||currentoverrideregion->UseSpline) {
+
+				if (!MovementAxisLocked&&currentoverrideregion->UseSpline) {
+					newspline = currentoverrideregion->path;
+				}
 
 				if (!wasztarget) {
 					SpringArm->CameraLagSpeed = ActualDefaultCameraLag;

@@ -25,6 +25,9 @@ ACameraOverrideRegion::ACameraOverrideRegion()
 	Axis = CreateDefaultSubobject<UArrowComponent>(TEXT("Axis"));
 	//Axis->AttachTo(Root);
 	Axis->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+
+	path = CreateDefaultSubobject<USplineComponent>(TEXT("Path"));
+	path->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // Called when the game starts or when spawned
