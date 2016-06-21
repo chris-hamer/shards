@@ -2081,7 +2081,7 @@ void AAuyron::Tick(float DeltaTime)
 
 		// If we're trying to move, take the camera's orientation into account to figure
 		// out the direction we want to face.
-		if (!ztarget && (OnTheGround || IsGliding)) {
+		if (!ztarget && (OnTheGround || IsGliding || MovementAxisLocked)) {
 			// I'ma tell ya not even Unity was stupid enough to use -180 -> 180 for rotations.
 			int8 reflect = (MovementInput.X >= 0 ? 1 : -1);
 
