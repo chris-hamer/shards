@@ -167,7 +167,7 @@ AAuyron::AAuyron()
 	
 	// Use a spring arm so the camera can be all like swoosh.
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
-	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 0.0f), FRotator(-30.0f, 0.0f, 0.0f));
+	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 0.0f), FRotator(-15.0f, 0.0f, 0.0f));
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag;
