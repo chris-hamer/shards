@@ -649,6 +649,7 @@ private:
 	bool justswished;
 
 	bool stillscrolling;
+	bool onsandship;
 	bool skiptext;
 
 	float warpanimtimer;

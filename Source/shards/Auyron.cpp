@@ -15,6 +15,7 @@
 #include "TeleClaw.h"
 #include "EquipmentPickup.h"
 #include "MusicRegion.h"
+#include "SandShip.h"
 #include "DialogueCut.h"
 #include "NPC.h"
 #include "TwoDimensionalMovementRegion.h"
@@ -322,7 +323,7 @@ AAuyron::AAuyron()
 	TheAbyss->SetVisibility(false);
 
 	// ASSUMING DIRECT CONTROL.
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	//AutoPossessPlayer = EAutoReceiveInput::Player0;
 
 	// Apparently we need some newfangled "MovementComponent".
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
@@ -688,7 +689,7 @@ void AAuyron::BeginPlay()
 	//Belt->AttachTo(PlayerModel, "Belt");
 	//Wings->AttachTo(PlayerModel,  "Wings");
 
-	((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
+	//((APlayerController*)GetController())->SetAudioListenerOverride(PlayerModel, FVector::ZeroVector, FRotator::ZeroRotator);
 
 	// Start with the particles off.
 	DashParticles->bAutoActivate = false;
@@ -1640,6 +1641,63 @@ void AAuyron::Tick(float DeltaTime)
 					FOutputDeviceNull dummy;
 					CurrentCut->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
 				}
+			}
+		}
+
+
+
+
+
+		ASandShip* closestship = NULL;
+		biggestdot = -1.0f;
+
+		// Iterate over each NPC and cast a ray.
+		for (TActorIterator<ASandShip> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->IsA(ASandShip::StaticClass())) {
+
+				// Get displacement vector from the player/camera to the NPC.
+				FVector displacement = ActorItr->GetActorLocation() - source;
+
+				// Get the dot product between the displacement and the source.
+				float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+
+				// Set trace parameters. I have no idea what these do but
+				// the raycast doesn't work if I don't put these here.
+				FHitResult f;
+				FCollisionObjectQueryParams TraceParams(ECC_Visibility);
+				//TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel2);
+				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+
+				// Don't want the ray to collide with the player model now do we?
+				QueryParams.AddIgnoredActor(this);
+
+				// Figure out if the ray is blocked by an object.
+				bool blocked = GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+				// If the trace hit a NPC and it's closer to where we're aiming
+				// at than any other NPC, set it as the "closest" one.
+				if (f.GetActor() != nullptr &&
+					f.GetActor()->IsA(ASandShip::StaticClass()) &&
+					dot > biggestdot &&
+					blocked &&
+					displacement.Size() < 500.0f) {
+					closestship = *ActorItr;
+					biggestdot = dot;
+				}
+			}
+		}
+
+		// Activate the "closest" NPC as long as it's in
+		// range and within a certain angle tolerance.
+		if (closestship != nullptr &&
+			FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < TeleportAngleTolerance &&
+			(closestship->GetActorLocation() - GetActorLocation()).Size() < 300.0f) {
+			if (ActivateNextFrame && OnTheGround) {
+				BlockInput();
+				onsandship = true;
+				closestship->Player = this;
+				CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+				((APlayerController*)GetController())->Possess(closestship);
 			}
 		}
 	}
