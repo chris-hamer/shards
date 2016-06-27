@@ -68,6 +68,9 @@ public:
 	float DistanceFromImpact;
 	bool overground;
 
+	float playerradius;
+	float playerhalfheight;
+
 	bool toosteep;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;

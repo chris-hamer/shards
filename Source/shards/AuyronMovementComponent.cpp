@@ -17,6 +17,8 @@ UAuyronMovementComponent::UAuyronMovementComponent()
 	minnormalz = 0.9f;
 	minnormalz = 0.0f;
 	timerlimit = 0.15f;
+	playerradius = 45.0f;
+	playerhalfheight = 90.0f;
 }
 
 void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -25,7 +27,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	FHitResult HitResult;
 	FHitResult ShapeTraceResult;
-	FCollisionShape shape = FCollisionShape::MakeBox(FVector(32.5f,32.5f,10.0f));
+	FCollisionShape shape = FCollisionShape::MakeBox(FVector(0.72f*playerradius, 0.72f*playerradius,10.0f));
 
 	FCollisionQueryParams Params;
 	Params.bFindInitialOverlaps = true;
@@ -62,7 +64,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	}
 
 	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 45.0f * FVector::UpVector; // 50
-	float RequiredDistance = (onground ? 50.0f : 10.0f)+45.0f; //50,1
+	float RequiredDistance = (onground ? 50.0f : 10.0f)*FMath::Pow(playerhalfheight / 90.0f,4.0f) + playerhalfheight/2.0f; //50,1
 	DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	overground = ShapeTraceResult.IsValidBlockingHit();
 
@@ -130,7 +132,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	if (onground) {
 
 		if (TraceBlocked) {
-			newlocation.Z = TraceHitResult.ImpactPoint.Z + 90.0f; // 50
+			newlocation.Z = TraceHitResult.ImpactPoint.Z + playerhalfheight; // 50
 			GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility);
 			FloorNormal = TraceHitResult.ImpactNormal;
 		}

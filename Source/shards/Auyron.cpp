@@ -2361,7 +2361,7 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 	// range and within a certain angle tolerance.
 	if (closestship != nullptr &&
 		FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < Player->TeleportAngleTolerance &&
-		(closestship->GetActorLocation() - Player->GetActorLocation()).Size() < 300.0f) {
+		(closestship->GetActorLocation() - Player->GetActorLocation()).Size() < 750.0f) {
 		if (Player->ActivateNextFrame && Player->OnTheGround) {
 			Player->BlockInput();
 			Player->onsandship = true;

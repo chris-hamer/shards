@@ -4,6 +4,7 @@
 
 #include "GameFramework/Pawn.h"
 #include "Auyron.h"
+#include "AuyronMovementComponent.h"
 #include "SandShip.generated.h"
 
 USTRUCT()
@@ -45,7 +46,7 @@ public:
 	void Unjump();
 	void GetOut();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) UCapsuleComponent* Root;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) UCapsuleComponent* CapsuleComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticMeshComponent* Model;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USpringArmComponent* SpringArm;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UCameraComponent* Camera;
@@ -53,8 +54,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FSandShipPhysicsSettings PhysicsSettings;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UAuyronMovementComponent* MovementComponent;
+
 	FVector MovementInput;
 	FVector CameraInput;
+	float AdjustedTurnInput;
 
 	AAuyron* Player;
 

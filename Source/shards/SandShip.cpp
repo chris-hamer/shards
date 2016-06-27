@@ -17,37 +17,41 @@ ASandShip::ASandShip()
 	PhysicsSettings.MaxVelocity = 10000.0f;
 	PhysicsSettings.TurnRate = 7.5f;
 
-	Root = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Root"));
-	Root->InitCapsuleSize(150.0f, 300.0f);
-	Root->SetCollisionProfileName(TEXT("Pawn"));
-	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	Root->SetSimulatePhysics(true);
-	Root->SetEnableGravity(false);
-	Root->SetLinearDamping(0.0f);
-	Root->SetAngularDamping(3.0f);
-	Root->BodyInstance.bLockRotation = true;
-	Root->BodyInstance.bLockXRotation = true;
-	Root->BodyInstance.bLockYRotation = true;
-	Root->BodyInstance.bLockZRotation = false;
-	Root->BodyInstance.PositionSolverIterationCount = 16;
-	Root->BodyInstance.VelocitySolverIterationCount = 16;
-	Root->bShouldUpdatePhysicsVolume = true;
-	Root->SetCollisionObjectType(ECC_GameTraceChannel2);
-	Root->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
+	CapsuleComponent->InitCapsuleSize(150.0f, 300.0f);
+	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
+	CapsuleComponent->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	CapsuleComponent->SetSimulatePhysics(true);
+	CapsuleComponent->SetEnableGravity(false);
+	CapsuleComponent->SetLinearDamping(0.0f);
+	CapsuleComponent->SetAngularDamping(3.0f);
+	CapsuleComponent->BodyInstance.bLockRotation = true;
+	CapsuleComponent->BodyInstance.bLockXRotation = true;
+	CapsuleComponent->BodyInstance.bLockYRotation = true;
+	CapsuleComponent->BodyInstance.bLockZRotation = false;
+	CapsuleComponent->BodyInstance.PositionSolverIterationCount = 16;
+	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
+	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
+	CapsuleComponent->SetCollisionObjectType(ECC_GameTraceChannel2);
+	CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/crystal"));
 	Model->SetStaticMesh(MeshObj.Object);
-	Model->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	Model->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
+	Model->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	Model->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	Model->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
 	SpringArm->TargetArmLength = 2000.0f;
 	SpringArm->SetWorldRotation(FRotator(-20.0f, 0.0f, 0.0f));
-	SpringArm->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
+	SpringArm->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->AttachToComponent(SpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);
+
+	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
+	MovementComponent->UpdatedComponent = CapsuleComponent;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Textures/Effects/celshader"));
 	CelShaderMaterial = celshade.Object;
@@ -69,6 +73,8 @@ void ASandShip::BeginPlay()
 	Super::BeginPlay();
 	
 	CurrentDrag = PhysicsSettings.CoastingDrag;
+	MovementComponent->playerradius = CapsuleComponent->GetScaledCapsuleRadius();
+	MovementComponent->playerhalfheight = CapsuleComponent->GetScaledCapsuleHalfHeight();
 }
 
 // Called every frame
@@ -77,7 +83,7 @@ void ASandShip::Tick( float DeltaTime )
 	Super::Tick( DeltaTime );
 
 	if (Player == nullptr) {
-		Root->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		return;
 	}
 
@@ -90,25 +96,47 @@ void ASandShip::Tick( float DeltaTime )
 	SpringArm->SetWorldRotation(NewSpringArmRotation);
 
 	MovementInput = MovementInput.GetClampedToSize(0.0f, 1.0f);
-	FVector Forward = FVector::VectorPlaneProject(Root->GetForwardVector(), FVector::UpVector).GetSafeNormal();
-	FVector Right = FVector::VectorPlaneProject(Root->GetRightVector(), FVector::UpVector).GetSafeNormal();
+	FVector Forward = FVector::VectorPlaneProject(CapsuleComponent->GetForwardVector(), FVector::UpVector).GetSafeNormal();
+	FVector Right = FVector::VectorPlaneProject(CapsuleComponent->GetRightVector(), FVector::UpVector).GetSafeNormal();
 
+	//FHitResult groundtrace;
+	//FCollisionShape traceshape = FCollisionShape::MakeSphere(CapsuleComponent->GetScaledCapsuleRadius()-5.0f);
+	//FCollisionQueryParams gtparams;
+	//gtparams.AddIgnoredActor(this);
+	//GetWorld()->SweepSingleByChannel(groundtrace, GetActorLocation(), GetActorLocation() - 1000.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, traceshape, gtparams);
+	//if (groundtrace.IsValidBlockingHit()) {
+	//	SetActorLocation(GetActorLocation()*FVector(1.0f, 1.0f, 0.0f) + FVector::UpVector*groundtrace.ImpactPoint.Z + FVector::UpVector*CapsuleComponent->GetScaledCapsuleHalfHeight(), false, nullptr, ETeleportType::TeleportPhysics);
+	//}
 
-	FVector Velocity2D = FVector::VectorPlaneProject(Root->GetPhysicsLinearVelocity(),FVector::UpVector);
+	FVector Velocity2D = FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity(),FVector::UpVector);
 	if (CurrentDrag > 1.0f) {
 		MovementInput.Y = 0.0f;
 	}
 
 	FVector AdjustedMovementInput = MovementInput.Y * Forward;
-	Root->AddForce(AdjustedMovementInput*PhysicsSettings.AccelRate,NAME_None,true);
+	CapsuleComponent->AddForce(AdjustedMovementInput*PhysicsSettings.AccelRate,NAME_None,true);
 	
 	float mult = FMath::Lerp(FMath::Sqrt(Velocity2D.Size() / PhysicsSettings.MaxVelocity), Velocity2D.Size() / PhysicsSettings.MaxVelocity, Velocity2D.Size() / PhysicsSettings.MaxVelocity)* CurrentDrag;
 	float tangent = FMath::Pow(1.0f - FMath::Abs(Velocity2D.GetSafeNormal() | Forward),0.25f);
-	Root->AddForce(-Velocity2D.GetSafeNormal()*PhysicsSettings.AccelRate*mult, NAME_None, true);
-	Root->AddTorque(FVector::UpVector*MovementInput.X*PhysicsSettings.TurnRate*(1.1f-FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity,1.5f)), NAME_None, true);
+	CapsuleComponent->AddForce(-Velocity2D.GetSafeNormal()*PhysicsSettings.AccelRate*mult, NAME_None, true);
 	if (CurrentDrag == PhysicsSettings.CoastingDrag) {
-		Root->AddForce(Right.GetSafeNormal()*PhysicsSettings.AccelRate*MovementInput.X*mult/1.0f, NAME_None, true);
+		//Root->AddForce(Right.GetSafeNormal()*PhysicsSettings.AccelRate*MovementInput.X*mult/1.0f, NAME_None, true);
 	}
+
+	if (!MovementComponent->onground) {
+		CapsuleComponent->AddForce(Player->PhysicsSettings.Gravity*FVector::UpVector, NAME_None, true);
+	}
+
+	CapsuleComponent->SetPhysicsLinearVelocity(Velocity2D.Size()*Forward*FMath::Sign(Velocity2D |Forward) + CapsuleComponent->GetPhysicsLinearVelocity().Z*FVector::UpVector);
+
+	float thing = FMath::Lerp(FMath::Clamp(DeltaTime,0.0f,1.0f), 1.0f, FMath::Lerp((Velocity2D.Size() / PhysicsSettings.MaxVelocity)/2.0f,FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 8.0f), (Velocity2D.Size() / PhysicsSettings.MaxVelocity)));
+	AdjustedTurnInput = FMath::Lerp(AdjustedTurnInput, MovementInput.X, DeltaTime);
+	CapsuleComponent->AddTorque(FVector::UpVector*AdjustedTurnInput*PhysicsSettings.TurnRate*FMath::Clamp(1.4f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f),0.0f,1.0f), NAME_None, true);
+	//CapsuleComponent->BodyInstance.bLockZRotation = false;
+
+	//CapsuleComponent->SetWorldRotation(CapsuleComponent->GetComponentRotation() + FRotator(0.0,MovementInput.X*PhysicsSettings.TurnRate *(1.1f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f))*DeltaTime,0.0f), NAME_None,nullptr, ETeleportType::TeleportPhysics);
+	//CapsuleComponent->BodyInstance.bLockZRotation = true;
+
 }
 
 // Called to bind functionality to input
