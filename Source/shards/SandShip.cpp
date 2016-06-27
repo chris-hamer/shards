@@ -75,6 +75,7 @@ void ASandShip::BeginPlay()
 	CurrentDrag = PhysicsSettings.CoastingDrag;
 	MovementComponent->playerradius = CapsuleComponent->GetScaledCapsuleRadius();
 	MovementComponent->playerhalfheight = CapsuleComponent->GetScaledCapsuleHalfHeight();
+	MovementComponent->minnormalz = 0.4;
 }
 
 // Called every frame
@@ -133,7 +134,7 @@ void ASandShip::Tick( float DeltaTime )
 	AdjustedTurnInput = FMath::Lerp(AdjustedTurnInput, MovementInput.X, DeltaTime);
 	CapsuleComponent->AddTorque(FVector::UpVector*AdjustedTurnInput*PhysicsSettings.TurnRate*FMath::Clamp(1.4f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f),0.0f,1.0f), NAME_None, true);
 	//CapsuleComponent->BodyInstance.bLockZRotation = false;
-
+	MovementComponent->grounddetecttfudgefactor = FMath::Clamp(1.0f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity,0.5f),0.0f,1.0f);
 	//CapsuleComponent->SetWorldRotation(CapsuleComponent->GetComponentRotation() + FRotator(0.0,MovementInput.X*PhysicsSettings.TurnRate *(1.1f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f))*DeltaTime,0.0f), NAME_None,nullptr, ETeleportType::TeleportPhysics);
 	//CapsuleComponent->BodyInstance.bLockZRotation = true;
 

@@ -19,6 +19,7 @@ UAuyronMovementComponent::UAuyronMovementComponent()
 	timerlimit = 0.15f;
 	playerradius = 45.0f;
 	playerhalfheight = 90.0f;
+	grounddetecttfudgefactor = 1.0f;
 }
 
 void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -64,7 +65,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	}
 
 	FVector PlayerCapsuleBottom = UpdatedComponent->GetComponentLocation() - 45.0f * FVector::UpVector; // 50
-	float RequiredDistance = (onground ? 50.0f : 10.0f)*FMath::Pow(playerhalfheight / 90.0f,4.0f) + playerhalfheight/2.0f; //50,1
+	float RequiredDistance = (onground ? 50.0f*grounddetecttfudgefactor : 10.0f)*FMath::Pow(playerhalfheight / 90.0f,4.0f) + playerhalfheight/2.0f; //50,1
 	DistanceFromImpact = (PlayerCapsuleBottom - ShapeTraceResult.ImpactPoint).Z;
 	overground = ShapeTraceResult.IsValidBlockingHit();
 
