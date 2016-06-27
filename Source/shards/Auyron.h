@@ -307,6 +307,52 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
+	class PlayerState
+	{
+	public:
+		PlayerState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick2(AAuyron* Player, float DeltaTime);
+		virtual void PhysicsStuff(AAuyron* Player, float DeltaTime);
+		virtual void CameraStuff(AAuyron* Player, float DeltaTime);
+		virtual void FaceTargetDirection(AAuyron* Player, float DeltaTime);
+	};
+
+	class NormalState : public PlayerState
+	{
+	public:
+		NormalState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+	};
+	
+	class DialogueState : public PlayerState
+	{
+	public:
+		DialogueState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+	};
+
+	class ClimbingState : public PlayerState
+	{
+	public:
+		ClimbingState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+	};
+
+	class TeleportingState : public PlayerState
+	{
+	public:
+		TeleportingState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+	};
+
+	class AimingState : public PlayerState
+	{
+	public:
+		AimingState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+	};
+
 	//Input functions
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
@@ -554,10 +600,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera") FCameraModelFade CameraModelFadeSettings;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera") FCelShader CelShaderSettings;
 
+	PlayerState* CurrentState;
+	NormalState Normal;
+	DialogueState Dialogue;
+	ClimbingState Climbing;
+	TeleportingState Teleporting;
+	AimingState Aiming;
+
 	bool ActivateNextFrame;
 	int GemCount;
-
-private:
+	FVector Right;
+	FVector Forward;
 	float TimeSinceLastRealignment;
 	float HowLong;
 	float dashtimer;
@@ -566,7 +619,7 @@ private:
 	//float AutoCameraCurrentPitch;
 	float TeleportRange;
 	float TeleportAngleTolerance;
-	bool JumpNextFrame;
+	bool JumpPressed;
 	bool HoldingJump;
 	bool JustJumped;
 	bool JustWallJumped;
@@ -651,6 +704,8 @@ private:
 	bool stillscrolling;
 	bool onsandship;
 	bool skiptext;
+
+	float dt;
 
 	float warpanimtimer;
 
