@@ -1786,7 +1786,7 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 {
 	PlayerState::Tick(Player, DeltaTime);
 
-	if (Player->ztarget) {
+	if (Player->ztarget&&!Player->dashing&&!Player->dunk) {
 		Player->CurrentState = &Player->Aiming;
 		return;
 	}
@@ -2367,7 +2367,11 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 			Player->onsandship = true;
 			closestship->Player = Player;
 			Player->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+			Player->CapsuleComponent->SetSimulatePhysics(false);
 			((APlayerController*)Player->GetController())->Possess(closestship);
+			Player->CurrentState = &Player->Vehicle;
+			Player->currentship = closestship;
+			return;
 		}
 
 	}
@@ -2733,4 +2737,28 @@ void AAuyron::AimingState::Tick(AAuyron * Player, float DeltaTime)
 	PlayerState::PhysicsStuff(Player, DeltaTime);
 	PlayerState::FaceTargetDirection(Player, DeltaTime);
 	PlayerState::Tick2(Player, DeltaTime);
+}
+
+
+void AAuyron::VehicleState::Tick(AAuyron * Player, float DeltaTime)
+{
+	//PlayerState::Tick(Player, DeltaTime);
+	if (Player->IsControlled()) {
+		Player->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+		Player->CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
+		Player->CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
+		Player->CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+		Player->CapsuleComponent->SetSimulatePhysics(true);
+		Player->CurrentState = &Player->Normal;
+		return;
+	}
+	Player->CapsuleComponent->SetSimulatePhysics(false);
+
+
+	Player->SetActorLocation(Player->currentship->GetActorLocation() + 260.0f*FVector::UpVector, false, nullptr, ETeleportType::TeleportPhysics);
+	Player->PlayerModel->SetWorldRotation(FRotator(0.0f, Player->currentship->GetActorRotation().Yaw, 0.0f));
+
+	((APlayerController*)Player->GetController());
+
+	//PlayerState::Tick2(Player, DeltaTime);
 }

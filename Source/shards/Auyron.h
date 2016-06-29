@@ -12,6 +12,7 @@
 #include "TeleClaw.h"
 #include "Stick.h"
 #include "DialogueCut.h"
+//#include "SandShip.h"
 #include "NPC.h"
 #include "CameraOverrideRegion.h"
 #include "TwoDimensionalMovementRegion.h"
@@ -353,6 +354,13 @@ public:
 		virtual void Tick(AAuyron* Player, float DeltaTime);
 	};
 
+	class VehicleState : public PlayerState
+	{
+	public:
+		VehicleState() {};
+		virtual void Tick(AAuyron* Player, float DeltaTime);
+	};
+
 	//Input functions
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
@@ -606,6 +614,9 @@ public:
 	ClimbingState Climbing;
 	TeleportingState Teleporting;
 	AimingState Aiming;
+	VehicleState Vehicle;
+
+	class ASandShip* currentship;
 
 	bool ActivateNextFrame;
 	int GemCount;

@@ -88,9 +88,6 @@ void ASandShip::Tick( float DeltaTime )
 		return;
 	}
 
-	Player->SetActorLocation(GetActorLocation() + 260.0f*FVector::UpVector);
-	Player->PlayerModel->SetWorldRotation(FRotator(0.0f,GetActorRotation().Yaw,0.0f));
-
 	FRotator NewSpringArmRotation = SpringArm->GetComponentRotation();
 	NewSpringArmRotation.Pitch = FMath::Clamp(NewSpringArmRotation.Pitch + CameraInput.Y*DeltaTime*180.0f, -89.0f, 89.0f);
 	NewSpringArmRotation.Yaw += CameraInput.X*DeltaTime*180.0f;
@@ -132,12 +129,15 @@ void ASandShip::Tick( float DeltaTime )
 
 	float thing = FMath::Lerp(FMath::Clamp(DeltaTime,0.0f,1.0f), 1.0f, FMath::Lerp((Velocity2D.Size() / PhysicsSettings.MaxVelocity)/2.0f,FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 8.0f), (Velocity2D.Size() / PhysicsSettings.MaxVelocity)));
 	AdjustedTurnInput = FMath::Lerp(AdjustedTurnInput, MovementInput.X, DeltaTime);
-	CapsuleComponent->AddTorque(FVector::UpVector*AdjustedTurnInput*PhysicsSettings.TurnRate*FMath::Clamp(1.4f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f),0.0f,1.0f), NAME_None, true);
+	//CapsuleComponent->AddTorque(FVector::UpVector*MovementInput.X*PhysicsSettings.TurnRate*FMath::Clamp(1.4f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f),0.0f,1.0f), NAME_None, true);
 	//CapsuleComponent->BodyInstance.bLockZRotation = false;
 	MovementComponent->grounddetecttfudgefactor = FMath::Clamp(1.0f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity,0.5f),0.0f,1.0f);
-	//CapsuleComponent->SetWorldRotation(CapsuleComponent->GetComponentRotation() + FRotator(0.0,MovementInput.X*PhysicsSettings.TurnRate *(1.1f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f))*DeltaTime,0.0f), NAME_None,nullptr, ETeleportType::TeleportPhysics);
+	CapsuleComponent->SetWorldRotation(CapsuleComponent->GetComponentRotation() + FRotator(0.0, AdjustedTurnInput*PhysicsSettings.TurnRate *(1.1f - FMath::Pow(Velocity2D.Size() / PhysicsSettings.MaxVelocity, 1.5f))*DeltaTime,0.0f), NAME_None,nullptr, ETeleportType::TeleportPhysics);
 	//CapsuleComponent->BodyInstance.bLockZRotation = true;
 
+
+	Player->SetActorLocation(GetActorLocation() + 260.0f*FVector::UpVector, false, nullptr, ETeleportType::TeleportPhysics);
+	Player->PlayerModel->SetWorldRotation(FRotator(0.0f, GetActorRotation().Yaw, 0.0f));
 }
 
 // Called to bind functionality to input

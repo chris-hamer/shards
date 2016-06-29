@@ -60,7 +60,7 @@ public:
 	FVector CameraInput;
 	float AdjustedTurnInput;
 
-	AAuyron* Player;
+	class AAuyron* Player;
 
 	float CurrentDrag;
 	UMaterialInstanceDynamic* celshadermat;
