@@ -396,6 +396,8 @@ void AAuyron::Respawn() {
 }
 
 void AAuyron::StopClimbing() {
+	OnTheGround = true;
+	FlattenVelocity();
 	CurrentState = &Normal;
 	//CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	grabbedledge = nullptr;

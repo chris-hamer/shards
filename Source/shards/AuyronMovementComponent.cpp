@@ -82,7 +82,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		enforcementtimer += DeltaTime;
 		toosteep = true;
 	}
-
 	wasonground = onground;
 	onground = false;
 	prevgroundvelocity = groundvelocity;
