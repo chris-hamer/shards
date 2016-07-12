@@ -418,7 +418,7 @@ void AAuyron::HereWeGo()
 
 	// Move the player to the telepad's position and give them the perscribed velocity.
 	FVector temp = GetActorLocation();
-	//SpringArm->CameraLagSpeed = 0.0f;
+	//SpringArm->CameraLagSpeed = 0.0f;//
 	//SpringArm->CameraRotationLagSpeed = 0.0f;
 	//SpringArm->SetWorldRotation((closeststick->gohere - temp).Rotation());
 	//SpringArm->TargetArmLength = (temp - closeststick->gohere).Size();
