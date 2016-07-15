@@ -1016,7 +1016,7 @@ bool AAuyron::GetHelpEnabled()
 	return HelpEnabled;
 }
 
-uint8 AAuyron::GetGemAmount()
+int AAuyron::GetGemAmount()
 {
 	return GemCount;
 }

@@ -420,7 +420,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetHelpEnabled();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
-	uint8 GetGemAmount();
+	int GetGemAmount();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	UParticleSystemComponent* GetTrailParticlesL();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
