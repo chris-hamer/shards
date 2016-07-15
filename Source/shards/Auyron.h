@@ -619,7 +619,7 @@ public:
 	class ASandShip* currentship;
 
 	bool ActivateNextFrame;
-	int GemCount;
+	uint64 GemCount;
 	FVector Right;
 	FVector Forward;
 	float TimeSinceLastRealignment;
@@ -627,7 +627,7 @@ public:
 	float dashtimer;
 	float TimeSinceLastMouseInput;
 	float TimeSinceLastMovementInputReleased;
-	//float AutoCameraCurrentPitch;
+	//float AutoCameraCurrentPitch;//
 	float TeleportRange;
 	float TeleportAngleTolerance;
 	bool JumpPressed;

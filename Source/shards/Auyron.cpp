@@ -1410,6 +1410,18 @@ void AAuyron::PlayerState::Tick(AAuyron* Player, float DeltaTime)
 	Player->Bracelet->SetVisibility(Player->SlamSettings.HasSlam);
 	Player->Belt->SetVisibility(Player->JumpSettings.HasWallJump);
 	Player->Wings->SetVisibility(Player->GlideSettings.HasGlide);
+
+	for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+		if (ActorItr->GetClass()->GetName() == "Stick") {
+
+			// Assume it's not being targeted, and set it to the default
+			// color and brightness.
+			ActorItr->PointLight->LightColor = FColor::White;
+			ActorItr->PointLight->Intensity = 0.0f; 1750.0f;
+			ActorItr->PointLight->UpdateColorAndBrightness();
+			ActorItr->asfd = false;
+		}
+	}
 }
 void AAuyron::PlayerState::Tick2(AAuyron* Player, float DeltaTime)
 {
@@ -1881,12 +1893,13 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 		QueryParams.AddObjectTypesToQuery(ECC_Destructible);
 
-		if (!Player->GetWorld()->OverlapAnyTestByObjectType(Player->GetActorLocation() - FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)) {
+		if (!Player->GetWorld()->OverlapAnyTestByObjectType(Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)) {
 			Player->RidingWall = false;
 			Player->StoredWallNormal = FVector::ZeroVector;
 		}
 
 		FCollisionQueryParams Params;
+		Params.bFindInitialOverlaps = true;
 
 		// Telepads don't count.
 		for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
@@ -1902,9 +1915,13 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		}
 
 		FHitResult ShapeTraceResult;
-		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() + 10.0f*FVector::UpVector, Player->GetActorLocation() - 10.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
-
-		if (!Player->OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.95f) {
+		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() + 20.0f*FVector::UpVector, Player->GetActorLocation() - 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
+		if (!ShapeTraceResult.IsValidBlockingHit()) {
+			Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() - 20.0f*FVector::UpVector, Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
+		}
+		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, FString::SanitizeFloat(ShapeTraceResult.IsValidBlockingHit()) + "                     " + FString::SanitizeFloat(Player->GetWorld()->OverlapAnyTestByObjectType(Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)));
+		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.Normal.ToString() + "                     " + FString::SanitizeFloat(FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size()));
+		if (!Player->OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.8f) {
 			if (ShapeTraceResult.GetActor() == nullptr ||
 				(ShapeTraceResult.GetActor()->GetClass() != AMovingPlatform::StaticClass() &&
 					ShapeTraceResult.GetActor()->GetClass() != ARotatingPlatform::StaticClass())) {
@@ -1914,11 +1931,12 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		}
 	}
 
+	//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, Player->StoredWallNormal.ToString()+"                     " + FString::SanitizeFloat(Player->StoredWallNormal.Size()));
 	// Handle jumping.
 	if (Player->JumpPressed) {
 		Player->JumpPressed = false;
 		bool wouldhavebeenotg = Player->OnTheGround;
-		if (Player->OnTheGround || (Player->StoredWallNormal.Size() > 0.95f && Player->JumpSettings.HasWallJump) || Player->MovementComponent->offGroundTime < Player->JumpSettings.CoyoteJumpTime) {
+		if (Player->OnTheGround || (Player->StoredWallNormal.Size() > 0.8f && Player->JumpSettings.HasWallJump) || Player->MovementComponent->offGroundTime < Player->JumpSettings.CoyoteJumpTime) {
 
 			// Jump while taking the floor's angle and vertical movement into account.
 			Player->CapsuleComponent->AddImpulse((Player->JumpSettings.JumpPower) * FVector::UpVector, NAME_None, true);
@@ -2585,7 +2603,7 @@ void AAuyron::AimingState::Tick(AAuyron * Player, float DeltaTime)
 
 		// Set the target TelePad's color and brightness so that it stands out.
 		closest->PointLight->LightColor = Player->TeleportSettings.TeleportLightColor;
-		closest->PointLight->Intensity = 32.0f;
+		closest->PointLight->Intensity = 16.0f;
 		closest->PointLight->UpdateColorAndBrightness();
 
 		closest->asfd = true;
