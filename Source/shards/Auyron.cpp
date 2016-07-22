@@ -1956,9 +1956,9 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		}
 
 		FHitResult ShapeTraceResult;
-		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() + 20.0f*FVector::UpVector + 1.0f*FVector::RightVector, Player->GetActorLocation() - 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
-		if (!ShapeTraceResult.IsValidBlockingHit()) {
-			Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() - 20.0f*FVector::UpVector + 1.0f*FVector::RightVector, Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
+		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() + 20.0f*FVector::UpVector + 1.0f*FVector::RightVector + 1.0f*FVector::ForwardVector, Player->GetActorLocation() - 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
+		if (!ShapeTraceResult.bBlockingHit) {
+			Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() - 20.0f*FVector::UpVector - 1.0f*FVector::RightVector - 1.0f*FVector::ForwardVector, Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
 		}
 		GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.ImpactPoint.ToString()+"                     " + FString::SanitizeFloat(ShapeTraceResult.bBlockingHit));
 		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, FString::SanitizeFloat(ShapeTraceResult.IsValidBlockingHit()) + "                     " + FString::SanitizeFloat(Player->GetWorld()->OverlapAnyTestByObjectType(Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)));
