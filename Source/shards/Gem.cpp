@@ -44,7 +44,7 @@ AGem::AGem()
 	GemModel->SetCastShadow(false);
 	GemModel->SetStaticMesh(meshes[FMath::RandRange(0, 5)]);
 	//GemModel->AttachTo(RootComponent);
-	GemModel->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	GemModel->SetupAttachment(RootComponent);//4.12
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> mat(TEXT("/Game/Textures/Gems/BaseGemMaterial"));
 	BaseGemMaterial = mat.Object;
@@ -53,7 +53,7 @@ AGem::AGem()
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/CollectionParticles.CollectionParticles"));
 	CollectionParticles->SetTemplate(particles.Object);
 	//CollectionParticles->AttachTo(GemModel);
-	CollectionParticles->AttachToComponent(GemModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	CollectionParticles->SetupAttachment(GemModel);//4.12
 	CollectionParticles->SetRelativeLocation(FVector::ZeroVector);
 	CollectionParticles->bAutoActivate = false;
 }

@@ -13,12 +13,12 @@ AEquipmentPickup::AEquipmentPickup()
 	Root = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Root"));
 	Root->InitCapsuleSize(100.0f, 100.0f);
 	//Root->AttachTo(RootComponent);
-	Root->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	Root->SetupAttachment(RootComponent);//4.12
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	Model->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	//Model->AttachTo(Root);
-	Model->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	Model->SetupAttachment(Root);//4.12
 
 }
 

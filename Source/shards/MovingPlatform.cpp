@@ -21,12 +21,12 @@ AMovingPlatform::AMovingPlatform()
 
 	StartPosition = CreateDefaultSubobject<USceneComponent>(TEXT("Start Position"));
 	//StartPosition->AttachTo(RootComponent);
-	StartPosition->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	StartPosition->SetupAttachment(RootComponent);//4.12
 	StartPosition->SetRelativeLocation(FVector::ZeroVector);
 
 	EndPosition = CreateDefaultSubobject<USceneComponent>(TEXT("End Position"));
 	//EndPosition->AttachTo(RootComponent);
-	EndPosition->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	EndPosition->SetupAttachment(RootComponent);//4.12
 	EndPosition->SetRelativeLocation(FVector::ZeroVector);
 
 }

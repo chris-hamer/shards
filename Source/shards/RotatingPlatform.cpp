@@ -9,7 +9,7 @@ ARotatingPlatform::ARotatingPlatform() {
 
 	Center = CreateDefaultSubobject<USceneComponent>(TEXT("Center"));
 	//Center->AttachTo(RootComponent);
-	Center->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	Center->SetupAttachment(RootComponent);//4.12
 }
 
 void ARotatingPlatform::Tick(float DeltaTime)

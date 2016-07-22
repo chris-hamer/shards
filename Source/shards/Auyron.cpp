@@ -143,8 +143,8 @@ AAuyron::AAuyron()
 	CapsuleComponent->BodyInstance.PositionSolverIterationCount = 16;
 	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
 	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
-	//CapsuleComponent->SetupAttachment(RootComponent);
-	CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	CapsuleComponent->SetupAttachment(RootComponent);
+	//CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	SetActorEnableCollision(true);
 
 	// It you.
@@ -162,7 +162,7 @@ AAuyron::AAuyron()
 	PlayerModel->SetCollisionObjectType(ECC_PhysicsBody);
 	PlayerModel->SetSimulatePhysics(false);
 	//PlayerModel->AttachTo(CapsuleComponent);
-	PlayerModel->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	PlayerModel->SetupAttachment(CapsuleComponent);
 
 	//static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimationBlueprint(TEXT("/Game/Animations/Characters/Auyron/Anim_Auyron"));
 	//PlayerModel->SetAnimInstanceClass(AnimationBlueprint.Object->GetAnimBlueprintGeneratedClass());
@@ -177,12 +177,12 @@ AAuyron::AAuyron()
 	SpringArm->CameraLagMaxDistance = 1000.0f;
 	SpringArm->ProbeSize = 20.0f;
 	//SpringArm->AttachTo(CapsuleComponent);
-	SpringArm->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	SpringArm->SetupAttachment(CapsuleComponent);//4.12
 
 	// Camera so the casuals can "see what they're doing" or whatever.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ActualCamera"));
 	//Camera->AttachTo(SpringArm, USpringArmComponent::SocketName);
-	Camera->AttachToComponent(SpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);//4.12
+	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);//4.12
 
 	// May god have mercy on your GPU.
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
@@ -191,7 +191,7 @@ AAuyron::AAuyron()
 	DashParticles->bAutoActivate = false;
 	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	//DashParticles->AttachTo(PlayerModel);
-	DashParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	DashParticles->SetupAttachment(PlayerModel);//4.12
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
@@ -199,7 +199,7 @@ AAuyron::AAuyron()
 	FloatParticles->bAutoActivate = false;
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	//FloatParticles->AttachTo(PlayerModel);
-	FloatParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	FloatParticles->SetupAttachment(PlayerModel);//4.12
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Particles/SlamParticles"));
@@ -207,7 +207,7 @@ AAuyron::AAuyron()
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	//SlamParticles->AttachTo(PlayerModel);
-	SlamParticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	SlamParticles->SetupAttachment(PlayerModel);//4.12
 
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
@@ -215,7 +215,7 @@ AAuyron::AAuyron()
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	//SlamTrail->AttachTo(PlayerModel);
-	SlamTrail->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	SlamTrail->SetupAttachment(PlayerModel);//4.12
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
@@ -223,7 +223,7 @@ AAuyron::AAuyron()
 	TrailParticlesL->bAutoActivate = false;
 	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	//TrailParticlesL->AttachTo(PlayerModel);
-	TrailParticlesL->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	TrailParticlesL->SetupAttachment(PlayerModel);//4.12
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
@@ -231,7 +231,7 @@ AAuyron::AAuyron()
 	TrailParticlesR->bAutoActivate = false;
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	//TrailParticlesR->AttachTo(PlayerModel);
-	TrailParticlesR->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	TrailParticlesR->SetupAttachment(PlayerModel);//4.12
 
 	grassparticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Grass Particles"));
 	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/grassparticles"));
@@ -239,7 +239,7 @@ AAuyron::AAuyron()
 	grassparticles->bAutoActivate = false;
 	grassparticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	//grassparticles->AttachTo(PlayerModel);
-	grassparticles->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	grassparticles->SetupAttachment(PlayerModel);//4.12
 
 	DropShadow = CreateDefaultSubobject<UDecalComponent>(TEXT("Drop Shadow"));
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> dsmat(TEXT("/Game/Textures/Effects/dropshadow"));
@@ -253,7 +253,7 @@ AAuyron::AAuyron()
 	DropShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	DropShadow->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	//DropShadow->AttachTo(PlayerModel);
-	DropShadow->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	DropShadow->SetupAttachment(PlayerModel);//4.12
 
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
@@ -313,7 +313,7 @@ AAuyron::AAuyron()
 	TheAbyss->SetRelativeLocation(FVector(185.0f, 0.0f, 120.0f));
 	TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, 0.0f));
 	//TheAbyss->AttachTo(PlayerModel);
-	TheAbyss->AttachToComponent(PlayerModel, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	TheAbyss->SetupAttachment(PlayerModel);//4.12
 
 	TeleClaw->SetVisibility(TeleportSettings.HasTeleport);
 	BootsR->SetVisibility(DashSettings.HasDash);
@@ -333,7 +333,7 @@ AAuyron::AAuyron()
 	// BLAST PROCESSING.
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
 	//PostProcess->AttachTo(RootComponent);
-	PostProcess->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	PostProcess->SetupAttachment(RootComponent);//4.12
 
 	// NINTENDON'T DO 16 BIT.
 	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> riftmatfile(TEXT("/Game/Textures/Effects/RiftRTT"));
@@ -679,12 +679,12 @@ void AAuyron::BeginPlay()
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
 
-	//TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
-	//BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
-	//BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
-	//Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
-	//Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
-	//Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
+	TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
+	BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
+	BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
+	Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
+	Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
+	Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
 
 	//TeleClaw->AttachTo(PlayerModel, "RightHand");
 	//BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R");
@@ -1402,6 +1402,37 @@ void AAuyron::PlayerState::Tick(AAuyron* Player, float DeltaTime)
 	Player->MovementComponent->forceregiondirection = Player->AppliedForce;
 	Player->MovementComponent->isclimbing = Player->isclimbing;
 
+
+	// Handle gliding.
+	if (Player->IsGliding && !Player->WasOnTheGround) {
+		Player->GlideTimer += DeltaTime;
+		//FlattenVelocity();
+		if (FMath::Abs(Player->GlideTimer*Player->GlideSettings.GlideSoundsPerSecond - FMath::FloorToInt(Player->GlideTimer*Player->GlideSettings.GlideSoundsPerSecond)) < DeltaTime*Player->GlideSettings.GlideSoundsPerSecond) {
+			Player->WingSound->PitchMultiplier = FMath::FRandRange(Player->GlideSettings.GlideSoundPitchMin, Player->GlideSettings.GlideSoundPitchMax);
+			UGameplayStatics::PlaySound2D(Player, Player->WingSound);
+			//WingSound->PitchMultiplier = 1.0f;
+		}
+		Player->Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+		Player->PhysicsSettings.Gravity = Player->DefaultGravity * Player->GlideSettings.GlideGravityMultiplier;
+		if (Player->AppliedForce.Z <= 0.0f) {
+			//CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity, NAME_None, true);
+		} else {
+			Player->PhysicsSettings.Gravity = Player->DefaultGravity;
+		}
+	} else {
+		Player->FloatParticles->DeactivateSystem();
+		Player->GlideTimer = 0.0f;
+		Player->Wings->SetRelativeScale3D(FVector(0.25f, 0.25f, 0.25f));
+		if (Player->GetWorld()->GetTimerManager().GetTimerElapsed(Player->PreWarpTimer) < 0.0f) {
+			Player->PhysicsSettings.Gravity = Player->DefaultGravity;
+		}
+	}
+
+	// Stop gliding.
+	if (Player->GlideTimer > Player->GlideSettings.GlideDuration || Player->OnTheGround || !Player->HoldingJump) {
+		Player->IsGliding = false;
+	}
+
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
 
 	// Make the equipment we have visible on the player model.
@@ -1820,6 +1851,15 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		QueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 		QueryParams.AddObjectTypesToQuery(ECC_Destructible);
 		FCollisionQueryParams Params;
+
+
+		for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->GetClass()->GetName() == "Stick") {
+				Params.AddIgnoredActor(ActorItr.operator->());
+			}
+		}
+
+
 		FHitResult ShapeTraceResult;
 		FVector head = Player->GetActorLocation() + 20.0f*FVector::UpVector;
 		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, head - 20.0f*Player->PlayerModel->GetForwardVector(), head + 50.0f*Player->PlayerModel->GetForwardVector(), FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
@@ -1916,10 +1956,11 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		}
 
 		FHitResult ShapeTraceResult;
-		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() + 20.0f*FVector::UpVector, Player->GetActorLocation() - 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
+		Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() + 20.0f*FVector::UpVector + 1.0f*FVector::RightVector, Player->GetActorLocation() - 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
 		if (!ShapeTraceResult.IsValidBlockingHit()) {
-			Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() - 20.0f*FVector::UpVector, Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
+			Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() - 20.0f*FVector::UpVector + 1.0f*FVector::RightVector, Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
 		}
+		GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.ImpactPoint.ToString()+"                     " + FString::SanitizeFloat(ShapeTraceResult.bBlockingHit));
 		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, FString::SanitizeFloat(ShapeTraceResult.IsValidBlockingHit()) + "                     " + FString::SanitizeFloat(Player->GetWorld()->OverlapAnyTestByObjectType(Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)));
 		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.Normal.ToString() + "                     " + FString::SanitizeFloat(FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size()));
 		if (!Player->OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.8f) {
@@ -2010,36 +2051,6 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		Player->AlreadyGlided = true;
 		Player->GlideNextFrame = false;
 		Player->FloatParticles->ActivateSystem();
-	}
-
-	// Handle gliding.
-	if (Player->IsGliding && !Player->WasOnTheGround) {
-		Player->GlideTimer += DeltaTime;
-		//FlattenVelocity();
-		if (FMath::Abs(Player->GlideTimer*Player->GlideSettings.GlideSoundsPerSecond - FMath::FloorToInt(Player->GlideTimer*Player->GlideSettings.GlideSoundsPerSecond)) < DeltaTime*Player->GlideSettings.GlideSoundsPerSecond) {
-			Player->WingSound->PitchMultiplier = FMath::FRandRange(Player->GlideSettings.GlideSoundPitchMin, Player->GlideSettings.GlideSoundPitchMax);
-			UGameplayStatics::PlaySound2D(Player, Player->WingSound);
-			//WingSound->PitchMultiplier = 1.0f;
-		}
-		Player->Wings->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-		Player->PhysicsSettings.Gravity = Player->DefaultGravity * Player->GlideSettings.GlideGravityMultiplier;
-		if (Player->AppliedForce.Z <= 0.0f) {
-			//CapsuleComponent->AddForce(FVector::UpVector * PhysicsSettings.Gravity, NAME_None, true);
-		} else {
-			Player->PhysicsSettings.Gravity = Player->DefaultGravity;
-		}
-	} else {
-		Player->FloatParticles->DeactivateSystem();
-		Player->GlideTimer = 0.0f;
-		Player->Wings->SetRelativeScale3D(FVector(0.25f, 0.25f, 0.25f));
-		if (Player->GetWorld()->GetTimerManager().GetTimerElapsed(Player->PreWarpTimer) < 0.0f) {
-			Player->PhysicsSettings.Gravity = Player->DefaultGravity;
-		}
-	}
-
-	// Stop gliding.
-	if (Player->GlideTimer > Player->GlideSettings.GlideDuration || Player->OnTheGround || !Player->HoldingJump) {
-		Player->IsGliding = false;
 	}
 
 	// Reset glide and unjump variables if the player is on the ground.

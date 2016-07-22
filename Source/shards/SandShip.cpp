@@ -33,22 +33,22 @@ ASandShip::ASandShip()
 	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
 	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
 	CapsuleComponent->SetCollisionObjectType(ECC_GameTraceChannel2);
-	CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	CapsuleComponent->SetupAttachment(RootComponent);
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/crystal"));
 	Model->SetStaticMesh(MeshObj.Object);
 	Model->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	Model->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	Model->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	Model->SetupAttachment(CapsuleComponent);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
 	SpringArm->TargetArmLength = 2000.0f;
 	SpringArm->SetWorldRotation(FRotator(-20.0f, 0.0f, 0.0f));
-	SpringArm->AttachToComponent(CapsuleComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	SpringArm->SetupAttachment(CapsuleComponent);
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->AttachToComponent(SpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);
+	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;

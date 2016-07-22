@@ -23,7 +23,7 @@ ABrokenBox::ABrokenBox()
 	DestructibleMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	DestructibleMesh->SetSimulatePhysics(true);
 	//DestructibleMesh->AttachTo(RootComponent);
-	DestructibleMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	DestructibleMesh->SetupAttachment(RootComponent);//4.12
 }
 
 // Called when the game starts or when spawned

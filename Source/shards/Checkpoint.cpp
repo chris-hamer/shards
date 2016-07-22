@@ -15,11 +15,11 @@ ACheckpoint::ACheckpoint()
 
 	RespawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("RespawnPoint"));
 	//RespawnPoint->AttachTo(Root);
-	RespawnPoint->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	RespawnPoint->SetupAttachment(Root);//4.12
 
 	Region = CreateDefaultSubobject<UBoxComponent>(TEXT("Region"));
 	//Region->AttachTo(Root);
-	Region->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);//4.12
+	Region->SetupAttachment(Root);//4.12
 	Region->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
 }
 

@@ -14,7 +14,7 @@ ASwitch::ASwitch()
 	SwitchModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
 	SwitchModel->SetRelativeLocation(FVector(0.0f, 0.0f, -50.0f));
 	//SwitchModel->AttachTo(RootComponent);
-	SwitchModel->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);//4.12
+	SwitchModel->SetupAttachment(RootComponent);//4.12
 }
 
 // Called when the game starts or when spawned
