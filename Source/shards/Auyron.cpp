@@ -1873,7 +1873,7 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 			Player->GetWorld()->SweepSingleByChannel(LedgeTraceResult, TraceHit + 200.0f*FVector::UpVector, TraceHit, FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
 			FHitResult ceilhit;
 			FCollisionShape CeilFinderShape = FCollisionShape::MakeSphere(20.0f);// (55.0f, 90.0f);
-			Player->GetWorld()->SweepSingleByChannel(ceilhit, Player->GetActorLocation() + 65.0f*FVector::UpVector, Player->GetActorLocation() + 200.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, CeilFinderShape);
+			Player->GetWorld()->SweepSingleByChannel(ceilhit, Player->GetActorLocation() + 65.0f*FVector::UpVector, Player->GetActorLocation() + 300.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, CeilFinderShape);
 			bool underceiling = ceilhit.GetActor() != nullptr && ceilhit.GetComponent() != nullptr;// && ceilhit.GetComponent()->IsA(UStaticMeshComponent::StaticClass());
 			FHitResult floorhit;
 			Player->GetWorld()->SweepSingleByChannel(floorhit, Player->GetActorLocation() - 65.0f*FVector::UpVector, Player->GetActorLocation() - 200.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, CeilFinderShape);
