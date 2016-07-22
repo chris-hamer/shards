@@ -143,6 +143,7 @@ AAuyron::AAuyron()
 	CapsuleComponent->BodyInstance.PositionSolverIterationCount = 16;
 	CapsuleComponent->BodyInstance.VelocitySolverIterationCount = 16;
 	CapsuleComponent->bShouldUpdatePhysicsVolume = true;
+	//CapsuleComponent->SetupAttachment(RootComponent);
 	CapsuleComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);//4.12
 	SetActorEnableCollision(true);
 
@@ -677,13 +678,13 @@ void AAuyron::BeginPlay()
 	// Sets the player's "true" facing direction to whatever
 	// the model's facing direction is in the editor.
 	TargetDirection = PlayerModel->GetComponentRotation();
-	
-	TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
-	BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
-	BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
-	Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
-	Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
-	Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
+
+	//TeleClaw->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "RightHand");
+	//BootsR->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_R");
+	//BootsL->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WHATARETHOSE_L");
+	//Bracelet->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Bracelet");
+	//Belt->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Belt");
+	//Wings->AttachToComponent(PlayerModel, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Wings");
 
 	//TeleClaw->AttachTo(PlayerModel, "RightHand");
 	//BootsR->AttachTo(PlayerModel, "WHATARETHOSE_R");
