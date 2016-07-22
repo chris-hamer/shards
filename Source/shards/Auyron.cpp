@@ -1434,6 +1434,7 @@ void AAuyron::PlayerState::Tick(AAuyron* Player, float DeltaTime)
 	}
 
 	// Set our frame of reference for future calculations to be that of the surface we're standing on.
+	Player->CapsuleComponent->SetPhysicsLinearVelocity(Player->CapsuleComponent->GetPhysicsLinearVelocity() - Player->MovementComponent->groundvelocity); // - (MovementComponent->groundvelocity + pushvelocity)
 
 	// Make the equipment we have visible on the player model.
 	Player->TeleClaw->SetVisibility(Player->TeleportSettings.HasTeleport);
@@ -1777,7 +1778,7 @@ void AAuyron::PlayerState::FaceTargetDirection(AAuyron* Player, float DeltaTime)
 
 	// If we're trying to move, take the camera's orientation into account to figure
 	// out the direction we want to face.
-	if (!Player->ztarget && (Player->OnTheGround || Player->IsGliding || Player->MovementAxisLocked)) {
+	if (!Player->ztarget&& (Player->OnTheGround || Player->IsGliding || Player->MovementAxisLocked)) {
 		// I'ma tell ya not even Unity was stupid enough to use -180 -> 180 for rotations.
 		int8 reflect = (Player->MovementInput.X >= 0 ? 1 : -1);
 
@@ -1813,7 +1814,7 @@ void AAuyron::PlayerState::FaceTargetDirection(AAuyron* Player, float DeltaTime)
 		float multiply = (Player->dashing ? 3.0f : 1.0f);
 
 		// Snap to the target angle if we're close enough, otherwise just keep turning.
-		if (!Player->ztarget) {
+		if (!Player->ztarget || Player->dashing) {
 			test = FQuat(dummy, FMath::DegreesToRadians(multiply*(Player->IsGliding ? 1.0f : Player->GlideSettings.GlideTurnRateMultiplier)*Player->TurnSettings.TurnRate)*DeltaTime);
 			float angle2 = 0.0f;
 			test.ToAxisAndAngle(dummy, angle2);
@@ -1837,7 +1838,6 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		return;
 	}
 
-	Player->CapsuleComponent->SetPhysicsLinearVelocity(Player->CapsuleComponent->GetPhysicsLinearVelocity() - Player->MovementComponent->groundvelocity); // - (MovementComponent->groundvelocity + pushvelocity)
 
 	 // Snap velocity to zero if it's really small.
 	if (FVector::VectorPlaneProject(Player->CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector).Size() < Player->PhysicsSettings.MinVelocity && !Player->dashing && !Player->JumpPressed && Player->MovementInput.IsNearlyZero()) {
@@ -1960,7 +1960,7 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 		if (!ShapeTraceResult.bBlockingHit) {
 			Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, Player->GetActorLocation() - 20.0f*FVector::UpVector - 1.0f*FVector::RightVector - 1.0f*FVector::ForwardVector, Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, ECC_Visibility, WallJumpCapsuleShape, Params); //100
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.ImpactPoint.ToString()+"                     " + FString::SanitizeFloat(ShapeTraceResult.bBlockingHit));
+		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.ImpactPoint.ToString()+"                     " + FString::SanitizeFloat(ShapeTraceResult.bBlockingHit));
 		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, FString::SanitizeFloat(ShapeTraceResult.IsValidBlockingHit()) + "                     " + FString::SanitizeFloat(Player->GetWorld()->OverlapAnyTestByObjectType(Player->GetActorLocation() + 20.0f*FVector::UpVector, FQuat::Identity, QueryParams, WallJumpCapsuleShape)));
 		//GEngine->AddOnScreenDebugMessage(-1, 344444444, FColor::Cyan, ShapeTraceResult.Normal.ToString() + "                     " + FString::SanitizeFloat(FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size()));
 		if (!Player->OnTheGround && FVector::VectorPlaneProject(ShapeTraceResult.Normal, FVector::UpVector).Size() > 0.8f) {
@@ -2547,7 +2547,7 @@ void AAuyron::ClimbingState::Tick(AAuyron* Player, float DeltaTime)
 void AAuyron::TeleportingState::Tick(AAuyron * Player, float DeltaTime)
 {
 	PlayerState::Tick(Player, DeltaTime);
-
+	Player->CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	Player->SpringArm->CameraLagSpeed = 0.0f; //CameraLagSettings.CameraLag*2.5f;
 	Player->SpringArm->CameraRotationLagSpeed = 0.0f; //CameraLagSettings.CameraRotationLag*2.5f;
 	Player->DefaultArmLength = Player->TargetDefaultArmLength;

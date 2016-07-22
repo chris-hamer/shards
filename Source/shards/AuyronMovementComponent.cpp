@@ -90,7 +90,7 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	platformspindir = 1;
 	FloorNormal = FVector::ZeroVector;
 
-	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance &&!justjumped&& (PlayerVelocity.Z <= 0.0f || wasonground)) { // (PlayerVelocity.Z <= 0.0f || wasonground)
+	if ((enforcementtimer < timerlimit && ShapeTraceResult.Normal.Z>0.6f) && DistanceFromImpact < RequiredDistance && !justjumped) { // (PlayerVelocity.Z <= 0.0f || wasonground)
 		if (ShapeTraceResult.Normal.Z < minnormalz) {
 			if (enforcementtimer == -1.0f) {
 				enforcementtimer = 0.0f;
@@ -98,8 +98,6 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		} else {
 			enforcementtimer = -1.0f;
 		}
-		onground = true;
-		offGroundTime = 0.0f;
 
 		FVector pvel;
 		// Handle moving platforms.
@@ -115,6 +113,11 @@ void UAuyronMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 			
 			groundvelocity = rvel + cmvel;
 			platformangularfrequency = -angvel.Z;
+		}
+
+		if ((PlayerVelocity.Z <= groundvelocity.Z || wasonground)) {
+			onground = true;
+			offGroundTime = 0.0f;
 		}
 	}
 
