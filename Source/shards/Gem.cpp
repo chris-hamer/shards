@@ -24,17 +24,17 @@ AGem::AGem()
 	GemModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	GemColor = FLinearColor::MakeRandomColor();
 
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj1(TEXT("/Game/Models/Gems/Gem1"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj1(TEXT("/Game/Generic/Gems/Gem1"));
 	meshes.Add(MeshObj1.Object);
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj2(TEXT("/Game/Models/Gems/Gem2"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj2(TEXT("/Game/Generic/Gems/Gem2"));
 	meshes.Add(MeshObj2.Object);
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj3(TEXT("/Game/Models/Gems/Gem3"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj3(TEXT("/Game/Generic/Gems/Gem3"));
 	meshes.Add(MeshObj3.Object);
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj4(TEXT("/Game/Models/Gems/Gem4"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj4(TEXT("/Game/Generic/Gems/Gem4"));
 	meshes.Add(MeshObj4.Object);
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj5(TEXT("/Game/Models/Gems/Gem5"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj5(TEXT("/Game/Generic/Gems/Gem5"));
 	meshes.Add(MeshObj5.Object);
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj6(TEXT("/Game/Models/Gems/Gem6"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj6(TEXT("/Game/Generic/Gems/Gem6"));
 	meshes.Add(MeshObj6.Object);
 	
 	GemModel->SetCollisionProfileName(TEXT("NoCollision"));
@@ -46,11 +46,11 @@ AGem::AGem()
 	//GemModel->AttachTo(RootComponent);
 	GemModel->SetupAttachment(RootComponent);//4.12
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> mat(TEXT("/Game/Textures/Gems/BaseGemMaterial"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> mat(TEXT("/Game/Generic/Gems/BaseGemMaterial"));
 	BaseGemMaterial = mat.Object;
 
 	CollectionParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("CollectionParticles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Particles/CollectionParticles.CollectionParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> particles(TEXT("/Game/Effects/Player/CollectionParticles.CollectionParticles"));
 	CollectionParticles->SetTemplate(particles.Object);
 	//CollectionParticles->AttachTo(GemModel);
 	CollectionParticles->SetupAttachment(GemModel);//4.12

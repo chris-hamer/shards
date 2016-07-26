@@ -36,7 +36,7 @@ ASandShip::ASandShip()
 	CapsuleComponent->SetupAttachment(RootComponent);
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/crystal"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Generic/Environment/Crystals/crystal"));
 	Model->SetStaticMesh(MeshObj.Object);
 	Model->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	Model->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -53,7 +53,7 @@ ASandShip::ASandShip()
 	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Textures/Effects/celshader"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Effects/Player/celshader"));
 	CelShaderMaterial = celshade.Object;
 
 	MovementInput = FVector::ZeroVector;

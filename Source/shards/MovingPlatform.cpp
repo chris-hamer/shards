@@ -14,7 +14,7 @@ AMovingPlatform::AMovingPlatform()
 	MovementType = MovingPlatformType::LINEAR;
 
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/platform"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Generic/Environment/Misc/FloatingPlatform/platform"));
 	Model->SetStaticMesh(MeshObj.Object);
 	Model->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	RootComponent = Model;

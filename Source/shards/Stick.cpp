@@ -11,7 +11,7 @@ AStick::AStick()
 	PrimaryActorTick.bCanEverTick = true;
 
 	StickModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualRepresentation"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Models/Environment/Dais"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Game/Generic/Environment/Misc/Dais/Dais"));
 	StickModel->SetStaticMesh(MeshObj.Object);
 	StickModel->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	StickModel->SetRelativeScale3D(FVector(10.0f, 10.0f, 10.0f));
@@ -39,7 +39,7 @@ AStick::AStick()
 	Here->SetRelativeLocation(FVector::ZeroVector);
 	PostTeleportVelocity = FVector(0.0f, 0.0f, 0.0f);
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> daismat(TEXT("/Game/Textures/Environment/mDais"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> daismat(TEXT("/Game/Generic/Environment/Misc/Dais/mDais"));
 	Material = daismat.Object;
 }
 

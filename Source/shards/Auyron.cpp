@@ -149,7 +149,7 @@ AAuyron::AAuyron()
 
 	// It you.
 	PlayerModel = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PlayerModel"));
-	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Models/Characters/Auyron/Auyron2"));
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshObj(TEXT("/Game/Generic/Characters/Auyron/Auyron2"));
 	PlayerModel->SetSkeletalMesh(PlayerMeshObj.Object);
 	PlayerModel->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	PlayerModel->bRenderCustomDepth = true;
@@ -186,7 +186,7 @@ AAuyron::AAuyron()
 
 	// May god have mercy on your GPU.
 	DashParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Dash Particles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Particles/DashParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> dp(TEXT("/Game/Effects/Player/DashParticles"));
 	DashParticles->SetTemplate(dp.Object);
 	DashParticles->bAutoActivate = false;
 	DashParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
@@ -194,7 +194,7 @@ AAuyron::AAuyron()
 	DashParticles->SetupAttachment(PlayerModel);//4.12
 
 	FloatParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Float Particles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Particles/FloatParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> fp(TEXT("/Game/Effects/Player/FloatParticles"));
 	FloatParticles->SetTemplate(fp.Object);
 	FloatParticles->bAutoActivate = false;
 	FloatParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
@@ -202,7 +202,7 @@ AAuyron::AAuyron()
 	FloatParticles->SetupAttachment(PlayerModel);//4.12
 
 	SlamParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Particles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Particles/SlamParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> sp(TEXT("/Game/Effects/Player/SlamParticles"));
 	SlamParticles->SetTemplate(sp.Object);
 	SlamParticles->bAutoActivate = false;
 	SlamParticles->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
@@ -210,7 +210,7 @@ AAuyron::AAuyron()
 	SlamParticles->SetupAttachment(PlayerModel);//4.12
 
 	SlamTrail = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Slam Trail"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Particles/SlamTrail"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> st(TEXT("/Game/Effects/Player/SlamTrail"));
 	SlamTrail->SetTemplate(st.Object);
 	SlamTrail->bAutoActivate = false;
 	SlamTrail->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
@@ -218,7 +218,7 @@ AAuyron::AAuyron()
 	SlamTrail->SetupAttachment(PlayerModel);//4.12
 
 	TrailParticlesL = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles L"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Particles/TrailParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpl(TEXT("/Game/Effects/Player/TrailParticles"));
 	TrailParticlesL->SetTemplate(tpl.Object);
 	TrailParticlesL->bAutoActivate = false;
 	TrailParticlesL->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
@@ -226,7 +226,7 @@ AAuyron::AAuyron()
 	TrailParticlesL->SetupAttachment(PlayerModel);//4.12
 
 	TrailParticlesR = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particles R"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Particles/TrailParticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> tpr(TEXT("/Game/Effects/Player/TrailParticles"));
 	TrailParticlesR->SetTemplate(tpr.Object);
 	TrailParticlesR->bAutoActivate = false;
 	TrailParticlesR->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
@@ -234,7 +234,7 @@ AAuyron::AAuyron()
 	TrailParticlesR->SetupAttachment(PlayerModel);//4.12
 
 	grassparticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Grass Particles"));
-	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/grassparticles"));
+	const ConstructorHelpers::FObjectFinder<UParticleSystem> gpr(TEXT("/Game/Effects/Player/grassparticles"));
 	grassparticles->SetTemplate(gpr.Object);
 	grassparticles->bAutoActivate = false;
 	grassparticles->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
@@ -242,7 +242,7 @@ AAuyron::AAuyron()
 	grassparticles->SetupAttachment(PlayerModel);//4.12
 
 	DropShadow = CreateDefaultSubobject<UDecalComponent>(TEXT("Drop Shadow"));
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> dsmat(TEXT("/Game/Textures/Effects/dropshadow"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> dsmat(TEXT("/Game/Effects/Player/dropshadow"));
 	DropShadow->SetMaterial(0,dsmat.Object);
 	DropShadow->DecalSize = FVector(1000.0f, 45.0f, 45.0f);
 	DropShadow->DecalSize = FVector(1000.0f, 90.0f, 90.0f);
@@ -257,12 +257,12 @@ AAuyron::AAuyron()
 
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
-	const ConstructorHelpers::FObjectFinder<UPhysicalMaterial> PlayerPhysMat(TEXT("/Game/Textures/Characters/Auyron/PlayerPhysMaterial"));
+	const ConstructorHelpers::FObjectFinder<UPhysicalMaterial> PlayerPhysMat(TEXT("/Game/Generic/Characters/Auyron/PlayerPhysMaterial"));
 	physmat = PlayerPhysMat.Object;
 
 	// Get the instance of the TeleClaw weapon.
 	TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> tc(TEXT("/Game/Models/Weapons/TeleClaw"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> tc(TEXT("/Game/Generic/Weapons/TeleClaw"));
 	TeleClaw->SetStaticMesh(tc.Object);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TeleClaw->bRenderCustomDepth = true;
@@ -270,7 +270,7 @@ AAuyron::AAuyron()
 
 	// WHAT ARE THOSE?
 	BootsR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BootsR"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> bootsmodel(TEXT("/Game/Models/Weapons/Boots"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> bootsmodel(TEXT("/Game/Generic/Weapons/Boots"));
 	BootsR->SetStaticMesh(bootsmodel.Object);
 	BootsR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BootsR->bRenderCustomDepth = true;
@@ -284,21 +284,21 @@ AAuyron::AAuyron()
 
 	// WWE CHAMPIONSHIP BELT
 	Belt = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Belt"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> beltmodel(TEXT("/Game/Models/Weapons/Belt"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> beltmodel(TEXT("/Game/Generic/Weapons/Belt"));
 	Belt->SetStaticMesh(beltmodel.Object);
 	Belt->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Belt->bRenderCustomDepth = true;
 	Belt->bReceivesDecals = false;
 
 	Bracelet = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Bracelet"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> braceletmodel(TEXT("/Game/Models/Weapons/Bracelet"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> braceletmodel(TEXT("/Game/Generic/Weapons/Bracelet"));
 	Bracelet->SetStaticMesh(braceletmodel.Object);
 	Bracelet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Bracelet->bRenderCustomDepth = true;
 	Bracelet->bReceivesDecals = false;
 
 	Wings = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Wings"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> wingsmodel(TEXT("/Game/Models/Weapons/Wings"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> wingsmodel(TEXT("/Game/Generic/Weapons/Wings"));
 	Wings->SetStaticMesh(wingsmodel.Object);
 	Wings->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Wings->bRenderCustomDepth = true;
@@ -306,7 +306,7 @@ AAuyron::AAuyron()
 
 	// It gazes also into you.
 	TheAbyss = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TheAbyss"));
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> ab(TEXT("/Game/Models/Weapons/cutidea1"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> ab(TEXT("/Game/Generic/Weapons/cutidea1"));
 	TheAbyss->SetStaticMesh(ab.Object);
 	TheAbyss->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TheAbyss->SetWorldScale3D(FVector(0.2f, 1.6f, 1.0f));
@@ -336,53 +336,50 @@ AAuyron::AAuyron()
 	PostProcess->SetupAttachment(RootComponent);//4.12
 
 	// NINTENDON'T DO 16 BIT.
-	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> riftmatfile(TEXT("/Game/Textures/Effects/RiftRTT"));
+	const ConstructorHelpers::FObjectFinder<UTextureRenderTarget2D> riftmatfile(TEXT("/Game/Effects/Player/RiftRTT"));
 	TeleportRiftRenderTarget = riftmatfile.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Textures/Characters/Auyron/Hair"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> hair(TEXT("/Game/Generic/Characters/Auyron/Hair"));
 	HairMatBase = hair.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bandana(TEXT("/Game/Textures/Characters/Auyron/Headband"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bandana(TEXT("/Game/Generic/Characters/Auyron/Headband"));
 	BandanaMatBase = bandana.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Textures/Characters/Auyron/protag-UVs_Mat"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> body(TEXT("/Game/Generic/Characters/Auyron/protag-UVs_Mat"));
 	BodyMatBase = body.Object;
 
 	// Might need this later.
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bw(TEXT("/Game/Textures/Weapons/wing_blue"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> bw(TEXT("/Game/Generic/Weapons/wing_blue"));
 	bluewings = bw.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat(TEXT("/Game/Textures/Effects/RiftMat"));
-	TeleportRiftMaterial = riftmat.Object;
-
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Textures/Effects/warpmat"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> riftmat2(TEXT("/Game/Effects/Player/warpmat"));
 	TestTeleEffectBase = riftmat2.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> behindmat(TEXT("/Game/Textures/Effects/Outline"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> behindmat(TEXT("/Game/Effects/Player/Outline"));
 	DrawBehindMaterial = behindmat.Object;
 
-	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Textures/Effects/celshader"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Effects/Player/celshader"));
 	CelShaderMaterial = celshade.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> jsound(TEXT("/Game/Sound/SoundEffects/jump"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> jsound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/jump"));
 	JumpSound = jsound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> dsound(TEXT("/Game/Sound/SoundEffects/dash"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> dsound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/dash"));
 	DashSound= dsound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> csound(TEXT("/Game/Sound/SoundEffects/gempickup"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> csound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/gempickup"));
 	CollectSound = csound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> wrpsound(TEXT("/Game/Sound/SoundEffects/warpsound"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> wrpsound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/warpsound"));
 	WarpSound = wrpsound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> dksound(TEXT("/Game/Sound/SoundEffects/dunk"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> dksound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/dunk"));
 	DunkSound = dksound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> dhksound(TEXT("/Game/Sound/SoundEffects/dunkhit"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> dhksound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/dunkhit"));
 	DunkHitSound = dhksound.Object;
 
-	const ConstructorHelpers::FObjectFinder<USoundCue> wsound(TEXT("/Game/Sound/SoundEffects/wing"));
+	const ConstructorHelpers::FObjectFinder<USoundCue> wsound(TEXT("/Game/Generic/Characters/Auyron/SoundEffects/wing"));
 	WingSound = wsound.Object;
 
 }
@@ -651,8 +648,6 @@ void AAuyron::BeginPlay()
 	previousposition = GetActorLocation();
 	closecamera = GetActorLocation();
 	RespawnPoint = GetActorLocation();
-	TheAbyss->SetVisibility(false);
-	TheAbyss->SetMaterial(0, TeleportRiftMaterial);
 
 	Capture2D = GetWorld()->SpawnActor<ASceneCapture2D>();
 	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = true;
