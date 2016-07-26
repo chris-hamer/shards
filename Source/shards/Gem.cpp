@@ -4,7 +4,7 @@
 // tired of eatin sloppy, slimey eggs.
 
 #include "shards.h"
-#include "Auyron.h"
+#include "ShardsCharacter.h"
 #include "Gem.h"
 
 // Sets default values
@@ -120,7 +120,7 @@ void AGem::Tick( float DeltaTime )
 	curTime += DeltaTime;
 }
 
-void AGem::GetCollected(AAuyron* itsame) {
+void AGem::GetCollected(AShardsCharacter* itsame) {
 	Player = itsame;
 	CollectionParticles->ActivateSystem();
 	GemModel->SetVisibility(false);

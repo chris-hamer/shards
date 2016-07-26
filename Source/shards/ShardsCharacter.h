@@ -17,7 +17,7 @@
 #include "CameraOverrideRegion.h"
 #include "TwoDimensionalMovementRegion.h"
 #include "Checkpoint.h"
-#include "Auyron.generated.h"
+#include "ShardsCharacter.generated.h"
 
 USTRUCT()
 struct FMovementPhysics
@@ -288,14 +288,14 @@ UENUM() enum AxisType {
 	INVERTED		UMETA(DisplayName = "Inverted")
 };
 
-UCLASS() class AAuyron : public APawn
+UCLASS() class AShardsCharacter : public APawn
 {
 	GENERATED_BODY()
 
 public:
 
 	// Sets default values for this pawn's properties
-	AAuyron();
+	AShardsCharacter();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -312,53 +312,53 @@ public:
 	{
 	public:
 		PlayerState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
-		virtual void Tick2(AAuyron* Player, float DeltaTime);
-		virtual void PhysicsStuff(AAuyron* Player, float DeltaTime);
-		virtual void CameraStuff(AAuyron* Player, float DeltaTime);
-		virtual void FaceTargetDirection(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
+		virtual void Tick2(AShardsCharacter* Player, float DeltaTime);
+		virtual void PhysicsStuff(AShardsCharacter* Player, float DeltaTime);
+		virtual void CameraStuff(AShardsCharacter* Player, float DeltaTime);
+		virtual void FaceTargetDirection(AShardsCharacter* Player, float DeltaTime);
 	};
 
 	class NormalState : public PlayerState
 	{
 	public:
 		NormalState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 	
 	class DialogueState : public PlayerState
 	{
 	public:
 		DialogueState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
 	class ClimbingState : public PlayerState
 	{
 	public:
 		ClimbingState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
 	class TeleportingState : public PlayerState
 	{
 	public:
 		TeleportingState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
 	class AimingState : public PlayerState
 	{
 	public:
 		AimingState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
 	class VehicleState : public PlayerState
 	{
 	public:
 		VehicleState() {};
-		virtual void Tick(AAuyron* Player, float DeltaTime);
+		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
 	//Input functions

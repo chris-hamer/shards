@@ -2,7 +2,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
-#include "Auyron.h"
+#include "ShardsCharacter.h"
 #include "Gem.generated.h"
 
 UCLASS()
@@ -26,7 +26,7 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
-	void GetCollected(AAuyron* itsame);
+	void GetCollected(AShardsCharacter* itsame);
 	void Ded();
 
 	AActor* Player;

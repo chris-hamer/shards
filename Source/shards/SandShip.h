@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GameFramework/Pawn.h"
-#include "Auyron.h"
+#include "ShardsCharacter.h"
 #include "AuyronMovementComponent.h"
 #include "SandShip.generated.h"
 
@@ -60,7 +60,7 @@ public:
 	FVector CameraInput;
 	float AdjustedTurnInput;
 
-	class AAuyron* Player;
+	class AShardsCharacter* Player;
 
 	float CurrentDrag;
 	UMaterialInstanceDynamic* celshadermat;

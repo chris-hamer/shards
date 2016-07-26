@@ -2,7 +2,7 @@
 
 #include "shards.h"
 #include "Gem.h"
-#include "Auyron.h"
+#include "ShardsCharacter.h"
 #include "AuyronMovementComponent.h"
 #include "CameraOverrideRegion.h"
 #include "MovingPlatform.h"
@@ -24,7 +24,7 @@
 #include "Switch.h"
 
 // Sets default values4//
-AAuyron::AAuyron()
+AShardsCharacter::AShardsCharacter()
 {	
 	// These should work.//
 	PhysicsSettings.GroundAccelerationRate = 80.0f;
@@ -130,9 +130,9 @@ AAuyron::AAuyron()
 	//CapsuleComponent->OnComponentEndOverlap.Add(onendoverlapdelegate);
 	//onhitdelegate.BindUFunction(this, "Stay");
 	//CapsuleComponent->OnComponentHit.Add(onhitdelegate);
-	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AAuyron::Hit);
-	//CapsuleComponent->OnComponentHit.AddDynamic(this, &AAuyron::Stay);
-	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AAuyron::UnHit);
+	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AShardsCharacter::Hit);
+	//CapsuleComponent->OnComponentHit.AddDynamic(this, &AShardsCharacter::Stay);
+	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AShardsCharacter::UnHit);
 	CapsuleComponent->SetSimulatePhysics(true);
 	CapsuleComponent->SetEnableGravity(false);
 	CapsuleComponent->SetLinearDamping(0.0f);
@@ -384,7 +384,7 @@ AAuyron::AAuyron()
 
 }
 
-void AAuyron::Respawn() {
+void AShardsCharacter::Respawn() {
 
 	CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	justteleported = true;
@@ -393,7 +393,7 @@ void AAuyron::Respawn() {
 	SetActorLocation(RespawnPoint, false,NULL,ETeleportType::TeleportPhysics);
 }
 
-void AAuyron::StopClimbing() {
+void AShardsCharacter::StopClimbing() {
 	OnTheGround = true;
 	FlattenVelocity();
 	CurrentState = &Normal;
@@ -408,7 +408,7 @@ void AAuyron::StopClimbing() {
 	PhysicsSettings.Gravity = DefaultGravity;
 }
 
-void AAuyron::HereWeGo()
+void AShardsCharacter::HereWeGo()
 {
 
 	TheAbyss->SetVisibility(false);
@@ -446,7 +446,7 @@ void AAuyron::HereWeGo()
 	CurrentState = &Normal;
 }
 
-void AAuyron::MoveIt()
+void AShardsCharacter::MoveIt()
 {
 	Capture2D->AddActorLocalOffset(FVector::ZeroVector);
 	Capture2D->AddActorLocalOffset(FVector::ZeroVector);
@@ -458,20 +458,20 @@ void AAuyron::MoveIt()
 	GetWorld()->GetTimerManager().ClearTimer(PreWarpTimer2);
 }
 
-void AAuyron::FlattenVelocity()
+void AShardsCharacter::FlattenVelocity()
 {
 	FVector temp = CapsuleComponent->GetPhysicsLinearVelocity();
 	temp.Z = 0.0f;
 	CapsuleComponent->SetPhysicsLinearVelocity(temp);
 }
 
-void AAuyron::FadeInMusic() {
+void AShardsCharacter::FadeInMusic() {
 	if (currentmusic != nullptr) {
 		currentmusic->FadeIn(2.0f);
 	}
 }
 
-void AAuyron::PostInitializeComponents()
+void AShardsCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
@@ -495,7 +495,7 @@ void AAuyron::PostInitializeComponents()
 }
 
 UFUNCTION()
-void AAuyron::UnHit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AShardsCharacter::UnHit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
 		// We just exited a camera override region.
@@ -529,7 +529,7 @@ void AAuyron::UnHit(class UPrimitiveComponent* thisguy, class AActor* OtherActor
 }
 
 UFUNCTION()
-void AAuyron::Hit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
+void AShardsCharacter::Hit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
 {
 	// Stop hitting yourself.
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
@@ -597,7 +597,7 @@ void AAuyron::Hit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, 
 				currentmusic->FadeOut(2.0f, 0.0f);
 			}
 			currentmusic = ((AMusicRegion*)OtherActor)->MusicActor;
-			GetWorldTimerManager().SetTimer(MusicChangeTimer, this, &AAuyron::FadeInMusic, 2.0f);
+			GetWorldTimerManager().SetTimer(MusicChangeTimer, this, &AShardsCharacter::FadeInMusic, 2.0f);
 		}
 
 		if (OtherActor->IsA(AWarpCrystal::StaticClass())) {
@@ -613,7 +613,7 @@ void AAuyron::Hit(class UPrimitiveComponent* thisguy, class AActor* OtherActor, 
 }
 
 // GAME START.
-void AAuyron::BeginPlay()
+void AShardsCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -706,12 +706,12 @@ void AAuyron::BeginPlay()
 	CurrentState = &Normal;
 }
 
-void AAuyron::whywhy() {
+void AShardsCharacter::whywhy() {
 	Capture2D->GetCaptureComponent2D()->bCaptureEveryFrame = false;
 }
 
 // Called every frame UNLIKE UNITY MIRITE?
-void AAuyron::Tick(float DeltaTime)
+void AShardsCharacter::Tick(float DeltaTime)
 {
 
 	// 3x^2 - 2x^3
@@ -728,38 +728,38 @@ void AAuyron::Tick(float DeltaTime)
 }
 
 // Bind buttons and axes to input handling functions.
-void AAuyron::SetupPlayerInputComponent(class UInputComponent* InputComponent)
+void AShardsCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	Super::SetupPlayerInputComponent(InputComponent);
 	//InputComponent->bBlockInput = true;
 	InputComponent->SetTickableWhenPaused(true);
 	InputComponent->Priority = 1000;
-	InputComponent->BindAxis("MoveX", this, &AAuyron::MoveRight);
-	InputComponent->BindAxis("MoveY", this, &AAuyron::MoveForward);
-	InputComponent->BindAxis("ControllerCameraPitch", this, &AAuyron::ControllerPitchCamera);
-	InputComponent->BindAxis("ControllerCameraYaw", this, &AAuyron::ControllerYawCamera);
-	InputComponent->BindAxis("CameraPitch", this, &AAuyron::PitchCamera);
-	InputComponent->BindAxis("CameraYaw", this, &AAuyron::YawCamera);
-	InputComponent->BindAction("Jump", IE_Pressed, this, &AAuyron::Jump);
-	InputComponent->BindAction("Jump", IE_Released, this, &AAuyron::Unjump);
-	InputComponent->BindAction("Use", IE_Pressed, this, &AAuyron::Use);
-	InputComponent->BindAction("ToggleHelp", IE_Pressed, this, &AAuyron::ToggleHelp);
-	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AAuyron::CameraFaceForward);
-	InputComponent->BindAction("CameraFaceForward", IE_Released, this, &AAuyron::CameraUnFaceForward);
-	InputComponent->BindAction("CameraMode", IE_Pressed, this, &AAuyron::CameraModeToggle);
-	InputComponent->BindAction("Warp", IE_Pressed, this, &AAuyron::Warp);
-	InputComponent->BindAction("Slam", IE_Pressed, this, &AAuyron::Slam);
-	InputComponent->BindAction("Dash", IE_Pressed, this, &AAuyron::Dash);
-	InputComponent->BindAction("Dash", IE_Released, this, &AAuyron::UnDash);
-	InputComponent->BindAction("Attack", IE_Pressed, this, &AAuyron::Attack);
-	InputComponent->BindAction("Pause", IE_Pressed, this, &AAuyron::Pause);
-	InputComponent->BindAction("Unpause", IE_Pressed, this, &AAuyron::Unpause);
-	InputComponent->BindAction("CameraZoomIn", IE_Pressed, this, &AAuyron::CameraZoomIn);
-	InputComponent->BindAction("CameraZoomOut", IE_Pressed, this, &AAuyron::CameraZoomOut);
+	InputComponent->BindAxis("MoveX", this, &AShardsCharacter::MoveRight);
+	InputComponent->BindAxis("MoveY", this, &AShardsCharacter::MoveForward);
+	InputComponent->BindAxis("ControllerCameraPitch", this, &AShardsCharacter::ControllerPitchCamera);
+	InputComponent->BindAxis("ControllerCameraYaw", this, &AShardsCharacter::ControllerYawCamera);
+	InputComponent->BindAxis("CameraPitch", this, &AShardsCharacter::PitchCamera);
+	InputComponent->BindAxis("CameraYaw", this, &AShardsCharacter::YawCamera);
+	InputComponent->BindAction("Jump", IE_Pressed, this, &AShardsCharacter::Jump);
+	InputComponent->BindAction("Jump", IE_Released, this, &AShardsCharacter::Unjump);
+	InputComponent->BindAction("Use", IE_Pressed, this, &AShardsCharacter::Use);
+	InputComponent->BindAction("ToggleHelp", IE_Pressed, this, &AShardsCharacter::ToggleHelp);
+	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AShardsCharacter::CameraFaceForward);
+	InputComponent->BindAction("CameraFaceForward", IE_Released, this, &AShardsCharacter::CameraUnFaceForward);
+	InputComponent->BindAction("CameraMode", IE_Pressed, this, &AShardsCharacter::CameraModeToggle);
+	InputComponent->BindAction("Warp", IE_Pressed, this, &AShardsCharacter::Warp);
+	InputComponent->BindAction("Slam", IE_Pressed, this, &AShardsCharacter::Slam);
+	InputComponent->BindAction("Dash", IE_Pressed, this, &AShardsCharacter::Dash);
+	InputComponent->BindAction("Dash", IE_Released, this, &AShardsCharacter::UnDash);
+	InputComponent->BindAction("Attack", IE_Pressed, this, &AShardsCharacter::Attack);
+	InputComponent->BindAction("Pause", IE_Pressed, this, &AShardsCharacter::Pause);
+	InputComponent->BindAction("Unpause", IE_Pressed, this, &AShardsCharacter::Unpause);
+	InputComponent->BindAction("CameraZoomIn", IE_Pressed, this, &AShardsCharacter::CameraZoomIn);
+	InputComponent->BindAction("CameraZoomOut", IE_Pressed, this, &AShardsCharacter::CameraZoomOut);
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
-void AAuyron::MoveRight(float AxisValue)
+void AShardsCharacter::MoveRight(float AxisValue)
 {
 	float sqr = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f));
 	MovementInput.X = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
@@ -770,7 +770,7 @@ void AAuyron::MoveRight(float AxisValue)
 }
 
 // and X for vertical? I mean who does that?
-void AAuyron::MoveForward(float AxisValue)
+void AShardsCharacter::MoveForward(float AxisValue)
 {
 	float sqr = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)*FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f));
 	MovementInput.Y = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
@@ -780,7 +780,7 @@ void AAuyron::MoveForward(float AxisValue)
 	MovementInput.Y = AxisValue;
 }
 
-void AAuyron::PitchCamera(float AxisValue)
+void AShardsCharacter::PitchCamera(float AxisValue)
 {
 	CameraMouseInput.Y = AxisValue;
 	if(CameraInput.Y != 0.0f) {
@@ -792,7 +792,7 @@ void AAuyron::PitchCamera(float AxisValue)
 	CameraInput.Y = AxisValue;
 }
 
-void AAuyron::YawCamera(float AxisValue)
+void AShardsCharacter::YawCamera(float AxisValue)
 {
 	CameraMouseInput.X = AxisValue;
 	if (CameraInput.X != 0.0f) {
@@ -804,7 +804,7 @@ void AAuyron::YawCamera(float AxisValue)
 	CameraInput.X = AxisValue;
 }
 
-void AAuyron::ControllerPitchCamera(float AxisValue)
+void AShardsCharacter::ControllerPitchCamera(float AxisValue)
 {
 	if (((CurrentState == &Aiming) && YAxisAimingStyle == INVERTED) || (!(CurrentState == &Aiming) && YAxisStyle == INVERTED)) {
 		AxisValue *= -1;
@@ -817,7 +817,7 @@ void AAuyron::ControllerPitchCamera(float AxisValue)
 	CameraInput.Y = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
 }
 
-void AAuyron::ControllerYawCamera(float AxisValue)
+void AShardsCharacter::ControllerYawCamera(float AxisValue)
 {
 	if (((CurrentState == &Aiming) && XAxisAimingStyle == STANDARD) || (!(CurrentState == &Aiming) && XAxisStyle == INVERTED)) {
 		AxisValue *= -1;
@@ -830,17 +830,17 @@ void AAuyron::ControllerYawCamera(float AxisValue)
 	CameraInput.X = FMath::Lerp(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f), sqr, FMath::Abs(FMath::Clamp<float>(AxisValue, -1.0f, 1.0f)));
 }
 
-void AAuyron::Pause()
+void AShardsCharacter::Pause()
 {
 	//UGameplayStatics::SetGamePaused(GetWorld(), true);
 }
 
-void AAuyron::Unpause()
+void AShardsCharacter::Unpause()
 {
 	//UGameplayStatics::SetGamePaused(GetWorld(), false);
 }
 
-void AAuyron::Jump()
+void AShardsCharacter::Jump()
 {
 	// We can jump if:
 	//   1. We're on the ground.
@@ -862,18 +862,18 @@ void AAuyron::Jump()
 }
 
 // I wish you could unjump in real life.
-void AAuyron::Unjump()
+void AShardsCharacter::Unjump()
 {
 	HoldingJump = false;
 }
 
-void AAuyron::Use()
+void AShardsCharacter::Use()
 {
 	ActivateNextFrame = true;
 }
 
 // HEY LINK TALK TO ME USING Z TARGETING
-void AAuyron::CameraFaceForward()
+void AShardsCharacter::CameraFaceForward()
 {
 	//if (!dashing&&!MovementAxisLocked&&TeleportSettings.HasTeleport&&(CurrentState == &Normal)&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 		if (AimStyle == TOGGLE) {
@@ -884,27 +884,27 @@ void AAuyron::CameraFaceForward()
 	//}
 }
 
-void AAuyron::CameraUnFaceForward()
+void AShardsCharacter::CameraUnFaceForward()
 {
 	if (AimStyle == HOLD && !dashing) {
 		ztarget = false;
 	}
 }
 
-void AAuyron::CameraModeToggle()
+void AShardsCharacter::CameraModeToggle()
 {
 	cameramode = !cameramode;
 }
 
 // swish
-void AAuyron::Warp()
+void AShardsCharacter::Warp()
 {
 	if (TeleportSettings.HasTeleport&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 		swish = true;
 	}
 }
 
-void AAuyron::Slam()
+void AShardsCharacter::Slam()
 {
 	if (SlamSettings.HasSlam&&!OnTheGround) {
 		SlamNextFrame = true;
@@ -912,12 +912,12 @@ void AAuyron::Slam()
 }
 
 // I DON'T NEED YOUR HELP
-void AAuyron::ToggleHelp() {
+void AShardsCharacter::ToggleHelp() {
 	HelpEnabled = !HelpEnabled;
 }
 
 // woosh
-void AAuyron::Dash()
+void AShardsCharacter::Dash()
 {
 	if (!dashing&&!(CurrentState == &Aiming)) {
 		DashNextFrame = true;
@@ -926,7 +926,7 @@ void AAuyron::Dash()
 }
 
 // unwoosh
-void AAuyron::UnDash()
+void AShardsCharacter::UnDash()
 {
 	holdingdash = false;
 	if (dashing) {
@@ -935,11 +935,11 @@ void AAuyron::UnDash()
 }
 
 
-void AAuyron::Attack() {
+void AShardsCharacter::Attack() {
 	AttackPressed = true;
 }
 
-void AAuyron::CameraZoomIn() {
+void AShardsCharacter::CameraZoomIn() {
 	bool justno = !(CurrentState == &Aiming) && (CurrentState != &Dialogue) && !cameralocked && !InCameraOverrideRegion && GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f;
 	if (TargetDefaultArmLength > MinimumArmLength && justno) {
 		if (TargetDefaultArmLength < ActualDefaultArmLength) {
@@ -949,7 +949,7 @@ void AAuyron::CameraZoomIn() {
 	}
 }
 
-void AAuyron::CameraZoomOut() {
+void AShardsCharacter::CameraZoomOut() {
 	bool justno = !(CurrentState == &Aiming) && (CurrentState != &Dialogue) && !cameralocked && !InCameraOverrideRegion && GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f;
 	if (TargetDefaultArmLength < MaximumArmLength && justno) {
 		TargetDefaultArmLength += CameraZoomStep;
@@ -960,30 +960,30 @@ void AAuyron::CameraZoomOut() {
 }
 
 // Getter functions used by the animation blueprints.
-float AAuyron::GetSpeed()
+float AShardsCharacter::GetSpeed()
 {
 	return SpeedRelativeToGround;
 }
 
-FVector AAuyron::GetPlayerVelocity()
+FVector AShardsCharacter::GetPlayerVelocity()
 {
 	return (CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity);
 }
 
-float AAuyron::GetActualSpeed()
+float AShardsCharacter::GetActualSpeed()
 {
 	//return (CapsuleComponent->GetPhysicsLinearVelocity() - MovementComponent->groundvelocity).Size();
 	return SpeedRelativeToGround;
 	return (FVector::VectorPlaneProject(CapsuleComponent->GetPhysicsLinearVelocity() + (MovementComponent->groundvelocity - previousgroundvelocity), FVector::UpVector)).Size();
 }
 
-float AAuyron::GetModelOpacity()
+float AShardsCharacter::GetModelOpacity()
 {
 	float dist = (Camera->GetComponentLocation() - GetActorLocation()).Size();
 	return FMath::Clamp(dist / CameraModelFadeSettings.ModelFadeDistance, 0.0f, 1.0f);
 }
 
-bool AAuyron::GetIsTurning()
+bool AShardsCharacter::GetIsTurning()
 {
 	FQuat test = FQuat::FindBetween(PlayerModel->GetComponentRotation().Vector(), TargetDirection.Vector());
 	float angle = 0.0f;
@@ -992,103 +992,103 @@ bool AAuyron::GetIsTurning()
 	return (FMath::Abs(angle) > FMath::DegreesToRadians(TurnSettings.FacingAngleSnapThreshold));
 }
 
-bool AAuyron::GetIsAiming()
+bool AShardsCharacter::GetIsAiming()
 {
 	return (CurrentState == &Aiming);
 }
 
-bool AAuyron::GetIsOnTheGround()
+bool AShardsCharacter::GetIsOnTheGround()
 {
 	return OnTheGround;
 }
 
-bool AAuyron::GetIsDashing()
+bool AShardsCharacter::GetIsDashing()
 {
 	return dashing;
 }
 
-bool AAuyron::GetHelpEnabled()
+bool AShardsCharacter::GetHelpEnabled()
 {
 	return HelpEnabled;
 }
 
-int AAuyron::GetGemAmount()
+int AShardsCharacter::GetGemAmount()
 {
 	return GemCount;
 }
 
-FVector AAuyron::GetPlayerLocation() {
+FVector AShardsCharacter::GetPlayerLocation() {
 	return GetActorLocation();
 }
 
-bool AAuyron::AboutToWarp() {
+bool AShardsCharacter::AboutToWarp() {
 	bool isitreally = itshappening;
 	itshappening = false;
 	return isitreally;
 }
 
-void AAuyron::SetAimStyle(FString Style)
+void AShardsCharacter::SetAimStyle(FString Style)
 {
 	TEnumAsByte<AimType> NewStyle = (Style == "Toggle" ? TOGGLE : HOLD);
 	AimStyle = NewStyle;
 }
 
-FString AAuyron::GetAimStyle()
+FString AShardsCharacter::GetAimStyle()
 {
 	return (AimStyle == TOGGLE ? "Toggle" : "Hold");
 }
 
-void AAuyron::SetXAxisStyle(FString Style)
+void AShardsCharacter::SetXAxisStyle(FString Style)
 {
 	XAxisStyle = (Style == "Inverted" ? INVERTED : STANDARD);
 }
 
-FString AAuyron::GetXAxisStyle()
+FString AShardsCharacter::GetXAxisStyle()
 {
 	return (XAxisStyle == INVERTED ? "Inverted" : "Standard");
 }
 
-void AAuyron::SetXAxisAimingStyle(FString Style)
+void AShardsCharacter::SetXAxisAimingStyle(FString Style)
 {
 	XAxisAimingStyle = (Style == "Inverted" ? INVERTED : STANDARD);
 }
 
-FString AAuyron::GetXAxisAimingStyle()
+FString AShardsCharacter::GetXAxisAimingStyle()
 {
 	return (XAxisAimingStyle == INVERTED ? "Inverted" : "Standard");
 }
 
-void AAuyron::SetYAxisStyle(FString Style)
+void AShardsCharacter::SetYAxisStyle(FString Style)
 {
 	YAxisStyle = (Style == "Inverted" ? INVERTED : STANDARD);
 }
 
-FString AAuyron::GetYAxisStyle()
+FString AShardsCharacter::GetYAxisStyle()
 {
 	return (YAxisStyle == INVERTED ? "Inverted" : "Standard");
 }
 
-void AAuyron::SetYAxisAimingStyle(FString Style)
+void AShardsCharacter::SetYAxisAimingStyle(FString Style)
 {
 	YAxisAimingStyle = (Style == "Inverted" ? INVERTED : STANDARD);
 }
 
-FString AAuyron::GetYAxisAimingStyle()
+FString AShardsCharacter::GetYAxisAimingStyle()
 {
 	return (YAxisAimingStyle == INVERTED ? "Inverted" : "Standard");
 }
 
-void AAuyron::SetEnableTeleportAnimation(bool ShouldEnable)
+void AShardsCharacter::SetEnableTeleportAnimation(bool ShouldEnable)
 {
 	TeleportSettings.TeleportAnimationDuration = ActualTeleportAnimationDuration * ShouldEnable;
 }
 
-bool AAuyron::GetEnableTeleportAnimation()
+bool AShardsCharacter::GetEnableTeleportAnimation()
 {
 	return (TeleportSettings.TeleportAnimationDuration > 0.0f);
 }
 
-void AAuyron::HandlePause()
+void AShardsCharacter::HandlePause()
 {
 	dashing = false;
 	IsGliding = false;
@@ -1096,134 +1096,134 @@ void AAuyron::HandlePause()
 	HoldingJump = false;
 }
 
-void AAuyron::BlockInput()
+void AShardsCharacter::BlockInput()
 {
 	blockedbyblueprint = true;
 	movementlocked = true;
 	cameralocked = true;
 }
 
-void AAuyron::ResumeInput()
+void AShardsCharacter::ResumeInput()
 {
 	blockedbyblueprint = false;
 	movementlocked = false;
 	cameralocked = false;
 }
 
-void AAuyron::SetLightMin(float newvalue)
+void AShardsCharacter::SetLightMin(float newvalue)
 {
 	CelShaderSettings.LightMin = newvalue;
 }
 
-void AAuyron::SetLightMax(float newvalue)
+void AShardsCharacter::SetLightMax(float newvalue)
 {
 	CelShaderSettings.LightMax = newvalue;
 }
 
-void AAuyron::SetAdditiveLightBias(float newvalue)
+void AShardsCharacter::SetAdditiveLightBias(float newvalue)
 {
 	CelShaderSettings.AdditiveLightBias = newvalue;
 }
 
-void AAuyron::SetMultiplicativeLightBias(float newvalue)
+void AShardsCharacter::SetMultiplicativeLightBias(float newvalue)
 {
 	CelShaderSettings.MultiplicativeLightBias = newvalue;
 }
 
-void AAuyron::SetTint(FLinearColor newvalue)
+void AShardsCharacter::SetTint(FLinearColor newvalue)
 {
 	CelShaderSettings.Tint = newvalue;
 }
 
-void AAuyron::SetMaterial(int32 index, UMaterialInterface * newmat)
+void AShardsCharacter::SetMaterial(int32 index, UMaterialInterface * newmat)
 {
 	PlayerModel->SetMaterial(index,newmat);
 }
 
-bool AAuyron::HasTeleport()
+bool AShardsCharacter::HasTeleport()
 {
 	return TeleportSettings.HasTeleport;
 }
 
-void AAuyron::SetHasTeleport(bool has)
+void AShardsCharacter::SetHasTeleport(bool has)
 {
 	TeleportSettings.HasTeleport = has;
 }
 
-bool AAuyron::HasDash()
+bool AShardsCharacter::HasDash()
 {
 	return DashSettings.HasDash;
 }
 
-void AAuyron::SetHasDash(bool has)
+void AShardsCharacter::SetHasDash(bool has)
 {
 	DashSettings.HasDash = has;
 }
 
-bool AAuyron::HasWallJump()
+bool AShardsCharacter::HasWallJump()
 {
 	return true;
 }
 
-void AAuyron::SetHasWallJump(bool has)
+void AShardsCharacter::SetHasWallJump(bool has)
 {
 	JumpSettings.HasWallJump = has;
 }
 
-bool AAuyron::HasGlide()
+bool AShardsCharacter::HasGlide()
 {
 	return GlideSettings.HasGlide;
 }
 
-void AAuyron::SetHasGlide(bool has)
+void AShardsCharacter::SetHasGlide(bool has)
 {
 	GlideSettings.HasGlide = has;
 }
 
-bool AAuyron::HasSlam()
+bool AShardsCharacter::HasSlam()
 {
 	return SlamSettings.HasSlam;
 }
 
-void AAuyron::SetHasSlam(bool has)
+void AShardsCharacter::SetHasSlam(bool has)
 {
 	SlamSettings.HasSlam = has;
 }
 
-void AAuyron::SetStillScrolling(bool b)
+void AShardsCharacter::SetStillScrolling(bool b)
 {
 	stillscrolling = b;
 }
 
-bool AAuyron::GetSkipText()
+bool AShardsCharacter::GetSkipText()
 {
 	return skiptext;
 }
 
-bool AAuyron::GetIsClimbing()
+bool AShardsCharacter::GetIsClimbing()
 {
 	return (CurrentState == &Climbing);
 }
 
-UParticleSystemComponent* AAuyron::GetTrailParticlesL() {
+UParticleSystemComponent* AShardsCharacter::GetTrailParticlesL() {
 	return TrailParticlesL;
 }
 
-UParticleSystemComponent* AAuyron::GetTrailParticlesR() {
+UParticleSystemComponent* AShardsCharacter::GetTrailParticlesR() {
 	return TrailParticlesR;
 }
 
-bool AAuyron::GetJustWallJumped()
+bool AShardsCharacter::GetJustWallJumped()
 {
 	return JustWallJumped;
 }
 
-bool AAuyron::GetIsInDialogue()
+bool AShardsCharacter::GetIsInDialogue()
 {
 	return (CurrentState == &Dialogue) && !CurrentCut->NoText;
 }
 
-float AAuyron::GetWarpTimerCompleted()
+float AShardsCharacter::GetWarpTimerCompleted()
 {
 	if (GetWorldTimerManager().GetTimerElapsed(PreWarpTimer) == -1.0f) {
 		return -1.0f;
@@ -1231,21 +1231,21 @@ float AAuyron::GetWarpTimerCompleted()
 	return GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)/TeleportSettings.TeleportAnimationDuration;
 }
 
-FString AAuyron::GetDialogueText()
+FString AShardsCharacter::GetDialogueText()
 {
 	return CurrentLine;
 }
 
-float AAuyron::GetDialogueWidth()
+float AShardsCharacter::GetDialogueWidth()
 {
 	return CurrentTextWidth;
 }
 
-USkeletalMeshComponent* AAuyron::GetMesh() {
+USkeletalMeshComponent* AShardsCharacter::GetMesh() {
 	return PlayerModel;
 }
 
-void AAuyron::PlayerState::Tick(AAuyron* Player, float DeltaTime)
+void AShardsCharacter::PlayerState::Tick(AShardsCharacter* Player, float DeltaTime)
 {
 	Player->SpeedRelativeToGround = (FVector::VectorPlaneProject(Player->CapsuleComponent->GetPhysicsLinearVelocity() - Player->MovementComponent->groundvelocity, FVector::UpVector)).Size();
 	Player->WasOnTheGround = Player->OnTheGround;
@@ -1451,7 +1451,7 @@ void AAuyron::PlayerState::Tick(AAuyron* Player, float DeltaTime)
 		}
 	}
 }
-void AAuyron::PlayerState::Tick2(AAuyron* Player, float DeltaTime)
+void AShardsCharacter::PlayerState::Tick2(AShardsCharacter* Player, float DeltaTime)
 {
 	{
 		Player->WasInCameraOverrideRegion = Player->InCameraOverrideRegion;
@@ -1477,7 +1477,7 @@ void AAuyron::PlayerState::Tick2(AAuyron* Player, float DeltaTime)
 		Player->JustJumped = false;
 	}
 }
-void AAuyron::PlayerState::PhysicsStuff(AAuyron * Player, float DeltaTime)
+void AShardsCharacter::PlayerState::PhysicsStuff(AShardsCharacter * Player, float DeltaTime)
 {
 	// Get horizontal velocity projection.
 	FVector Velocity2D = FVector::VectorPlaneProject(Player->CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector);
@@ -1550,7 +1550,7 @@ void AAuyron::PlayerState::PhysicsStuff(AAuyron * Player, float DeltaTime)
 	}
 	Player->CapsuleComponent->SetPhysicsLinearVelocity(Player->CapsuleComponent->GetPhysicsLinearVelocity() + Player->MovementComponent->groundvelocity); // + (MovementComponent->groundvelocity + pushvelocity)
 }
-void AAuyron::PlayerState::CameraStuff(AAuyron * Player, float DeltaTime)
+void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float DeltaTime)
 {
 
 	// Handle camera movement when the camera is controllable.
@@ -1759,7 +1759,7 @@ void AAuyron::PlayerState::CameraStuff(AAuyron * Player, float DeltaTime)
 	}
 }
 
-void AAuyron::PlayerState::FaceTargetDirection(AAuyron* Player, float DeltaTime)
+void AShardsCharacter::PlayerState::FaceTargetDirection(AShardsCharacter* Player, float DeltaTime)
 {
 
 	// Handle rotating the player model in response to player input.
@@ -1824,7 +1824,7 @@ void AAuyron::PlayerState::FaceTargetDirection(AAuyron* Player, float DeltaTime)
 
 }
 
-void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
+void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaTime)
 {
 	PlayerState::Tick(Player, DeltaTime);
 
@@ -1915,7 +1915,7 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 					Player->CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
 					Player->CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 					Player->CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Block);
-					Player->GetWorld()->GetTimerManager().SetTimer(Player->climbtimer, Player, &AAuyron::StopClimbing, 1.667f / 2.0f);
+					Player->GetWorld()->GetTimerManager().SetTimer(Player->climbtimer, Player, &AShardsCharacter::StopClimbing, 1.667f / 2.0f);
 				}
 			}
 		}
@@ -2415,7 +2415,7 @@ void AAuyron::NormalState::Tick(AAuyron * Player, float DeltaTime)
 	PlayerState::Tick2(Player, DeltaTime);
 }
 
-void AAuyron::DialogueState::Tick(AAuyron* Player, float DeltaTime)
+void AShardsCharacter::DialogueState::Tick(AShardsCharacter* Player, float DeltaTime)
 {
 	PlayerState::Tick(Player, DeltaTime);
 
@@ -2487,7 +2487,7 @@ void AAuyron::DialogueState::Tick(AAuyron* Player, float DeltaTime)
 	PlayerState::Tick2(Player, DeltaTime);
 }
 
-void AAuyron::ClimbingState::Tick(AAuyron* Player, float DeltaTime)
+void AShardsCharacter::ClimbingState::Tick(AShardsCharacter* Player, float DeltaTime)
 {
 
 	PlayerState::Tick(Player, DeltaTime);
@@ -2539,7 +2539,7 @@ void AAuyron::ClimbingState::Tick(AAuyron* Player, float DeltaTime)
 	PlayerState::Tick2(Player, DeltaTime);
 }
 
-void AAuyron::TeleportingState::Tick(AAuyron * Player, float DeltaTime)
+void AShardsCharacter::TeleportingState::Tick(AShardsCharacter * Player, float DeltaTime)
 {
 	PlayerState::Tick(Player, DeltaTime);
 	Player->CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
@@ -2550,7 +2550,7 @@ void AAuyron::TeleportingState::Tick(AAuyron * Player, float DeltaTime)
 	PlayerState::Tick2(Player, DeltaTime);
 }
 
-void AAuyron::AimingState::Tick(AAuyron * Player, float DeltaTime)
+void AShardsCharacter::AimingState::Tick(AShardsCharacter * Player, float DeltaTime)
 {
 	PlayerState::Tick(Player, DeltaTime);
 
@@ -2640,8 +2640,8 @@ void AAuyron::AimingState::Tick(AAuyron * Player, float DeltaTime)
 				if (Player->InCameraOverrideRegion) {
 					Player->HereWeGo();
 				} else {
-					Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer, Player, &AAuyron::HereWeGo, Player->TeleportSettings.TeleportAnimationDuration);
-					Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer2, Player, &AAuyron::MoveIt, 0.75f*Player->TeleportSettings.TeleportAnimationDuration);
+					Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer, Player, &AShardsCharacter::HereWeGo, Player->TeleportSettings.TeleportAnimationDuration);
+					Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer2, Player, &AShardsCharacter::MoveIt, 0.75f*Player->TeleportSettings.TeleportAnimationDuration);
 					Player->CurrentState = &Player->Teleporting;
 					Player->TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
 					//TheAbyss->SetVisibility(true);
@@ -2672,7 +2672,7 @@ void AAuyron::AimingState::Tick(AAuyron * Player, float DeltaTime)
 					//Capture2D->SetActorLocation(warphere);
 					//Capture2D->SetActorRotation(SpringArm->GetComponentRotation());
 					//Capture2D->AddActorLocalOffset(-BackupDefaultArmLength*FVector::ForwardVector);
-					//GetWorld()->GetTimerManager().SetTimer(WHY, this, &AAuyron::whywhy, 0.25f);
+					//GetWorld()->GetTimerManager().SetTimer(WHY, this, &AShardsCharacter::whywhy, 0.25f);
 					Player->lel = true;
 					Player->Capture2D->SetActorTransform(Player->Camera->GetComponentTransform());
 					FVector temp = Player->GetActorLocation();
@@ -2767,7 +2767,7 @@ void AAuyron::AimingState::Tick(AAuyron * Player, float DeltaTime)
 }
 
 
-void AAuyron::VehicleState::Tick(AAuyron * Player, float DeltaTime)
+void AShardsCharacter::VehicleState::Tick(AShardsCharacter * Player, float DeltaTime)
 {
 	//PlayerState::Tick(Player, DeltaTime);
 	if (Player->IsControlled()) {
