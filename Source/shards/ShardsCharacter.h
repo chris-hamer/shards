@@ -9,8 +9,7 @@
 #include "Runtime/UMG/Public/UMGStyle.h"
 #include "Runtime/UMG/Public/Slate/SObjectWidget.h"
 #include "Runtime/UMG/Public/IUMGModule.h"
-#include "TeleClaw.h"
-#include "Stick.h"
+#include "TelePad.h"
 #include "DialogueCut.h"
 //#include "SandShip.h"
 #include "NPC.h"
@@ -541,7 +540,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* grassparticles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UPostProcessComponent* PostProcess;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UDecalComponent* DropShadow;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") class UAuyronMovementComponent* MovementComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") class UShardsMovementComponent* MovementComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* HairMatBase;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* BandanaMatBase;
@@ -647,7 +646,7 @@ public:
 	FScriptDelegate onendoverlapdelegate;
 	FScriptDelegate onhitdelegate;
 
-	AStick* closeststick;
+	ATelePad* closeststick;
 
 	FVector StoredWallNormal;
 
@@ -707,7 +706,7 @@ public:
 	FString CurrentLine;
 	float CurrentTextWidth;
 
-	AStick* thisguy;
+	ATelePad* thisguy;
 
 	bool justteleported;
 	bool justswished;

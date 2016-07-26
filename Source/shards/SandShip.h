@@ -4,7 +4,7 @@
 
 #include "GameFramework/Pawn.h"
 #include "ShardsCharacter.h"
-#include "AuyronMovementComponent.h"
+#include "ShardsMovementComponent.h"
 #include "SandShip.generated.h"
 
 USTRUCT()
@@ -54,7 +54,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FSandShipPhysicsSettings PhysicsSettings;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UAuyronMovementComponent* MovementComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UShardsMovementComponent* MovementComponent;
 
 	FVector MovementInput;
 	FVector CameraInput;

@@ -3,18 +3,16 @@
 #include "shards.h"
 #include "Gem.h"
 #include "ShardsCharacter.h"
-#include "AuyronMovementComponent.h"
+#include "ShardsMovementComponent.h"
 #include "CameraOverrideRegion.h"
 #include "MovingPlatform.h"
 #include "RotatingPlatform.h"
 #include "EngineUtils.h" 
-#include "Stick.h"
+#include "TelePad.h"
 #include "KillZone.h"
 #include "Checkpoint.h"
 #include "DestructibleBox.h"
-#include "TeleClaw.h"
 #include "EquipmentPickup.h"
-#include "MusicRegion.h"
 #include "SandShip.h"
 #include "DialogueCut.h"
 #include "NPC.h"
@@ -327,7 +325,7 @@ AShardsCharacter::AShardsCharacter()
 	//AutoPossessPlayer = EAutoReceiveInput::Player0;
 
 	// Apparently we need some newfangled "MovementComponent".
-	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
+	MovementComponent = CreateDefaultSubobject<UShardsMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 	
 	// BLAST PROCESSING.
@@ -521,10 +519,6 @@ void AShardsCharacter::UnHit(class UPrimitiveComponent* thisguy, class AActor* O
 		if (OtherActor->IsA(ATwoDimensionalMovementRegion::StaticClass())) {
 			MovementAxisLocked = false;
 		}
-		
-		if (OtherActor->IsA(AMusicRegion::StaticClass())) {
-			((AMusicRegion*)OtherActor)->MusicActor->FadeOut(2.0f,0.0f);
-		}
 	}
 }
 
@@ -589,15 +583,6 @@ void AShardsCharacter::Hit(class UPrimitiveComponent* thisguy, class AActor* Oth
 
 		if (OtherActor->IsA(ACheckpoint::StaticClass())) {
 			RespawnPoint = ((ACheckpoint*)OtherActor)->RespawnPoint->GetComponentLocation();
-		}
-
-		if (OtherActor->IsA(AMusicRegion::StaticClass())) {
-			GetWorldTimerManager().ClearTimer(MusicChangeTimer);
-			if (currentmusic != nullptr) {
-				currentmusic->FadeOut(2.0f, 0.0f);
-			}
-			currentmusic = ((AMusicRegion*)OtherActor)->MusicActor;
-			GetWorldTimerManager().SetTimer(MusicChangeTimer, this, &AShardsCharacter::FadeInMusic, 2.0f);
 		}
 
 		if (OtherActor->IsA(AWarpCrystal::StaticClass())) {
@@ -1439,7 +1424,7 @@ void AShardsCharacter::PlayerState::Tick(AShardsCharacter* Player, float DeltaTi
 	Player->Belt->SetVisibility(Player->JumpSettings.HasWallJump);
 	Player->Wings->SetVisibility(Player->GlideSettings.HasGlide);
 
-	for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+	for (TActorIterator<ATelePad> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
 		if (ActorItr->GetClass()->GetName() == "Stick") {
 
 			// Assume it's not being targeted, and set it to the default
@@ -1848,7 +1833,7 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 		FCollisionQueryParams Params;
 
 
-		for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+		for (TActorIterator<ATelePad> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
 			if (ActorItr->GetClass()->GetName() == "Stick") {
 				Params.AddIgnoredActor(ActorItr.operator->());
 			}
@@ -1938,7 +1923,7 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 		Params.bFindInitialOverlaps = true;
 
 		// Telepads don't count.
-		for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+		for (TActorIterator<ATelePad> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
 			Params.AddIgnoredActor(ActorItr.operator->());
 		}
 
@@ -2557,11 +2542,11 @@ void AShardsCharacter::AimingState::Tick(AShardsCharacter * Player, float DeltaT
 	FVector source = Player->Camera->GetComponentLocation();
 	FVector forward = Player->Camera->GetForwardVector();
 
-	AStick* closest = NULL;
+	ATelePad* closest = NULL;
 	float biggestdot = -1.0f;
 
 	// Iterate over each TelePad and cast a ray.
-	for (TActorIterator<AStick> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+	for (TActorIterator<ATelePad> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
 		if (ActorItr->GetClass()->GetName() == "Stick") {
 
 			// Assume it's not being targeted, and set it to the default

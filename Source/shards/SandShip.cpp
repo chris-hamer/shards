@@ -50,7 +50,7 @@ ASandShip::ASandShip()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 
-	MovementComponent = CreateDefaultSubobject<UAuyronMovementComponent>(TEXT("MovementComponent"));
+	MovementComponent = CreateDefaultSubobject<UShardsMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->UpdatedComponent = CapsuleComponent;
 
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> celshade(TEXT("/Game/Effects/Player/celshader"));
