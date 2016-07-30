@@ -395,6 +395,7 @@ void AShardsCharacter::StopClimbing() {
 	OnTheGround = true;
 	FlattenVelocity();
 	CurrentState = &Normal;
+	MovementComponent->isclimbing = false;
 	//CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	grabbedledge = nullptr;
 	CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
@@ -1547,7 +1548,7 @@ void AShardsCharacter::PlayerState::PhysicsStuff(AShardsCharacter * Player, floa
 void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float DeltaTime)
 {
 
-	bool CameraIsBeingManuallyControlled = !((Player->TimeSinceLastMouseInput > Player->CameraAutoTurnSettings.CameraResetTime) && (Player->TimeSinceLastMovementInputReleased > Player->CameraAutoTurnSettings.CameraResetTime));
+	bool CameraIsBeingManuallyControlled = !((Player->TimeSinceLastMouseInput > Player->CameraAutoTurnSettings.CameraResetTime));
 
 	// Handle camera movement when the camera is controllable.
 	if (Player->CurrentCameraMode == CameraMode::NORMAL) {
@@ -1584,7 +1585,7 @@ void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float
 
 			// Make camera look down if the player is falling.
 			if (Player->CapsuleComponent->GetPhysicsLinearVelocity().Z < -900.0f) {
-				Player->CameraInput.Y = -FMath::Clamp(-0.0005f*Player->CapsuleComponent->GetPhysicsLinearVelocity().Z, 0.0f, 1.0f);
+				NewRotation.Pitch += -(DeltaTime*120.0f)*FMath::Clamp(-0.0005f*Player->CapsuleComponent->GetPhysicsLinearVelocity().Z, 0.0f, 1.0f);
 			}
 
 			float thing = FMath::Pow(FMath::Abs(Player->MovementInput.X), 1.0f) * (Player->Camera->GetRightVector().GetSafeNormal() | FVector::VectorPlaneProject(Player->CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector) / Player->PhysicsSettings.MaxVelocity) * DeltaTime * Player->CameraAutoTurnSettings.CameraAutoTurnFactor;
@@ -2508,6 +2509,10 @@ void AShardsCharacter::ClimbingState::Tick(AShardsCharacter* Player, float Delta
 
 	PlayerState::Tick(Player, DeltaTime);
 
+
+	Player->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	Player->MovementComponent->isclimbing = true;
+
 	FCollisionShape LedgeFinderShape = FCollisionShape::MakeSphere(50.0f);// (55.0f, 90.0f);
 	FCollisionObjectQueryParams QueryParams;
 	QueryParams.AddObjectTypesToQuery(ECC_WorldStatic);//
@@ -2517,7 +2522,6 @@ void AShardsCharacter::ClimbingState::Tick(AShardsCharacter* Player, float Delta
 	FHitResult ShapeTraceResult;
 	FVector head = Player->GetActorLocation() + 20.0f*FVector::UpVector;
 	Player->GetWorld()->SweepSingleByChannel(ShapeTraceResult, head - 20.0f*Player->PlayerModel->GetForwardVector(), head + 50.0f*Player->PlayerModel->GetForwardVector(), FQuat::Identity, ECC_Visibility, LedgeFinderShape, Params);
-
 
 	FVector WallNormal;
 	FVector TraceHit;
