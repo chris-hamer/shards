@@ -15,6 +15,7 @@
 #include "NPC.h"
 #include "CameraOverrideRegion.h"
 #include "TwoDimensionalMovementRegion.h"
+#include "Target.h"
 #include "Checkpoint.h"
 #include "ShardsCharacter.generated.h"
 
@@ -282,6 +283,11 @@ UENUM() enum AimType {
 	TOGGLE			UMETA(DisplayName = "Toggle")
 };
 
+UENUM() enum TargetType {
+	TARGET_HOLD		UMETA(DisplayName = "Hold"),
+	TARGET_TOGGLE	UMETA(DisplayName = "Toggle")
+};
+
 UENUM() enum AxisType {
 	STANDARD		UMETA(DisplayName = "Standard"),
 	INVERTED		UMETA(DisplayName = "Inverted")
@@ -323,6 +329,7 @@ public:
 		virtual void PhysicsStuff(AShardsCharacter* Player, float DeltaTime);
 		virtual void CameraStuff(AShardsCharacter* Player, float DeltaTime);
 		virtual void FaceTargetDirection(AShardsCharacter* Player, float DeltaTime);
+		virtual void Teleport(AShardsCharacter* Player, float DeltaTime, ATelePad* closest);
 	};
 
 	class NormalState : public PlayerState
@@ -330,6 +337,7 @@ public:
 	public:
 		NormalState() {};
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
+		virtual void HandleTargeting(AShardsCharacter* Player, float DeltaTime);
 	};
 	
 	class DialogueState : public PlayerState
@@ -380,8 +388,9 @@ public:
 	void Unjump();
 	void Use();
 	void ToggleHelp();
+	void Aim();
+	void UnAim();
 	void CameraFaceForward();
-	void CameraUnFaceForward();
 	void CameraModeToggle();
 	void Warp();
 	void Slam();
@@ -391,6 +400,7 @@ public:
 	void CameraZoomIn();
 	void CameraZoomOut();
 	void Target();
+	void TargetRelease();
 	void Respawn();
 	void HereWeGo();
 	void MoveIt();
@@ -550,6 +560,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UDecalComponent* DropShadow;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") class UShardsMovementComponent* MovementComponent;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UMaterialBillboardComponent* TargetCrosshair;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* HairMatBase;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* BandanaMatBase;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials") UMaterialInterface* BodyMatBase;
@@ -576,6 +588,7 @@ public:
 
 	/* Should be obvious as well. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AimType> AimStyle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<TargetType> TargetStyle;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AxisType> XAxisStyle;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AxisType> XAxisAimingStyle;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AxisType> YAxisStyle;
@@ -626,6 +639,11 @@ public:
 	VehicleState Vehicle;
 
 	class ASandShip* currentship;
+
+	class ATarget* CurrentTarget;
+
+	bool TargetButtonPressed;
+	bool FaceForwardPressed;
 
 	bool ActivateNextFrame;
 	uint64 GemCount;

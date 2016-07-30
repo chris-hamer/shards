@@ -19,6 +19,7 @@
 #include "TwoDimensionalMovementRegion.h"
 #include "ForceRegion.h"
 #include "WarpCrystal.h"
+#include "Target.h"
 #include "Switch.h"
 
 // Sets default values4//
@@ -253,6 +254,15 @@ AShardsCharacter::AShardsCharacter()
 	//DropShadow->AttachTo(PlayerModel);
 	DropShadow->SetupAttachment(PlayerModel);//4.12
 
+	TargetCrosshair = CreateDefaultSubobject<UMaterialBillboardComponent>(TEXT("Target Crosshair"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> TargetCrosshairMat(TEXT("/Game/Generic/UI/Target_Mat"));
+	TargetCrosshair->Elements.AddDefaulted(1);
+	TargetCrosshair->Elements[0].Material = TargetCrosshairMat.Object;
+	TargetCrosshair->Elements[0].bSizeIsInScreenSpace = true;
+	TargetCrosshair->Elements[0].BaseSizeX = 0.1f;
+	TargetCrosshair->Elements[0].BaseSizeY = 0.1f;
+	TargetCrosshair->SetVisibility(false);
+
 	// Deferring application of physical material because Unreal crashes
 	// for no reason if you try to apply it in the contrsuctor.
 	const ConstructorHelpers::FObjectFinder<UPhysicalMaterial> PlayerPhysMat(TEXT("/Game/Generic/Characters/Auyron/PlayerPhysMaterial"));
@@ -429,6 +439,8 @@ void AShardsCharacter::HereWeGo()
 	//if (wasztarget) {
 		//SpringArm->SetRelativeRotation(FRotator(-30.0f, SpringArm->GetComponentRotation().Yaw, 0.0f));
 	//}
+	DefaultArmLength = 1000.0f;
+	TargetArmLength = DefaultArmLength;
 
 	// Reset OnTheGround and glide variables.
 	OnTheGround = false;
@@ -623,6 +635,9 @@ void AShardsCharacter::BeginPlay()
 	// Initialize gem count.
 	GemCount = 0;
 
+	TeleportRange = TeleportSettings.TeleportRangeWhenAiming;
+	TeleportAngleTolerance = TeleportSettings.TeleportAngleToleranceWhenAiming;
+
 	defaultfov = Camera->FieldOfView;
 	GetWorld()->GetTimerManager().ClearTimer(WarpAnimationTimer);
 
@@ -731,8 +746,9 @@ void AShardsCharacter::SetupPlayerInputComponent(class UInputComponent* InputCom
 	InputComponent->BindAction("Jump", IE_Released, this, &AShardsCharacter::Unjump);
 	InputComponent->BindAction("Use", IE_Pressed, this, &AShardsCharacter::Use);
 	InputComponent->BindAction("ToggleHelp", IE_Pressed, this, &AShardsCharacter::ToggleHelp);
+	InputComponent->BindAction("Aim", IE_Pressed, this, &AShardsCharacter::Aim);
+	InputComponent->BindAction("Aim", IE_Released, this, &AShardsCharacter::UnAim);
 	InputComponent->BindAction("CameraFaceForward", IE_Pressed, this, &AShardsCharacter::CameraFaceForward);
-	InputComponent->BindAction("CameraFaceForward", IE_Released, this, &AShardsCharacter::CameraUnFaceForward);
 	InputComponent->BindAction("CameraMode", IE_Pressed, this, &AShardsCharacter::CameraModeToggle);
 	InputComponent->BindAction("Warp", IE_Pressed, this, &AShardsCharacter::Warp);
 	InputComponent->BindAction("Slam", IE_Pressed, this, &AShardsCharacter::Slam);
@@ -744,10 +760,21 @@ void AShardsCharacter::SetupPlayerInputComponent(class UInputComponent* InputCom
 	InputComponent->BindAction("CameraZoomIn", IE_Pressed, this, &AShardsCharacter::CameraZoomIn);
 	InputComponent->BindAction("CameraZoomOut", IE_Pressed, this, &AShardsCharacter::CameraZoomOut);
 	InputComponent->BindAction("Target", IE_Pressed, this, &AShardsCharacter::Target);
+	InputComponent->BindAction("Target", IE_Released, this, &AShardsCharacter::TargetRelease);
 }
 
 void AShardsCharacter::Target() {
-	SpringArm->SetWorldLocation(FVector::ForwardVector*300.0f);
+	TargetButtonPressed = true;
+}
+
+void AShardsCharacter::TargetRelease() {
+	if (CurrentTarget != nullptr && TargetStyle == TargetType::TARGET_HOLD) {
+		TargetButtonPressed = true;
+	}
+}
+
+void AShardsCharacter::CameraFaceForward() {
+	FaceForwardPressed = true;
 }
 
 // Can you believe the tutorial wanted me to use Y for horizontal movement
@@ -865,7 +892,7 @@ void AShardsCharacter::Use()
 }
 
 // HEY LINK TALK TO ME USING Z TARGETING
-void AShardsCharacter::CameraFaceForward()
+void AShardsCharacter::Aim()
 {
 	//if (!dashing&&!MovementAxisLocked&&TeleportSettings.HasTeleport&&(CurrentState == &Normal)&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 		if (AimStyle == TOGGLE) {
@@ -876,7 +903,7 @@ void AShardsCharacter::CameraFaceForward()
 	//}
 }
 
-void AShardsCharacter::CameraUnFaceForward()
+void AShardsCharacter::UnAim()
 {
 	if (AimStyle == HOLD && !dashing) {
 		ztarget = false;
@@ -1457,6 +1484,8 @@ void AShardsCharacter::PlayerState::Tick2(AShardsCharacter* Player, float DeltaT
 		Player->pushvelocity = FVector::ZeroVector;
 		Player->CameraInput = FVector::ZeroVector;
 
+		Player->TargetButtonPressed = false;
+		Player->FaceForwardPressed = false;
 		Player->JumpPressed = false;
 		Player->ActivateNextFrame = false;
 		Player->SlamNextFrame = false;
@@ -1471,6 +1500,7 @@ void AShardsCharacter::PlayerState::Tick2(AShardsCharacter* Player, float DeltaT
 		Player->JustJumped = false;
 	}
 }
+
 void AShardsCharacter::PlayerState::PhysicsStuff(AShardsCharacter * Player, float DeltaTime)
 {
 	// Get horizontal velocity projection.
@@ -1544,11 +1574,29 @@ void AShardsCharacter::PlayerState::PhysicsStuff(AShardsCharacter * Player, floa
 	}
 	Player->CapsuleComponent->SetPhysicsLinearVelocity(Player->CapsuleComponent->GetPhysicsLinearVelocity() + Player->MovementComponent->groundvelocity); // + (MovementComponent->groundvelocity + pushvelocity)
 }
-
 void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float DeltaTime)
 {
 
 	bool CameraIsBeingManuallyControlled = !((Player->TimeSinceLastMouseInput > Player->CameraAutoTurnSettings.CameraResetTime));
+	Player->TargetCrosshair->SetVisibility(false);
+
+	if (Player->CurrentCameraMode == CameraMode::TARGETING) {
+		if (Player->CurrentTarget == nullptr) {
+			return;
+		}
+
+		Player->SpringArm->bDoCollisionTest = false;
+
+		Player->SpringArm->CameraLagSpeed = Player->CameraLagSettings.CameraLag * 4.0f;
+		Player->SpringArm->CameraRotationLagSpeed = Player->CameraLagSettings.CameraRotationLag * 2.0f;
+
+		Player->TargetCrosshair->SetVisibility(true);
+		Player->TargetCrosshair->SetWorldLocation(Player->CurrentTarget->GetActorLocation());
+		Player->TargetArmLength = FMath::Max((Player->CurrentTarget->GetActorLocation() - Player->GetActorLocation()).Size(),750.0f);
+
+		FVector midpoint = FMath::Lerp(Player->GetActorLocation(), Player->CurrentTarget->GetActorLocation(), 0.5f);
+		Player->SpringArm->SetWorldLocation(midpoint);
+	}
 
 	// Handle camera movement when the camera is controllable.
 	if (Player->CurrentCameraMode == CameraMode::NORMAL) {
@@ -1645,6 +1693,11 @@ void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float
 
 		// Clamp the camera's pitch.
 		finalrotation.Pitch = FMath::Clamp(finalrotation.Pitch, -Player->CameraMaxAngle, -Player->CameraMinAngle);
+
+		if (Player->FaceForwardPressed) {
+			finalrotation.Yaw = Player->TargetDirection.Yaw;
+			finalrotation.Pitch = Player->CameraAutoTurnSettings.CameraDefaultPitch;
+		}
 
 		// Set the rotation of the camera.
 		Player->SpringArm->SetWorldRotation(finalrotation);
@@ -1768,7 +1821,7 @@ void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float
 			// Reset the camera's rotation as well.
 			Player->SpringArm->SetRelativeLocation(FVector::ZeroVector);
 			Player->TargetDefaultArmLength = Player->BackupDefaultArmLength;
-			Player->SpringArm->SetRelativeRotation(FRotator(-30.0f, Player->SpringArm->GetComponentRotation().Yaw, 0.0f));
+			Player->SpringArm->SetRelativeRotation(FRotator(Player->CameraAutoTurnSettings.CameraDefaultPitch, Player->SpringArm->GetComponentRotation().Yaw, 0.0f));
 		}
 	}
 }
@@ -1837,6 +1890,83 @@ void AShardsCharacter::PlayerState::FaceTargetDirection(AShardsCharacter* Player
 	// Like what even ARE quaternions anyway?
 
 }
+void AShardsCharacter::PlayerState::Teleport(AShardsCharacter* Player, float DeltaTime, ATelePad* closest) {
+		if (closest != nullptr) {
+
+			Player->CurrentCameraMode = CameraMode::NORMAL;
+			Player->CurrentTarget = nullptr;
+			Player->TargetCrosshair->SetVisibility(false);
+
+			Player->IsGliding = false;
+			Player->ztarget = false;
+
+			Player->closeststick = closest;
+			Player->warphere = closest->gohere;
+			Player->warpvel = closest->PostTeleportVelocity;
+			Player->BackupDefaultArmLength = Player->TargetDefaultArmLength;
+
+			closest->PointLight->LightColor = FColor::White;
+			closest->PointLight->Intensity = 0.0f; 1750.0f;
+			closest->PointLight->UpdateColorAndBrightness();
+			closest->asfd = false;
+
+			UGameplayStatics::PlaySound2D(Player, Player->WarpSound);
+
+			// Start the teleport animation timer.
+			if (Player->InCameraOverrideRegion) {
+				Player->HereWeGo();
+			} else {
+				Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer, Player, &AShardsCharacter::HereWeGo, Player->TeleportSettings.TeleportAnimationDuration);
+				Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer2, Player, &AShardsCharacter::MoveIt, 0.75f*Player->TeleportSettings.TeleportAnimationDuration);
+				Player->CurrentState = &Player->Teleporting;
+				Player->TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
+				//TheAbyss->SetVisibility(true);
+
+				//FRotator NewRotation = SpringArm->GetComponentRotation();
+				FRotator NewRotation = FRotator::ZeroRotator;
+				NewRotation.Yaw += Player->PlayerModel->GetComponentRotation().Yaw;
+				NewRotation.Pitch = -30.0f;
+
+				//SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag*4.0f;
+				//SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*4.0f;
+
+				//TargetDefaultArmLength = 600.0f;
+				//SpringArm->TargetArmLength = TargetDefaultArmLength;
+				//SpringArm->SetRelativeRotation(NewRotation);
+
+				// Offset the spring arm (and therefore the camera) a bit so the player model
+				// isn't blocking the screen when we're trying to aim.
+				//FVector base = FVector(0.0f, 100.0f, 100.0f);
+				//base = (base.X*Forward + base.Y*Right + base.Z*FVector::UpVector);
+				//SpringArm->SetRelativeLocation(base);
+
+				Player->FlattenVelocity();
+				Player->PhysicsSettings.Gravity = 0.0f;
+				//Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength*4.0f);
+				FRotator asdfasdf = FRotator::ZeroRotator;
+				asdfasdf.Yaw = (Player->warphere - Player->GetActorLocation()).Rotation().Yaw;
+				//Capture2D->SetActorLocation(warphere);
+				//Capture2D->SetActorRotation(SpringArm->GetComponentRotation());
+				//Capture2D->AddActorLocalOffset(-BackupDefaultArmLength*FVector::ForwardVector);
+				//GetWorld()->GetTimerManager().SetTimer(WHY, this, &AShardsCharacter::whywhy, 0.25f);
+				Player->lel = true;
+				Player->Capture2D->SetActorTransform(Player->Camera->GetComponentTransform());
+				FVector temp = Player->GetActorLocation();
+				Player->SetActorLocation(Player->warphere, false, nullptr, ETeleportType::TeleportPhysics);
+
+				Player->TargetDefaultArmLength = Player->BackupDefaultArmLength;
+				Player->DefaultArmLength = 1000.0f;
+				Player->SpringArm->TargetArmLength = Player->DefaultArmLength;
+
+				Player->teletestmat->SetScalarParameterValue("t", 0.1f);
+
+				Player->SpringArm->CameraLagSpeed = 0.0f; 1.0f / 128.0f;
+				Player->SpringArm->CameraRotationLagSpeed = 0.0f; 1.0f / 128.0f;
+				Player->SpringArm->SetRelativeLocation(FVector::ZeroVector);// = DefaultArmLength;
+				Player->SetActorLocation(temp, false, nullptr, ETeleportType::TeleportPhysics);
+			}
+		}
+}
 
 void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaTime)
 {
@@ -1848,6 +1978,9 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 	}
 
 	Player->CurrentCameraMode = CameraMode::NORMAL;
+	if (Player->CurrentTarget != nullptr) {
+		Player->CurrentCameraMode = CameraMode::TARGETING;
+	}
 
 	 // Snap velocity to zero if it's really small.
 	if (FVector::VectorPlaneProject(Player->CapsuleComponent->GetPhysicsLinearVelocity(), FVector::UpVector).Size() < Player->PhysicsSettings.MinVelocity && !Player->dashing && !Player->JumpPressed && Player->MovementInput.IsNearlyZero()) {
@@ -1864,9 +1997,7 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 
 
 		for (TActorIterator<ATelePad> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
-			if (ActorItr->GetClass()->GetName() == "Stick") {
-				Params.AddIgnoredActor(ActorItr.operator->());
-			}
+			Params.AddIgnoredActor(ActorItr.operator->());
 		}
 
 
@@ -2160,6 +2291,10 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 		}
 	}
 
+	HandleTargeting(Player, DeltaTime);
+	if (Player->CurrentState == &(Player->Teleporting)) {
+		return;
+	}
 
 	// Use the player as the source for the teleport raycast...
 	FVector source = Player->GetActorLocation();
@@ -2350,6 +2485,11 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 				FOutputDeviceNull dummy;
 				Player->CurrentCut->CallFunctionByNameWithArguments(TEXT("Activate"), dummy, NULL, true);
 			}
+
+			Player->CurrentCameraMode = CameraMode::NORMAL;
+			Player->CurrentTarget = nullptr;
+			Player->TargetCrosshair->SetVisibility(false);
+
 			Player->CurrentState = &Player->Dialogue;
 
 			return;
@@ -2428,6 +2568,102 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 
 
 	PlayerState::Tick2(Player, DeltaTime);
+}
+void AShardsCharacter::NormalState::HandleTargeting(AShardsCharacter* Player, float DeltaTime)
+{
+	if (Player->CurrentTarget == nullptr) {
+		FVector source = Player->GetActorLocation();
+		FVector forward = Player->PlayerModel->GetForwardVector();
+
+		ATarget* closesttarget = NULL;
+		float biggestdot = 1000000000000.0f;
+
+		// Iterate over each Switch and cast a ray.
+		for (TActorIterator<ATarget> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+			if (ActorItr->IsA(ATarget::StaticClass())) {
+
+				// Get displacement vector from the player/camera to the switch.
+				FVector displacement = ActorItr->GetActorLocation() - source;
+
+				// Get the dot product between the displacement and the source.
+				//float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+				float dot = displacement.Size();
+
+				// Set trace parameters. I have no idea what these do but
+				// the raycast doesn't work if I don't put these here.
+				FHitResult f;
+				FCollisionObjectQueryParams TraceParams(ECC_Visibility);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+
+				// Don't want the ray to collide with the player model now do we?
+				QueryParams.AddIgnoredActor(Player);
+
+				// Figure out if the ray is blocked by an object.
+				bool blocked = Player->GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+
+				// If the trace hit a switch and it's closer to where we're aiming
+				// at than any other switch, set it as the "closest" one.
+				if (f.GetActor() != nullptr &&
+					//f.GetActor()->IsA(ATarget::StaticClass()) &&
+					dot < biggestdot &&
+					//blocked &&
+					displacement.Size() < 1000.0f) {
+					closesttarget = *ActorItr;
+					biggestdot = dot;
+				}
+			}
+		}
+
+		// Activate the "closest" switch as long as it's in range
+		// and within a certain angle tolerance.
+		if (closesttarget != nullptr &&
+			FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < 1000000000.0f &&
+			(closesttarget->GetActorLocation() - Player->GetActorLocation()).Size() < 1000.0f) {
+			if (Player->TargetButtonPressed) {
+				Player->CurrentTarget = closesttarget;
+				Player->CurrentCameraMode = CameraMode::TARGETING;
+				Player->SpringArm->RelativeRotation.Pitch = -30.0f;
+				//closestswitch->Activate();
+			}
+		}
+	} else {
+		if (Player->OnTheGround && !Player->dashing) {
+			Player->CurrentCameraMode = CameraMode::TARGETING;
+			FVector dir = FVector::VectorPlaneProject(Player->CurrentTarget->GetActorLocation() - Player->GetActorLocation(), FVector::UpVector).GetSafeNormal();
+			Player->TargetDirection = dir.Rotation();
+		}
+		if (Player->swish && Player->CurrentTarget->IsA(ATelePad::StaticClass())) {
+
+			FVector displacement = (Player->CurrentTarget->GetActorLocation() - Player->GetActorLocation());
+
+			// Set trace parameters.
+			FHitResult f;
+			FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Visibility);
+			TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+			TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+			FCollisionQueryParams QueryParams = FCollisionQueryParams();
+
+			// Don't want the ray to collide with the player model now do we?
+			QueryParams.AddIgnoredActor(Player);
+			QueryParams.AddIgnoredActor(Player->CurrentTarget);
+
+			// Figure out if the ray is blocked by an object.
+			bool blocked = Player->GetWorld()->LineTraceSingleByObjectType(f, Player->GetActorLocation(), Player->CurrentTarget->GetActorLocation(), TraceParams, QueryParams);
+
+			if (!blocked && displacement.Size() < Player->TeleportRange) {
+				FVector dir = FVector::VectorPlaneProject(Player->CurrentTarget->GetActorLocation() - Player->GetActorLocation(), FVector::UpVector).GetSafeNormal();
+				Player->TargetDirection = dir.Rotation();
+				Player->PlayerModel->SetWorldRotation(Player->TargetDirection);
+				PlayerState::Teleport(Player, DeltaTime, ((ATelePad*)Player->CurrentTarget));
+			}
+		}
+		if (Player->TargetButtonPressed) {
+			Player->CurrentTarget = nullptr;
+			Player->CurrentCameraMode = CameraMode::NORMAL;
+		}
+	}
 }
 
 void AShardsCharacter::DialogueState::Tick(AShardsCharacter* Player, float DeltaTime)
@@ -2566,7 +2802,7 @@ void AShardsCharacter::TeleportingState::Tick(AShardsCharacter * Player, float D
 	Player->CapsuleComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	Player->SpringArm->CameraLagSpeed = 0.0f; //CameraLagSettings.CameraLag*2.5f;
 	Player->SpringArm->CameraRotationLagSpeed = 0.0f; //CameraLagSettings.CameraRotationLag*2.5f;
-	Player->DefaultArmLength = Player->TargetDefaultArmLength;
+	Player->DefaultArmLength = 1000.0f;
 	Player->SpringArm->TargetArmLength = Player->DefaultArmLength;
 	PlayerState::Tick2(Player, DeltaTime);
 }
@@ -2615,7 +2851,7 @@ void AShardsCharacter::AimingState::Tick(AShardsCharacter * Player, float DeltaT
 
 		// If the trace hit a telepad and it's closer to where we're aiming
 		// at than any other TelePad, set it as the "closest" one.
-		if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && dot > biggestdot && blocked && displacement.Size() < Player->TeleportRange) {
+		if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ATelePad::StaticClass()) && f.GetActor()->GetActorLocation() == ActorItr->GetActorLocation() && dot > biggestdot && blocked && displacement.Size() < Player->TeleportRange) {
 			closest = *ActorItr;
 			biggestdot = dot;
 		}
@@ -2640,78 +2876,8 @@ void AShardsCharacter::AimingState::Tick(AShardsCharacter * Player, float DeltaT
 		// Teleport the player to the TelePad if they're trying to teleport
 		// and impart the post teleport velocity on them.
 		if (Player->swish) {
-			if (closest != nullptr) {
-
-				Player->IsGliding = false;
-				Player->ztarget = false;
-
-				Player->closeststick = closest;
-				Player->warphere = closest->gohere;
-				Player->warpvel = closest->PostTeleportVelocity;
-				Player->BackupDefaultArmLength = Player->TargetDefaultArmLength;
-
-				closest->PointLight->LightColor = FColor::White;
-				closest->PointLight->Intensity = 0.0f; 1750.0f;
-				closest->PointLight->UpdateColorAndBrightness();
-				closest->asfd = false;
-
-				UGameplayStatics::PlaySound2D(Player, Player->WarpSound);
-
-				// Start the teleport animation timer.
-				if (Player->InCameraOverrideRegion) {
-					Player->HereWeGo();
-				} else {
-					Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer, Player, &AShardsCharacter::HereWeGo, Player->TeleportSettings.TeleportAnimationDuration);
-					Player->GetWorld()->GetTimerManager().SetTimer(Player->PreWarpTimer2, Player, &AShardsCharacter::MoveIt, 0.75f*Player->TeleportSettings.TeleportAnimationDuration);
-					Player->CurrentState = &Player->Teleporting;
-					Player->TheAbyss->SetRelativeRotation(FRotator(0.0f, 5.0f, FMath::RandRange(-5.0f, 5.0f)));
-					//TheAbyss->SetVisibility(true);
-
-					//FRotator NewRotation = SpringArm->GetComponentRotation();
-					FRotator NewRotation = FRotator::ZeroRotator;
-					NewRotation.Yaw += Player->PlayerModel->GetComponentRotation().Yaw;
-					NewRotation.Pitch = -30.0f;
-
-					//SpringArm->CameraLagSpeed = CameraLagSettings.CameraLag*4.0f;
-					//SpringArm->CameraRotationLagSpeed = CameraLagSettings.CameraRotationLag*4.0f;
-
-					//TargetDefaultArmLength = 600.0f;
-					//SpringArm->TargetArmLength = TargetDefaultArmLength;
-					//SpringArm->SetRelativeRotation(NewRotation);
-
-					// Offset the spring arm (and therefore the camera) a bit so the player model
-					// isn't blocking the screen when we're trying to aim.
-					//FVector base = FVector(0.0f, 100.0f, 100.0f);
-					//base = (base.X*Forward + base.Y*Right + base.Z*FVector::UpVector);
-					//SpringArm->SetRelativeLocation(base);
-
-					Player->FlattenVelocity();
-					Player->PhysicsSettings.Gravity = 0.0f;
-					//Capture2D->SetActorLocation(warphere - (warphere - GetActorLocation()).GetSafeNormal()*DefaultArmLength*4.0f);
-					FRotator asdfasdf = FRotator::ZeroRotator;
-					asdfasdf.Yaw = (Player->warphere - Player->GetActorLocation()).Rotation().Yaw;
-					//Capture2D->SetActorLocation(warphere);
-					//Capture2D->SetActorRotation(SpringArm->GetComponentRotation());
-					//Capture2D->AddActorLocalOffset(-BackupDefaultArmLength*FVector::ForwardVector);
-					//GetWorld()->GetTimerManager().SetTimer(WHY, this, &AShardsCharacter::whywhy, 0.25f);
-					Player->lel = true;
-					Player->Capture2D->SetActorTransform(Player->Camera->GetComponentTransform());
-					FVector temp = Player->GetActorLocation();
-					Player->SetActorLocation(Player->warphere, false, nullptr, ETeleportType::TeleportPhysics);
-
-					Player->TargetDefaultArmLength = Player->BackupDefaultArmLength;
-					Player->DefaultArmLength = Player->TargetDefaultArmLength;
-					Player->SpringArm->TargetArmLength = Player->TargetDefaultArmLength;
-
-					Player->teletestmat->SetScalarParameterValue("t", 0.1f);
-
-					Player->SpringArm->CameraLagSpeed = 0.0f; 1.0f / 128.0f;
-					Player->SpringArm->CameraRotationLagSpeed = 0.0f; 1.0f / 128.0f;
-					Player->SpringArm->SetRelativeLocation(FVector::ZeroVector);// = DefaultArmLength;
-					Player->SetActorLocation(temp, false, nullptr, ETeleportType::TeleportPhysics);
-					return;
-				}
-			}
+			PlayerState::Teleport(Player, DeltaTime, closest);
+			return;
 		}
 	}
 

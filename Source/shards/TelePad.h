@@ -3,10 +3,11 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Target.h"
 #include "TelePad.generated.h"
 
 UCLASS()
-class SHARDS_API ATelePad : public AActor
+class SHARDS_API ATelePad : public ATarget
 {
 	GENERATED_BODY()
 	
