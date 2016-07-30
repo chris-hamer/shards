@@ -287,6 +287,13 @@ UENUM() enum AxisType {
 	INVERTED		UMETA(DisplayName = "Inverted")
 };
 
+UENUM() enum CameraMode {
+	NORMAL			UMETA(DisplayName = "Standard"),
+	TARGETING		UMETA(DisplayName = "Inverted"),
+	AIMING			UMETA(DisplayName = "Inverted"),
+	OVERRIDDEN		UMETA(DisplayName = "Inverted")
+};
+
 UCLASS() class AShardsCharacter : public APawn
 {
 	GENERATED_BODY()
@@ -383,6 +390,7 @@ public:
 	void Attack();
 	void CameraZoomIn();
 	void CameraZoomOut();
+	void Target();
 	void Respawn();
 	void HereWeGo();
 	void MoveIt();
@@ -572,6 +580,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AxisType> XAxisAimingStyle;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AxisType> YAxisStyle;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<AxisType> YAxisAimingStyle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") TEnumAsByte<CameraMode> CurrentCameraMode;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") FAbilitiesTeleport TeleportSettings;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities") FAbilitiesDash DashSettings;
@@ -767,6 +777,8 @@ public:
 
 	bool ishanging;
 	bool isclimbing;
+
+	float TargetArmLength;
 
 	float ActualDefaultArmLength;
 	float ActualDefaultCameraLag;
