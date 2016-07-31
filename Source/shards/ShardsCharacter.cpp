@@ -1353,6 +1353,7 @@ void AShardsCharacter::PlayerState::Tick(AShardsCharacter* Player, float DeltaTi
 
 	if (Player->isclimbing) {
 		Player->JumpPressed = false;
+		Player->AttackPressed = false;
 		Player->ActivateNextFrame = false;
 		Player->SlamNextFrame = false;
 		Player->GlideNextFrame = false;
@@ -2332,10 +2333,6 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 		return;
 	}
 
-	if (Player->AttackPressed&&Player->OnTheGround && !Player->dashing) {
-		Player->CurrentState = &Player->Attack1;
-	}
-
 	// Use the player as the source for the teleport raycast...
 	FVector source = Player->GetActorLocation();
 	FVector forward = Player->PlayerModel->GetForwardVector();
@@ -2389,7 +2386,8 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 	if (closestswitch != nullptr &&
 		FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < Player->TeleportAngleTolerance &&
 		(closestswitch->GetActorLocation() - Player->GetActorLocation()).Size() < closestswitch->MaxDistance) {
-		if (Player->ActivateNextFrame) {
+		if (Player->AttackPressed) { // ActivateNextFrame
+			Player->AttackPressed = false;
 			closestswitch->Activate();
 		}
 	}
@@ -2439,7 +2437,10 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 	if (closestNPC != nullptr &&
 		FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < 60.0f &&
 		(closestNPC->GetActorLocation() - Player->GetActorLocation()).Size() < closestNPC->MaxDistance) {
-		if (Player->ActivateNextFrame && Player->OnTheGround) {
+		if (Player->AttackPressed && Player->OnTheGround) { //ActivateNextFrame
+
+			Player->AttackPressed = false;
+
 			// Start dialogue with the target NPC.
 			closestNPC->Activate();
 
@@ -2542,7 +2543,8 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 	if (closestship != nullptr &&
 		FMath::RadiansToDegrees(FMath::Acos(biggestdot)) < Player->TeleportAngleTolerance &&
 		(closestship->GetActorLocation() - Player->GetActorLocation()).Size() < 750.0f) {
-		if (Player->ActivateNextFrame && Player->OnTheGround) {
+		if (Player->AttackPressed && Player->OnTheGround) { // ActivateNectFrame
+			Player->AttackPressed = false;
 			Player->BlockInput();
 			Player->onsandship = true;
 			closestship->Player = Player;
@@ -2554,6 +2556,11 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 			return;
 		}
 
+	}
+
+
+	if (Player->AttackPressed&&Player->OnTheGround && !Player->dashing) {
+		Player->CurrentState = &Player->Attack1;
 	}
 
 	PlayerState::PhysicsStuff(Player, DeltaTime);
