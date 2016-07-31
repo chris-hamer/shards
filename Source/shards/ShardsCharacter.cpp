@@ -272,6 +272,9 @@ AShardsCharacter::AShardsCharacter()
 	TeleClaw = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TeleClaw"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> tc(TEXT("/Game/Generic/Weapons/TeleClaw"));
 	TeleClaw->SetStaticMesh(tc.Object);
+	TeleClaw->SetCollisionObjectType(ECC_EngineTraceChannel3);
+	TeleClaw->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	//TeleClaw->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TeleClaw->bRenderCustomDepth = true;
 	TeleClaw->bReceivesDecals = false;
@@ -705,6 +708,15 @@ void AShardsCharacter::BeginPlay()
 	grassparticles->DeactivateSystem();
 	grassparticles->bAutoDestroy = false;
 	grassparticles->SecondsBeforeInactive = 0.0f;
+	
+	//Normal.name = "Normal";
+	//Climbing.name = "Climbing";
+	//Teleporting.name = "Teleporting";
+	//Aiming.name = "Aiming";
+	//Attack1.name = "Attack1";
+	//Dialogue.name = "Dialogue";
+	//Vehicle.name = "Vehicle";
+	
 	CurrentState = &Normal;
 }
 
@@ -1266,6 +1278,29 @@ USkeletalMeshComponent* AShardsCharacter::GetMesh() {
 	return PlayerModel;
 }
 
+void AShardsCharacter::SetHitboxActive(bool active) {
+	if (active) {
+		TeleClaw->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	} else {
+		TeleClaw->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+FString AShardsCharacter::GetStateName()
+{
+	if (CurrentState != nullptr) {
+		return CurrentState->GetName();
+	}
+	return "WHAT";
+}
+
+void AShardsCharacter::SetState(FString state)
+{
+	if (state == "Normal") {
+		CurrentState = &Normal;
+	}
+}
+
 void AShardsCharacter::PlayerState::Tick(AShardsCharacter* Player, float DeltaTime)
 {
 	Player->SpeedRelativeToGround = (FVector::VectorPlaneProject(Player->CapsuleComponent->GetPhysicsLinearVelocity() - Player->MovementComponent->groundvelocity, FVector::UpVector)).Size();
@@ -1485,6 +1520,7 @@ void AShardsCharacter::PlayerState::Tick2(AShardsCharacter* Player, float DeltaT
 		Player->CameraInput = FVector::ZeroVector;
 
 		Player->TargetButtonPressed = false;
+		Player->AttackPressed = false;
 		Player->FaceForwardPressed = false;
 		Player->JumpPressed = false;
 		Player->ActivateNextFrame = false;
@@ -2296,52 +2332,14 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 		return;
 	}
 
+	if (Player->AttackPressed&&Player->OnTheGround && !Player->dashing) {
+		Player->CurrentState = &Player->Attack1;
+	}
+
 	// Use the player as the source for the teleport raycast...
 	FVector source = Player->GetActorLocation();
 	FVector forward = Player->PlayerModel->GetForwardVector();
-
-	ADestructibleBox* currentbox = NULL;
 	float biggestdot = -1.0f;
-
-	// Iterate over each DestructibleBox and cast a ray.
-	for (TActorIterator<ADestructibleBox> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
-		if (ActorItr->IsA(ADestructibleBox::StaticClass())) {
-
-			if (ActorItr->fadetimer != -1.0f) {
-				continue;
-			}
-
-			// Get displacement vector from the player/camera to the DestructibleBox.
-			FVector displacement = ActorItr->GetActorLocation() - source;
-
-			// Get the dot product between the displacement and the source.
-			float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
-
-			// Set trace parameters. I have no idea what these do but the raycast doesn't work
-			// if I don't put these here.
-			FCollisionObjectQueryParams TraceParams(ECollisionChannel::ECC_Destructible);
-			FCollisionQueryParams QueryParams = FCollisionQueryParams();
-			QueryParams.AddIgnoredActor(Player);
-			FHitResult f;
-
-			// Don't want the ray to collide with the player model now do we?
-			QueryParams.AddIgnoredActor(Player);
-
-			// Figure out if the ray is blocked by an object.
-			bool blocked = Player->GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
-
-			// If the trace hit a DestructibleBox and it's closer to where we're aiming
-			// at than any other DestructibleBox, set it as the "closest" one.
-			if (f.GetActor() != nullptr && f.GetActor()->GetClass() != nullptr && f.GetActor()->IsA(ADestructibleBox::StaticClass()) && blocked && displacement.Size() < Player->AttackRange && dot > 0.65f) {
-				currentbox = (ADestructibleBox*)(f.GetActor());
-				if (currentbox != nullptr&&Player->AttackPressed) {
-					currentbox->BeginFadeout();
-				}
-			}
-		}
-	}
-
-	Player->AttackPressed = false;
 
 	// Reset the "player wants to teleport" variable.
 	Player->swish = false;
@@ -2745,7 +2743,6 @@ void AShardsCharacter::ClimbingState::Tick(AShardsCharacter* Player, float Delta
 
 	PlayerState::Tick(Player, DeltaTime);
 
-
 	Player->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	Player->MovementComponent->isclimbing = true;
 
@@ -2925,4 +2922,27 @@ void AShardsCharacter::VehicleState::Tick(AShardsCharacter * Player, float Delta
 	((APlayerController*)Player->GetController());
 
 	//PlayerState::Tick2(Player, DeltaTime);
+}
+
+void AShardsCharacter::A1::Tick(AShardsCharacter * Player, float DeltaTime)
+{
+	PlayerState::Tick(Player, DeltaTime);
+
+	if (Player->AttackPressed) {
+		Player->ContinueAttack = true;
+	}
+
+	Player->MovementInput = FVector::ZeroVector;
+
+	PlayerState::PhysicsStuff(Player, DeltaTime);
+	PlayerState::CameraStuff(Player, DeltaTime);
+	PlayerState::Tick2(Player, DeltaTime);
+}
+
+void AShardsCharacter::A2::Tick(AShardsCharacter * Player, float DeltaTime)
+{
+}
+
+void AShardsCharacter::A3::Tick(AShardsCharacter * Player, float DeltaTime)
+{
 }

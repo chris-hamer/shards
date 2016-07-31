@@ -21,6 +21,7 @@ ADestructibleBox::ADestructibleBox()
 	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 	StaticMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
 	StaticMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
+	StaticMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
 	StaticMesh->SetSimulatePhysics(true);
 	//StaticMesh->AttachTo(RootComponent);
 	StaticMesh->SetupAttachment(RootComponent);//4.12

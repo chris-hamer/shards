@@ -324,6 +324,7 @@ public:
 	{
 	public:
 		PlayerState() {};
+		virtual FString GetName() { return "None"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 		virtual void Tick2(AShardsCharacter* Player, float DeltaTime);
 		virtual void PhysicsStuff(AShardsCharacter* Player, float DeltaTime);
@@ -336,14 +337,22 @@ public:
 	{
 	public:
 		NormalState() {};
+		virtual FString GetName() { return "Normal"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 		virtual void HandleTargeting(AShardsCharacter* Player, float DeltaTime);
 	};
 	
+	class AttackState : public PlayerState { public: FString name = FString("NOPE"); };
+
+	class A1 : public AttackState {	public: virtual FString GetName() { return "Attack1"; }; virtual void Tick(AShardsCharacter* Player, float DeltaTime);};
+	class A2 : public AttackState { public: virtual FString GetName() { return "Attack2"; }; virtual void Tick(AShardsCharacter* Player, float DeltaTime); };
+	class A3 : public AttackState { public: virtual FString GetName() { return "Attack3"; }; virtual void Tick(AShardsCharacter* Player, float DeltaTime); };
+
 	class DialogueState : public PlayerState
 	{
 	public:
 		DialogueState() {};
+		virtual FString GetName() { return "Dialogue"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
@@ -351,6 +360,7 @@ public:
 	{
 	public:
 		ClimbingState() {};
+		virtual FString GetName() { return "Climbing"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
@@ -358,6 +368,7 @@ public:
 	{
 	public:
 		TeleportingState() {};
+		virtual FString GetName() { return "Teleporting"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
@@ -365,6 +376,7 @@ public:
 	{
 	public:
 		AimingState() {};
+		virtual FString GetName() { return "Aiming"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
@@ -372,6 +384,7 @@ public:
 	{
 	public:
 		VehicleState() {};
+		virtual FString GetName() { return "Vehicle"; };
 		virtual void Tick(AShardsCharacter* Player, float DeltaTime);
 	};
 
@@ -520,16 +533,22 @@ public:
 	bool HasSlam();
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetHasSlam(bool has);
-
 	
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	void SetStillScrolling(bool b);
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetSkipText();
-
 	
 	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
 	bool GetIsClimbing();
+	
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetHitboxActive(bool active);
+	
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	FString GetStateName();
+	UFUNCTION(BlueprintCallable, Category = "Auyron Interface")
+	void SetState(FString state);
 
 	FVector MovementInput;
 	FVector CameraInput;
@@ -549,6 +568,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UStaticMeshComponent* TheAbyss;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UCapsuleComponent* CapsuleComponent;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UCapsuleComponent* AttackHitbox;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* DashParticles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* FloatParticles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components") UParticleSystemComponent* SlamParticles;
@@ -638,9 +658,15 @@ public:
 	AimingState Aiming;
 	VehicleState Vehicle;
 
+	A1 Attack1;
+	A2 Attack2;
+	A3 Attack3;
+
 	class ASandShip* currentship;
 
 	class ATarget* CurrentTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack") bool ContinueAttack;
 
 	bool TargetButtonPressed;
 	bool FaceForwardPressed;

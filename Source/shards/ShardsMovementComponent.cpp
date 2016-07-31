@@ -32,6 +32,7 @@ void UShardsMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	FCollisionQueryParams Params;
 	Params.bFindInitialOverlaps = true;
+	Params.AddIgnoredActor(UpdatedComponent->GetAttachmentRootActor());
 
 	// Telepads don't count.
 	for (TActorIterator<ATelePad> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
@@ -60,7 +61,7 @@ void UShardsMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 			}
 		}
 		if (!ShapeTraceResult.IsValidBlockingHit()) {
-			GetWorld()->LineTraceSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, ECC_Visibility);
+			GetWorld()->LineTraceSingleByChannel(ShapeTraceResult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 1000.0f*FVector::UpVector, ECC_Visibility, Params);
 		}
 	}
 
@@ -70,7 +71,7 @@ void UShardsMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	overground = ShapeTraceResult.IsValidBlockingHit();
 
 	FHitResult groundhitresult;
-	GetWorld()->LineTraceSingleByChannel(groundhitresult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 10000.0f*FVector::UpVector, ECC_Visibility);
+	GetWorld()->LineTraceSingleByChannel(groundhitresult, UpdatedComponent->GetComponentLocation(), UpdatedComponent->GetComponentLocation() - 10000.0f*FVector::UpVector, ECC_Visibility, Params);
 	groundtracehit = groundhitresult.ImpactPoint;
 
 	if (!onground) {
@@ -127,7 +128,7 @@ void UShardsMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	FVector newlocation = UpdatedComponent->GetComponentLocation();
 
 	FHitResult TraceHitResult;
-	TraceBlocked = GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility);
+	TraceBlocked = GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility,Params);
 	if (TraceHitResult.Normal.Z > minnormalz) {
 		enforcementtimer = -1.0f;
 	}
@@ -136,7 +137,7 @@ void UShardsMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 		if (TraceBlocked) {
 			newlocation.Z = TraceHitResult.ImpactPoint.Z + playerhalfheight; // 50
-			GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility);
+			GetWorld()->LineTraceSingleByChannel(TraceHitResult, ShapeTraceResult.ImpactPoint + 1.0f*FVector::UpVector, ShapeTraceResult.ImpactPoint - 10.0f*FVector::UpVector, ECC_Visibility,Params);
 			FloorNormal = TraceHitResult.ImpactNormal;
 		}
 
