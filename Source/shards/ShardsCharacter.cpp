@@ -2560,6 +2560,7 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 
 
 	if (Player->AttackPressed&&Player->OnTheGround && !Player->dashing) {
+		Player->PlayerModel->SetWorldRotation(Player->TargetDirection);
 		Player->CurrentState = &Player->Attack1;
 	}
 
