@@ -1617,6 +1617,10 @@ void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float
 	bool CameraIsBeingManuallyControlled = !((Player->TimeSinceLastMouseInput > Player->CameraAutoTurnSettings.CameraResetTime));
 	Player->TargetCrosshair->SetVisibility(false);
 
+	if (!Player->CameraControllerInput.IsNearlyZero()) {
+		Player->CameraInput *= DeltaTime*120.0f;
+	}
+
 	if (Player->CurrentCameraMode == CameraMode::TARGETING) {
 		if (Player->CurrentTarget == nullptr) {
 			return;
@@ -1660,8 +1664,8 @@ void AShardsCharacter::PlayerState::CameraStuff(AShardsCharacter * Player, float
 		FRotator NewRotation = FRotator::ZeroRotator;
 
 		// Move the camera's yaw in response to the x input of the mouse/stick.
-		NewRotation.Yaw += (DeltaTime*120.0f)*Player->CameraInput.X;
-		NewRotation.Pitch += (DeltaTime*120.0f)*Player->CameraInput.Y;
+		NewRotation.Yaw += Player->CameraInput.X;
+		NewRotation.Pitch += Player->CameraInput.Y;
 
 		// The camera should only try to move automatically if it hasn't been touched recently.
 		if (!CameraIsBeingManuallyControlled) {
