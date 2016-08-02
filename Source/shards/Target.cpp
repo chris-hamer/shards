@@ -26,3 +26,14 @@ void ATarget::Tick( float DeltaTime )
 
 }
 
+//float ATarget::Distance() {W
+//	if (Player != nullptr) {
+//		return (GetActorLocation() - Player->GetActorLocation()).Size();
+//	}
+//}
+//
+//bool ATarget::operator<(ATarget* other) {
+//	if (Player != nullptr && other != nullptr) {
+//		return (Distance() < other->Distance());
+//	}
+//}

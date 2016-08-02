@@ -2013,7 +2013,7 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 {
 	PlayerState::Tick(Player, DeltaTime);
 
-	if (Player->ztarget&&!Player->dashing&&!Player->dunk) {
+	if (Player->ztarget&&!Player->dashing&&!Player->dunk&&Player->CurrentCameraMode == CameraMode::NORMAL) {
 		Player->CurrentState = &Player->Aiming;
 		return;
 	}
@@ -2581,51 +2581,79 @@ void AShardsCharacter::NormalState::Tick(AShardsCharacter * Player, float DeltaT
 }
 void AShardsCharacter::NormalState::HandleTargeting(AShardsCharacter* Player, float DeltaTime)
 {
-	if (Player->CurrentTarget == nullptr) {
-		FVector source = Player->GetActorLocation();
-		FVector forward = Player->PlayerModel->GetForwardVector();
+	FVector source = Player->GetActorLocation();
+	FVector forward = Player->PlayerModel->GetForwardVector();
 
-		ATarget* closesttarget = NULL;
-		float biggestdot = 1000000000000.0f;
+	TArray<ATarget*> targets;
 
-		// Iterate over each Switch and cast a ray.
-		for (TActorIterator<ATarget> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
-			if (ActorItr->IsA(ATarget::StaticClass())) {
+	TArray<float> distances;
 
-				// Get displacement vector from the player/camera to the switch.
-				FVector displacement = ActorItr->GetActorLocation() - source;
+	ATarget* closesttarget = NULL;
+	float biggestdot = 1000000000000.0f;
 
-				// Get the dot product between the displacement and the source.
-				//float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
-				float dot = displacement.Size();
+	// Iterate over each Switch and cast a ray.
+	for (TActorIterator<ATarget> ActorItr(Player->GetWorld()); ActorItr; ++ActorItr) {
+		if (ActorItr->IsA(ATarget::StaticClass())) {
 
-				// Set trace parameters. I have no idea what these do but
-				// the raycast doesn't work if I don't put these here.
-				FHitResult f;
-				FCollisionObjectQueryParams TraceParams(ECC_Visibility);
-				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
-				TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-				FCollisionQueryParams QueryParams = FCollisionQueryParams();
+			// Get displacement vector from the player/camera to the switch.
+			FVector displacement = ActorItr->GetActorLocation() - source;
 
-				// Don't want the ray to collide with the player model now do we?
-				QueryParams.AddIgnoredActor(Player);
+			// Get the dot product between the displacement and the source.
+			//float dot = displacement.GetSafeNormal() | forward.GetSafeNormal();
+			float dot = displacement.Size();
 
-				// Figure out if the ray is blocked by an object.
-				bool blocked = Player->GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+			// Set trace parameters. I have no idea what these do but
+			// the raycast doesn't work if I don't put these here.
+			FHitResult f;
+			FCollisionObjectQueryParams TraceParams(ECC_Visibility);
+			TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+			TraceParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+			FCollisionQueryParams QueryParams = FCollisionQueryParams();
 
-				// If the trace hit a switch and it's closer to where we're aiming
-				// at than any other switch, set it as the "closest" one.
-				if (f.GetActor() != nullptr &&
-					//f.GetActor()->IsA(ATarget::StaticClass()) &&
-					dot < biggestdot &&
-					//blocked &&
-					displacement.Size() < 1000.0f) {
+			// Don't want the ray to collide with the player model now do we?
+			QueryParams.AddIgnoredActor(Player);
+
+			// Figure out if the ray is blocked by an object.
+			bool blocked = Player->GetWorld()->LineTraceSingleByObjectType(f, source, ActorItr->GetActorLocation(), TraceParams, QueryParams);
+
+			// If the trace hit a switch and it's closer to where we're aiming
+			// at than any other switch, set it as the "closest" one.
+			if (f.GetActor() != nullptr &&
+				//f.GetActor()->IsA(ATarget::StaticClass()) &&
+				//blocked &&
+				displacement.Size() < 1000.0f) {
+				(*ActorItr)->distance = displacement.Size();
+				targets.Add(*ActorItr);
+				distances.Add(displacement.Size());
+				if (dot < biggestdot) {
 					closesttarget = *ActorItr;
 					biggestdot = dot;
 				}
 			}
 		}
+	}
 
+	targets.Sort([](ATarget &A, ATarget &B) {
+		return A.distance < B.distance;
+	});
+
+	if (Player->ztarget) {
+		Player->ztarget = false;
+		TArray<float> keyarray;
+		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, "AAAA");
+
+		int32 index = targets.IndexOfByKey(Player->CurrentTarget);
+		Player->CurrentTarget = targets[(index + 1) % (targets.Num())];
+		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, FString::SanitizeFloat((index + 1) % (targets.Num())));
+		if (index != INDEX_NONE) {
+			//for(TIterator targets.CreateIterator();;
+		} else {
+			//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, "AAAA");
+		}
+	}
+
+
+	if (Player->CurrentTarget == nullptr) {
 		// Activate the "closest" switch as long as it's in range
 		// and within a certain angle tolerance.
 		if (closesttarget != nullptr &&
