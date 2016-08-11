@@ -89,14 +89,14 @@ AShardsCharacter::AShardsCharacter()
 
 	CameraMaxAngle = 85.0f;
 	CameraMinAngle = -85.0f;
-	DefaultArmLength = 1000.0f;
+	DefaultArmLength = 850.0f;
 	MinimumArmLength = 200.0f;
 	MaximumArmLength = 1600.0f;
 	CameraZoomRate = 0.05f;
 	CameraZoomStep = 200.0f;
 	CameraLagZoomScale = 2.0f;
 
-	CameraLagSettings.CameraLag = 3.0f;
+	CameraLagSettings.CameraLag = 4.0f;
 	CameraLagSettings.CameraRotationLag = 10.0f;
 	CameraLagSettings.AimingLagMultiplier = 0.0f;
 	CameraLagSettings.OverrideRegionRotationLagMultiplier = 0.75f;
@@ -906,6 +906,9 @@ void AShardsCharacter::Use()
 // HEY LINK TALK TO ME USING Z TARGETING
 void AShardsCharacter::Aim()
 {
+	if (dashing) {
+		return;
+	}
 	//if (!dashing&&!MovementAxisLocked&&TeleportSettings.HasTeleport&&(CurrentState == &Normal)&&GetWorldTimerManager().GetTimerElapsed(PreWarpTimer)==-1.0f) {
 		if (AimStyle == TOGGLE) {
 			ztarget = !ztarget;

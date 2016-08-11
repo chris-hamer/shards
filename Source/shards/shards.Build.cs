@@ -6,7 +6,7 @@ public class shards : ModuleRules
 {
     public shards(TargetInfo Target)
     {
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "RHI" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });
 
